@@ -66,6 +66,8 @@ export async function verifySource(
     ``,
     `Source text (fetched, may be truncated):`,
     sourceText,
+    ``,
+    `Respond with the JSON object described in the system prompt — including both axes (supports + reliability).`,
   ].join("\n");
 
   const client = getClient();
@@ -101,9 +103,28 @@ function parseVerdict(raw: string): VerifyVerdict {
   const supports = Boolean(obj.supports);
   const confidence = typeof obj.confidence === "number" ? obj.confidence : 0;
   const supportingQuote =
-    typeof obj.supportingQuote === "string" ? obj.supportingQuote : undefined;
+    typeof obj.supportingQuote === "string" && obj.supportingQuote.length > 0
+      ? obj.supportingQuote
+      : undefined;
+  const reliability = normaliseReliability(obj.reliability);
+  const reliabilityReason =
+    typeof obj.reliabilityReason === "string" ? obj.reliabilityReason : "";
   const reasoning = typeof obj.reasoning === "string" ? obj.reasoning : "";
-  return { supports, confidence, supportingQuote, reasoning };
+  return {
+    supports,
+    confidence,
+    supportingQuote,
+    reliability,
+    reliabilityReason,
+    reasoning,
+  };
+}
+
+function normaliseReliability(raw: unknown): "high" | "medium" | "low" {
+  if (raw === "high" || raw === "medium" || raw === "low") return raw;
+  // Default to "medium" when the model omits the field rather than failing
+  // hard — the caller can still decide based on substantiation.
+  return "medium";
 }
 
 /** Finds the first balanced {...} JSON object in a string. */

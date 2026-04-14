@@ -47,15 +47,22 @@ export async function findCommand(args: FindArgs): Promise<void> {
     }
     r.suggestions.forEach((s, j) => {
       const mark = s.verdict.supports ? "✓" : "✗";
+      const flag =
+        s.verdict.supports && s.verdict.reliability === "low"
+          ? "  [low-reliability — find a better source]"
+          : "";
       console.log(
-        `    ${mark} [${j + 1}] (${s.verdict.confidence.toFixed(2)}) ${s.source.title}`,
+        `    ${mark} [${j + 1}] (conf=${s.verdict.confidence.toFixed(2)} rel=${s.verdict.reliability}) ${s.source.title}${flag}`,
       );
       console.log(`       ${s.source.url}`);
       if (s.verdict.supportingQuote) {
         console.log(`       quote: ${truncate(s.verdict.supportingQuote, 160)}`);
       }
       console.log(`       ${s.verdict.reasoning}`);
-      if (s.verdict.supports) {
+      if (s.verdict.reliabilityReason) {
+        console.log(`       reliability: ${s.verdict.reliabilityReason}`);
+      }
+      if (s.verdict.supports && s.verdict.reliability !== "low") {
         console.log(`       cite: ${s.citation.template}`);
       }
     });

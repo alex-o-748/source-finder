@@ -58,17 +58,25 @@ export async function runArticle(
             verdict: {
               supports: false,
               confidence: 0,
+              reliability: "low",
+              reliabilityReason: "verifier error — reliability not assessed",
               reasoning: `verification failed: ${(err as Error).message}`,
             },
             citation: formatCitation(candidate),
           });
         }
       }
-      // Rank: supporting first, then by confidence descending.
+      // Rank on both axes: fully-promotable (supports + reliability>=medium)
+      // first, then substantiating-but-low-reliability, then non-substantiating.
+      // Within each bucket, higher confidence wins.
+      const bucket = (s: ClaimSuggestion): number => {
+        if (!s.verdict.supports) return 2;
+        return s.verdict.reliability === "low" ? 1 : 0;
+      };
       suggestions.sort((a, b) => {
-        if (a.verdict.supports !== b.verdict.supports) {
-          return a.verdict.supports ? -1 : 1;
-        }
+        const ba = bucket(a);
+        const bb = bucket(b);
+        if (ba !== bb) return ba - bb;
         return b.verdict.confidence - a.verdict.confidence;
       });
       results.push({ claim, suggestions });

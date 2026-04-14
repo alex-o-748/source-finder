@@ -62,13 +62,20 @@ The core library has no CLI dependencies. Cloudflare Workers, a web UI, an MCP s
 
 ## The verifier is separable
 
-`verifySource(claim, sourceUrl)` is exposed both as a library function and as the `cnfirmed verify` subcommand. It uses the prompt at `src/prompts/verify_source.md`, which is intended to be replaced with your own source-checking prompt. The function contract (input/output shape) is stable.
+`verifySource(claim, sourceUrl)` is exposed both as a library function and as the `cnfirmed verify` subcommand. It uses the prompt at `src/prompts/verify_source.md`, which is intended to be replaced with your own source-checking prompt. The function contract is stable.
 
-## Policy handling (v1)
+The verifier grades **two independent axes**:
 
-- WP:RS guidance lives in the prompts (`find_sources.md`, `verify_source.md`).
-- WP:RSP deprecated domains are hard-blocked after search in `src/policy/unreliable_sources.ts`.
-- Promote rules from prompt to code as accuracy issues surface.
+- **Substantiation** (`supports`, `confidence`, `supportingQuote`) — pure reading comprehension: does the source actually state the specific claim?
+- **Reliability for this claim** (`reliability`, `reliabilityReason`) — WP:RS judgment *for the kind of claim being made* (context-sensitive: BLP, medical, SPS-for-author-bio, primary-vs-secondary).
+
+These are kept separate so callers can distinguish "doesn't say it" from "says it, but wrong kind of source". A suggestion with `supports: true` and `reliability: "low"` is still surfaced — flagged — so a human editor can see the source does say it but needs a better one.
+
+## Policy handling (three layers)
+
+1. **Hard domain blocklist** — `src/policy/unreliable_sources.ts`, applied in `findSources` after web_search returns. Catches WP:RSP-deprecated outlets deterministically before spending verifier tokens.
+2. **Discovery-time prompt guidance** — `src/prompts/find_sources.md` steers the model toward WP:RS-compliant sources during search.
+3. **Verifier reliability axis** — the context-sensitive judgment the domain blocklist cannot express.
 
 ## Testing
 

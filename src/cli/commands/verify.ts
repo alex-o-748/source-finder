@@ -14,10 +14,12 @@ export async function verifyCommand(args: VerifyArgs): Promise<void> {
     return;
   }
 
-  console.log(`Supports: ${verdict.supports ? "yes" : "no"}`);
-  console.log(`Confidence: ${verdict.confidence.toFixed(2)}`);
+  console.log(`Supports:        ${verdict.supports ? "yes" : "no"}`);
+  console.log(`Confidence:      ${verdict.confidence.toFixed(2)}`);
+  console.log(`Reliability:     ${verdict.reliability}`);
+  console.log(`  why:           ${verdict.reliabilityReason}`);
   if (verdict.supportingQuote) {
-    console.log(`Quote: ${verdict.supportingQuote}`);
+    console.log(`Quote:           ${verdict.supportingQuote}`);
   }
-  console.log(`Reasoning: ${verdict.reasoning}`);
+  console.log(`Reasoning:       ${verdict.reasoning}`);
 }
