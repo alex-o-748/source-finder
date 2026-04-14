@@ -56,22 +56,28 @@ export async function runArticle(
           suggestions.push({
             source: candidate,
             verdict: {
-              supports: false,
+              verdict: "SOURCE UNAVAILABLE",
               confidence: 0,
-              reliability: "low",
+              comments: `verification failed: ${(err as Error).message}`,
+              reliability: "n/a",
               reliabilityReason: "verifier error — reliability not assessed",
-              reasoning: `verification failed: ${(err as Error).message}`,
             },
             citation: formatCitation(candidate),
           });
         }
       }
-      // Rank on both axes: fully-promotable (supports + reliability>=medium)
-      // first, then substantiating-but-low-reliability, then non-substantiating.
-      // Within each bucket, higher confidence wins.
+      // Rank by (verdict, reliability), then by confidence desc within bucket.
+      //   0: SUPPORTED + reliability high|medium   — fully promotable
+      //   1: SUPPORTED + reliability low           — says it, but wrong kind of source
+      //   2: PARTIALLY SUPPORTED (any reliability) — weak but not useless
+      //   3: NOT SUPPORTED or SOURCE UNAVAILABLE   — not useful
       const bucket = (s: ClaimSuggestion): number => {
-        if (!s.verdict.supports) return 2;
-        return s.verdict.reliability === "low" ? 1 : 0;
+        const v = s.verdict.verdict;
+        if (v === "SUPPORTED") {
+          return s.verdict.reliability === "low" ? 1 : 0;
+        }
+        if (v === "PARTIALLY SUPPORTED") return 2;
+        return 3;
       };
       suggestions.sort((a, b) => {
         const ba = bucket(a);

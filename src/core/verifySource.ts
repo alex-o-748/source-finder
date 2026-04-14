@@ -1,6 +1,10 @@
 import { cachedSystem, getClient, getModel } from "./anthropic.js";
 import { loadPrompt } from "./prompts.js";
-import type { VerifyVerdict } from "./types.js";
+import type {
+  Reliability,
+  SubstantiationVerdict,
+  VerifyVerdict,
+} from "./types.js";
 
 interface VerifyOptions {
   /**
@@ -67,7 +71,7 @@ export async function verifySource(
     `Source text (fetched, may be truncated):`,
     sourceText,
     ``,
-    `Respond with the JSON object described in the system prompt — including both axes (supports + reliability).`,
+    `Respond with the JSON object described in the system prompt — grading both axes (substantiation verdict + reliability) independently.`,
   ].join("\n");
 
   const client = getClient();
@@ -100,28 +104,57 @@ function parseVerdict(raw: string): VerifyVerdict {
     throw new Error(`Verifier response was not an object: ${raw}`);
   }
   const obj = parsed as Record<string, unknown>;
-  const supports = Boolean(obj.supports);
-  const confidence = typeof obj.confidence === "number" ? obj.confidence : 0;
-  const supportingQuote =
-    typeof obj.supportingQuote === "string" && obj.supportingQuote.length > 0
-      ? obj.supportingQuote
-      : undefined;
-  const reliability = normaliseReliability(obj.reliability);
+  const verdict = normaliseVerdict(obj.verdict);
+  const rawConfidence =
+    typeof obj.confidence === "number" ? obj.confidence : 0;
+  // Clamp to [0, 100]; the prompt specifies a 0-100 scale.
+  const confidence = Math.max(0, Math.min(100, rawConfidence));
+  const comments = typeof obj.comments === "string" ? obj.comments : "";
+  // Accept either reliability_reason (per prompt spec) or reliabilityReason
+  // (camelCase), in case the model normalises the key.
+  const reliability = normaliseReliability(obj.reliability, verdict);
   const reliabilityReason =
-    typeof obj.reliabilityReason === "string" ? obj.reliabilityReason : "";
-  const reasoning = typeof obj.reasoning === "string" ? obj.reasoning : "";
+    typeof obj.reliability_reason === "string"
+      ? obj.reliability_reason
+      : typeof obj.reliabilityReason === "string"
+        ? obj.reliabilityReason
+        : "";
   return {
-    supports,
+    verdict,
     confidence,
-    supportingQuote,
+    comments,
     reliability,
     reliabilityReason,
-    reasoning,
   };
 }
 
-function normaliseReliability(raw: unknown): "high" | "medium" | "low" {
-  if (raw === "high" || raw === "medium" || raw === "low") return raw;
+function normaliseVerdict(raw: unknown): SubstantiationVerdict {
+  if (typeof raw !== "string") return "NOT SUPPORTED";
+  const v = raw.trim().toUpperCase();
+  if (
+    v === "SUPPORTED" ||
+    v === "PARTIALLY SUPPORTED" ||
+    v === "NOT SUPPORTED" ||
+    v === "SOURCE UNAVAILABLE"
+  ) {
+    return v;
+  }
+  // Tolerate minor variants (e.g. "PARTIAL", "UNSUPPORTED").
+  if (v.startsWith("PARTIAL")) return "PARTIALLY SUPPORTED";
+  if (v.includes("UNAVAILABLE")) return "SOURCE UNAVAILABLE";
+  if (v === "UNSUPPORTED") return "NOT SUPPORTED";
+  return "NOT SUPPORTED";
+}
+
+function normaliseReliability(
+  raw: unknown,
+  verdict: SubstantiationVerdict,
+): Reliability {
+  if (raw === "high" || raw === "medium" || raw === "low" || raw === "n/a") {
+    return raw;
+  }
+  // If the source is unavailable, reliability is n/a by construction.
+  if (verdict === "SOURCE UNAVAILABLE") return "n/a";
   // Default to "medium" when the model omits the field rather than failing
   // hard — the caller can still decide based on substantiation.
   return "medium";

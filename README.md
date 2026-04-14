@@ -66,10 +66,10 @@ The core library has no CLI dependencies. Cloudflare Workers, a web UI, an MCP s
 
 The verifier grades **two independent axes**:
 
-- **Substantiation** (`supports`, `confidence`, `supportingQuote`) — pure reading comprehension: does the source actually state the specific claim?
-- **Reliability for this claim** (`reliability`, `reliabilityReason`) — WP:RS judgment *for the kind of claim being made* (context-sensitive: BLP, medical, SPS-for-author-bio, primary-vs-secondary).
+- **Substantiation** — `verdict ∈ {SUPPORTED, PARTIALLY SUPPORTED, NOT SUPPORTED, SOURCE UNAVAILABLE}`, `confidence 0-100`, `comments` (usually including the relevant quote). Pure reading comprehension: does the source actually state the specific claim?
+- **Reliability for this claim** — `reliability ∈ {high, medium, low, n/a}`, `reliabilityReason`. WP:RS judgment *for the kind of claim being made* (context-sensitive: BLP, medical, SPS-for-author-bio, primary-vs-secondary).
 
-These are kept separate so callers can distinguish "doesn't say it" from "says it, but wrong kind of source". A suggestion with `supports: true` and `reliability: "low"` is still surfaced — flagged — so a human editor can see the source does say it but needs a better one.
+These are kept separate so callers can distinguish "doesn't say it" from "says it, but wrong kind of source". A suggestion with `verdict: "SUPPORTED"` and `reliability: "low"` is still surfaced — flagged — so a human editor can see the source does say it but needs a better one. A cite template is emitted only when both axes clear (`SUPPORTED` + reliability `high` or `medium`).
 
 ## Policy handling (three layers)
 

@@ -46,23 +46,22 @@ export async function findCommand(args: FindArgs): Promise<void> {
       return;
     }
     r.suggestions.forEach((s, j) => {
-      const mark = s.verdict.supports ? "✓" : "✗";
+      const mark = verdictMark(s.verdict.verdict);
       const flag =
-        s.verdict.supports && s.verdict.reliability === "low"
+        s.verdict.verdict === "SUPPORTED" && s.verdict.reliability === "low"
           ? "  [low-reliability — find a better source]"
           : "";
       console.log(
-        `    ${mark} [${j + 1}] (conf=${s.verdict.confidence.toFixed(2)} rel=${s.verdict.reliability}) ${s.source.title}${flag}`,
+        `    ${mark} [${j + 1}] ${s.verdict.verdict} (conf=${s.verdict.confidence}/100, rel=${s.verdict.reliability}) ${s.source.title}${flag}`,
       );
       console.log(`       ${s.source.url}`);
-      if (s.verdict.supportingQuote) {
-        console.log(`       quote: ${truncate(s.verdict.supportingQuote, 160)}`);
-      }
-      console.log(`       ${s.verdict.reasoning}`);
+      console.log(`       ${truncate(s.verdict.comments, 240)}`);
       if (s.verdict.reliabilityReason) {
         console.log(`       reliability: ${s.verdict.reliabilityReason}`);
       }
-      if (s.verdict.supports && s.verdict.reliability !== "low") {
+      const promotable =
+        s.verdict.verdict === "SUPPORTED" && s.verdict.reliability !== "low";
+      if (promotable) {
         console.log(`       cite: ${s.citation.template}`);
       }
     });
@@ -72,4 +71,19 @@ export async function findCommand(args: FindArgs): Promise<void> {
 
 function truncate(s: string, n: number): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+function verdictMark(v: string): string {
+  switch (v) {
+    case "SUPPORTED":
+      return "✓";
+    case "PARTIALLY SUPPORTED":
+      return "~";
+    case "NOT SUPPORTED":
+      return "✗";
+    case "SOURCE UNAVAILABLE":
+      return "?";
+    default:
+      return "•";
+  }
 }

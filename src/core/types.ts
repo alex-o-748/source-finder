@@ -40,35 +40,43 @@ export interface CandidateSource {
   relevance: string;
 }
 
+/** Substantiation verdict values emitted by the verifier. */
+export type SubstantiationVerdict =
+  | "SUPPORTED"
+  | "PARTIALLY SUPPORTED"
+  | "NOT SUPPORTED"
+  | "SOURCE UNAVAILABLE";
+
+/** WP:RS reliability grade, or "n/a" when the source is unavailable. */
+export type Reliability = "high" | "medium" | "low" | "n/a";
+
 /** Verdict from the verifier on whether a source supports a claim. */
 export interface VerifyVerdict {
   /**
    * Substantiation axis: does the source actually state (or directly imply)
    * the specific claim? Pure reading-comprehension judgment.
+   *
+   * SUPPORTED / PARTIALLY SUPPORTED / NOT SUPPORTED / SOURCE UNAVAILABLE.
+   * See also `confidence` for a 0-100 gradation within a verdict.
    */
-  supports: boolean;
-  /** Confidence in the substantiation judgment, in [0, 1]. */
+  verdict: SubstantiationVerdict;
+  /** Confidence in the substantiation judgment, 0-100. 0 iff SOURCE UNAVAILABLE. */
   confidence: number;
-  /** A quote from the source that most directly substantiates (or contradicts) the claim. */
-  supportingQuote?: string;
+  /** Short explanation of the substantiation verdict, normally including the relevant quote. */
+  comments: string;
 
   /**
    * Reliability axis (per WP:RS): is this an appropriate source *for the kind
-   * of claim being made*? Context-sensitive — a peer-reviewed paper is needed
-   * for a medical claim, a magazine is fine for a pop-culture fact, a
-   * self-published blog can substantiate the author's own bio but not third
-   * parties, BLP needs strong sourcing, etc.
+   * of claim being made*? Context-sensitive. Kept independent of `verdict` so
+   * callers can distinguish "doesn't say it" from "says it, but wrong kind of
+   * source". A (SUPPORTED, "low") pair is still surfaced so a human editor
+   * can see the source does say it but needs a better one.
    *
-   * Kept separate from `supports` so callers can distinguish "doesn't say it"
-   * from "says it, but wrong kind of source". A suggestion with supports:true
-   * and reliability:"low" is still surfaced so a human editor can decide.
+   * "n/a" is used only when `verdict` is "SOURCE UNAVAILABLE".
    */
-  reliability: "high" | "medium" | "low";
-  /** Why the reliability grade — BLP, SPS, primary-vs-secondary, etc. */
+  reliability: Reliability;
+  /** Brief WP:RS-grounded rationale for the reliability grade. */
   reliabilityReason: string;
-
-  /** Short reasoning explaining the overall verdict. */
-  reasoning: string;
 }
 
 /** Formatted Wikipedia cite template output. */
