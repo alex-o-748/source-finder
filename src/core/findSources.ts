@@ -20,7 +20,7 @@ export async function findSources(
   options: FindOptions = {},
 ): Promise<CandidateSource[]> {
   const maxResults = options.maxResults ?? 5;
-  const maxSearches = options.maxSearches ?? 3;
+  const maxSearches = options.maxSearches ?? 6;
 
   const system = cachedSystem(loadPrompt("find_sources"));
   const userMessage = [
