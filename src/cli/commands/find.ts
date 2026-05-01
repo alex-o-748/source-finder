@@ -59,12 +59,8 @@ export async function findCommand(args: FindArgs): Promise<void> {
       if (s.verdict.reliabilityReason) {
         console.log(`       reliability: ${s.verdict.reliabilityReason}`);
       }
-      const promotable =
-        s.verdict.verdict === "SUPPORTED" && s.verdict.reliability !== "low";
-      if (promotable) {
-        console.log(`       cite: ${s.citation.template}`);
-        console.log(`       ref:  ${s.citation.ref}`);
-      }
+      console.log(`       cite: ${s.citation.template}`);
+      console.log(`       ref:  ${s.citation.ref}`);
     });
     console.log();
   });
