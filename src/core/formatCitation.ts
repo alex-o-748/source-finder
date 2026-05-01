@@ -93,5 +93,5 @@ export function formatCitation(source: CandidateSource): Citation {
       break;
   }
 
-  return { template, kind };
+  return { template, ref: `<ref>${template}</ref>`, kind };
 }
