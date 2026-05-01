@@ -83,6 +83,8 @@ export interface VerifyVerdict {
 export interface Citation {
   /** e.g. "{{cite web|url=...|title=...|access-date=...}}" */
   template: string;
+  /** Editor-ready `<ref>{{cite ...}}</ref>` snippet that replaces the {{cn}} tag. */
+  ref: string;
   /** Which template was used: "cite web" | "cite news" | "cite journal" | "cite book". */
   kind: "cite web" | "cite news" | "cite journal" | "cite book";
 }
