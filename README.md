@@ -85,12 +85,45 @@ npx tsx --test test/extractClaims.test.ts
 
 Fixture-based tests cover the wikitext claim extractor (the trickiest piece). Add more fixtures in `test/fixtures/*.wikitext` as edge cases appear.
 
+## Wikipedia user script
+
+A user script + thin backend lets editors run CNfirmed inline on Wikipedia: a 🔍 badge appears next to every `[citation needed]` superscript, and a sidebar portlet lists every CN tag with live status.
+
+### Run the backend
+
+```sh
+ANTHROPIC_API_KEY=sk-ant-... npm run server
+# cnfirmed: listening on http://localhost:3939
+```
+
+The backend (built with [Hono](https://hono.dev) so the same code can later be deployed to Cloudflare Workers) exposes:
+
+- `GET /scan?article=<title-or-url>` — `{ article, claims }`, no Claude calls.
+- `POST /verify-claim` — SSE stream for one claim by index.
+- `POST /verify-article` — SSE stream wrapping `runArticle`.
+
+CORS is restricted to `*.wikipedia.org` and `localhost`. The Anthropic API key stays server-side.
+
+### Install the user script
+
+Copy `userscript/cnfirmed.js` to `User:Yourname/cnfirmed.js` on en.wikipedia.org, then add to `User:Yourname/common.js`:
+
+```js
+window.cnfirmedBackend = 'http://localhost:3939';   // optional override
+importScript('User:Yourname/cnfirmed.js');
+```
+
+Reload any article that has `{{citation needed}}` tags. Click a 🔍 badge or a sidebar row to verify a single claim; use "Verify all" to run the whole article.
+
+The user script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.org/wiki/User:Polygnotus/Helpers/Sidebar.js) for sidebar portlet plumbing.
+
 ## Status
 
-v1 ships the CLI + core library. Deferred:
+v1 ships the CLI + core library + user script + local backend. Deferred:
 
-- Browser extension (inline on Wikipedia)
-- Web UI / Cloudflare Pages deployment
+- Cloudflare Worker hosting (BYO Anthropic key)
+- Edit-mode integration (one-click insert `<ref>` into wikitext)
+- Browser extension (inline on Wikipedia, no backend needed)
 - MCP server wrapper
 - Bot / talk-page integration
 - Non-Wikipedia wikis
