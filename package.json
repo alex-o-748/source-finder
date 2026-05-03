@@ -13,7 +13,7 @@
     "./core": "./dist/core/index.js"
   },
   "scripts": {
-    "build": "tsc && npm run copy:prompts",
+    "build": "tsc -p tsconfig.build.json && npm run copy:prompts",
     "copy:prompts": "node --input-type=module -e \"import {cpSync} from 'node:fs'; cpSync('src/prompts','dist/prompts',{recursive:true})\"",
     "dev": "tsc --watch",
     "start": "node dist/cli/index.js",
