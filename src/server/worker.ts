@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 /**
  * Cloudflare Worker entrypoint. The same Hono app that serves the local
  * Node dev server runs here unchanged; only two things differ from Node:
