@@ -9,7 +9,7 @@
 # Local dev (hits the real Anthropic API; uses the secret you set above):
 #   npm run worker:dev
 
-name = "cnfirmed"
+name = "source-finder"
 main = "src/server/worker.ts"
 compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat"]
