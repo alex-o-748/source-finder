@@ -89,39 +89,62 @@ Fixture-based tests cover the wikitext claim extractor (the trickiest piece). Ad
 
 A user script + thin backend lets editors run CNfirmed inline on Wikipedia: a 🔍 badge appears next to every `[citation needed]` superscript, and a sidebar portlet lists every CN tag with live status.
 
-### Run the backend
+### Backend: choose Node (local) or Cloudflare Worker (hosted)
+
+Same Hono app, two deploy targets.
+
+#### Option A — Local Node server
 
 ```sh
 ANTHROPIC_API_KEY=sk-ant-... npm run server
 # cnfirmed: listening on http://localhost:3939
 ```
 
-The backend (built with [Hono](https://hono.dev) so the same code can later be deployed to Cloudflare Workers) exposes:
+Works in Chrome and Edge (which allowlist HTTPS-page → HTTP-localhost). **Firefox blocks this as mixed content** — for Firefox use a tunnel (`cloudflared tunnel --url http://localhost:3939`) or Option B.
+
+#### Option B — Cloudflare Worker (recommended)
+
+Free tier handles everything we need (subrequests, SSE, runtime). Stable HTTPS URL works in every browser.
+
+```sh
+npm install
+npx wrangler login                            # one-time
+npx wrangler secret put ANTHROPIC_API_KEY     # paste your key when prompted
+npm run worker:deploy                         # → https://cnfirmed.<your-account>.workers.dev
+```
+
+Local dev against the deployed config:
+
+```sh
+npm run worker:dev                            # http://localhost:8787
+```
+
+#### Endpoints
 
 - `GET /scan?article=<title-or-url>` — `{ article, claims }`, no Claude calls.
 - `POST /verify-claim` — SSE stream for one claim by index.
 - `POST /verify-article` — SSE stream wrapping `runArticle`.
 
-CORS is restricted to `*.wikipedia.org` and `localhost`. The Anthropic API key stays server-side.
+CORS is restricted to `*.wikipedia.org` and `localhost`. API key stays in the Worker secret / server env.
 
 ### Install the user script
 
 Copy `userscript/cnfirmed.js` to `User:Yourname/cnfirmed.js` on en.wikipedia.org, then add to `User:Yourname/common.js`:
 
 ```js
-window.cnfirmedBackend = 'http://localhost:3939';   // optional override
+window.cnfirmedBackend = 'https://cnfirmed.your-account.workers.dev';
 importScript('User:Yourname/cnfirmed.js');
 ```
 
-Reload any article that has `{{citation needed}}` tags. Click a 🔍 badge or a sidebar row to verify a single claim; use "Verify all" to run the whole article.
+(Use `http://localhost:3939` instead if you're running the Node server.) Reload any article with `{{citation needed}}` tags. Click a 🔍 badge or a sidebar row to verify a single claim; use "Verify all" to run the whole article.
 
 The user script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.org/wiki/User:Polygnotus/Helpers/Sidebar.js) for sidebar portlet plumbing.
 
 ## Status
 
-v1 ships the CLI + core library + user script + local backend. Deferred:
+v1 ships the CLI + core library + user script + Node and Worker backends. Deferred:
 
-- Cloudflare Worker hosting (BYO Anthropic key)
+- BYO-key proxy mode on the Worker (so multiple users can share one deployment without sharing the operator's API budget)
 - Edit-mode integration (one-click insert `<ref>` into wikitext)
 - Browser extension (inline on Wikipedia, no backend needed)
 - MCP server wrapper
