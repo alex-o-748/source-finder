@@ -1,0 +1,21 @@
+# Cloudflare Worker config for the CNfirmed backend.
+#
+# First-time setup:
+#   npm install
+#   npx wrangler login
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npm run worker:deploy
+#
+# Local dev (hits the real Anthropic API; uses the secret you set above):
+#   npm run worker:dev
+
+name = "cnfirmed"
+main = "src/server/worker.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+# `nodejs_compat` gives us a `process` global so the existing core code
+# (which reads process.env.ANTHROPIC_API_KEY) keeps working unchanged.
+
+# No KV / D1 / R2 bindings — the Worker is stateless.
+# Per-request results are cached client-side in localStorage by the user script.
