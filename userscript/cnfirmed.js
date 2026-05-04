@@ -5,10 +5,9 @@
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
  * the user's own API key (stored in localStorage).
  *
- * Install: copy this file to User:Yourname/cnfirmed.js, then add to
- * User:Yourname/common.js:
+ * Add to User:Yourname/common.js:
  *
- *   importScript('User:Yourname/cnfirmed.js');
+ *   importScript('User:Alaexis/cnfirmed.js');
  *
  * The first time you click a 🔍 badge or "Verify all", you'll be prompted for
  * an API key for the selected provider. Keys are kept in localStorage on the
