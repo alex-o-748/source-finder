@@ -1164,18 +1164,54 @@
     $body.empty();
     if (result) renderResultInto($body, i, result);
     else renderProgressInto($body, progress);
-    var sup = cnSups[i];
-    var badge = badges[i];
     p.$element.css({ position: 'absolute', 'z-index': 9999 });
-    var anchor = badge || sup;
-    if (anchor) {
-      var rect = anchor.getBoundingClientRect();
-      p.$element.css({
-        left: (window.scrollX + rect.left) + 'px',
-        top: (window.scrollY + rect.bottom + 6) + 'px'
-      });
-    }
     p.toggle(true);
+    positionPopover(i);
+  }
+
+  function positionPopover(i) {
+    if (!popup) return;
+    var anchor = badges[i] || cnSups[i];
+    if (!anchor) return;
+    var rect = anchor.getBoundingClientRect();
+    var el = popup.$element[0];
+    // Reset before measuring so prior positioning doesn't constrain the size.
+    popup.$element.css({ left: '0px', top: '0px', 'max-height': '' });
+    var popH = el.offsetHeight;
+    var popW = el.offsetWidth;
+    var vpH = window.innerHeight;
+    var vpW = window.innerWidth;
+    var gap = 6;
+    var margin = 8;
+
+    var spaceBelow = vpH - rect.bottom;
+    var spaceAbove = rect.top;
+    var placeAbove = popH + gap > spaceBelow && spaceAbove > spaceBelow;
+
+    var top;
+    if (placeAbove) {
+      // Flip above the anchor; cap height to available space if needed.
+      var maxH = Math.max(80, spaceAbove - gap - margin);
+      if (popH > maxH) {
+        popup.$element.css({ 'max-height': maxH + 'px', overflow: 'auto' });
+        popH = el.offsetHeight;
+      }
+      top = window.scrollY + rect.top - popH - gap;
+    } else {
+      var maxBelow = Math.max(80, spaceBelow - gap - margin);
+      if (popH > maxBelow) {
+        popup.$element.css({ 'max-height': maxBelow + 'px', overflow: 'auto' });
+      }
+      top = window.scrollY + rect.bottom + gap;
+    }
+
+    // Clamp horizontally so the popup stays inside the viewport.
+    var left = rect.left;
+    if (left + popW + margin > vpW) left = vpW - popW - margin;
+    if (left < margin) left = margin;
+    left = window.scrollX + left;
+
+    popup.$element.css({ left: left + 'px', top: top + 'px' });
   }
 
   function renderProgressInto($el, progress) {
@@ -1192,6 +1228,7 @@
     var $body = popup.$body || popup.$element;
     $body.empty();
     renderProgressInto($body, progress);
+    positionPopover(i);
   }
 
   function updatePopoverResult(i, result) {
@@ -1199,6 +1236,7 @@
     var $body = popup.$body || popup.$element;
     $body.empty();
     renderResultInto($body, i, result);
+    positionPopover(i);
   }
 
   function updatePopoverError(i, message) {
@@ -1206,6 +1244,7 @@
     var $body = popup.$body || popup.$element;
     $body.empty();
     $body.append($('<div>').css('color', '#b32424').text('Error: ' + message));
+    positionPopover(i);
   }
 
   function renderResultInto($el, i, result) {
