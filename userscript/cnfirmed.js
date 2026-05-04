@@ -240,6 +240,9 @@
 
     '#p-cnfirmed .cnfirmed-row { cursor: pointer; padding: 2px 0; }',
     '#p-cnfirmed .cnfirmed-row:hover { background: rgba(0,0,0,0.04); }',
+    '#p-cnfirmed .cnfirmed-empty {',
+    '  font-size: 0.85em; line-height: 1.4; color: #54595d; padding: 4px 0;',
+    '}',
     '#p-cnfirmed .cnfirmed-row-claim {',
     '  display: block; font-size: 0.85em; line-height: 1.3;',
     '  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
@@ -300,9 +303,8 @@
     cnSups = Array.prototype.slice.call(
       document.querySelectorAll('sup.Template-Fact')
     );
-    if (cnSups.length === 0) return;
 
-    insertBadges();
+    if (cnSups.length > 0) insertBadges();
 
     mw.loader.using(['mediawiki.util', 'oojs-ui-windows', 'oojs-ui-core', 'oojs-ui-widgets'])
       .then(function () {
@@ -468,22 +470,39 @@
     helper = window.SidebarHelper({
       id: 'p-cnfirmed',
       storageKey: 'cnfirmed-collapsed',
-      heading: 'CNfirmed (' + cnSups.length + ')',
+      heading: cnSups.length > 0 ? 'CNfirmed (' + cnSups.length + ')' : 'CNfirmed',
       btnClass: 'cnfirmed-collapse-btn',
       onExpand: function () {}
     });
     helper.replaceRows(buildSidebarUl());
     if (helper.markDataLoaded) helper.markDataLoaded();
     ensureControlsBar();
-    addVerifyAllButton();
+    if (cnSups.length > 0) addVerifyAllButton();
   }
 
   function buildSidebarUl() {
     var ul = document.createElement('ul');
+    if (cnSups.length === 0) {
+      ul.appendChild(buildEmptyStateRow());
+      return ul;
+    }
     for (var i = 0; i < cnSups.length; i++) {
       ul.appendChild(buildRow(i));
     }
     return ul;
+  }
+
+  function buildEmptyStateRow() {
+    var li = document.createElement('li');
+    li.className = 'cnfirmed-empty';
+    li.appendChild(document.createTextNode(
+      'No {{citation needed}} tags on this page. '
+    ));
+    var a = document.createElement('a');
+    a.href = 'https://en.wikipedia.org/wiki/Category:All_articles_with_unsourced_statements';
+    a.textContent = 'Find an article to try it on →';
+    li.appendChild(a);
+    return li;
   }
 
   function buildRow(i) {
