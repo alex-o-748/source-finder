@@ -26,6 +26,8 @@ The user script is the primary way to use CNfirmed. It runs entirely on the Wiki
    ```
 3. Reload any article that has `{{citation needed}}` tags.
 
+Need an article to test on? [Category:All articles with unsourced statements](https://en.wikipedia.org/wiki/Category:All_articles_with_unsourced_statements) lists every article on en.wikipedia with at least one `{{citation needed}}` tag.
+
 ### Usage
 
 - A 🔍 badge appears next to every `[citation needed]` superscript.
