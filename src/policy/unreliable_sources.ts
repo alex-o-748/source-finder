@@ -36,6 +36,7 @@ export const UNRELIABLE_DOMAINS: readonly string[] = [
   "answers.com",
   "medium.com", // personal blogs; some outlets are still ok, but default-block
   "substack.com", // same
+  "imdb.com", // user-editable database; WP:RSP "generally unreliable"
 ];
 
 /** Lower-cased set for fast lookup. */
