@@ -41,7 +41,7 @@ The script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.or
 | Provider | Default model           | Override (set on `window.…` before the script loads) |
 | -------- | ----------------------- | ---------------------------------------------------- |
 | Claude   | `claude-sonnet-4-6`     | `cnfirmedModelClaude`                                |
-| Gemini   | `gemini-2.5-flash`      | `cnfirmedModelGemini`                                |
+| Gemini   | `gemini-flash-latest`   | `cnfirmedModelGemini`                                |
 | OpenAI   | `gpt-4o`                | `cnfirmedModelOpenAI`                                |
 
 Each provider is invoked with its built-in web-search tool (Anthropic `web_search`, Google `googleSearch`+`urlContext`, OpenAI `web_search`) so source discovery and verification happen in a single round-trip per claim.

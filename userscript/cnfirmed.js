@@ -53,7 +53,7 @@
     gemini: {
       name: 'Gemini',
       keyStorage: 'cnfirmed-key-gemini',
-      defaultModel: 'gemini-2.5-flash',
+      defaultModel: 'gemini-flash-latest',
       modelOverride: 'cnfirmedModelGemini',
       run: callGemini
     },

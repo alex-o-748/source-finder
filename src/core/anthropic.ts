@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 let sharedClient: Anthropic | null = null;
 
 /** Default model. Overridable via CNFIRMED_MODEL env var. */
-export const DEFAULT_MODEL = "claude-opus-4-6";
+export const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 /** Returns a singleton Anthropic client, constructed lazily. */
 export function getClient(): Anthropic {
