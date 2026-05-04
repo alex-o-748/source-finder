@@ -1,14 +1,65 @@
 # CNfirmed
 
-Find and verify sources for Wikipedia `{{citation needed}}` claims using Claude.
+Find and verify sources for Wikipedia `{{citation needed}}` claims.
 
-CNfirmed fetches a Wikipedia article, locates every `{{citation needed}}`-family tag, extracts the claim being cited (plus surrounding context), uses Claude's `web_search` tool to discover candidate sources, and then runs each candidate through a separable verifier that judges whether the source *actually substantiates the specific claim* — not just mentions the topic. Supporting sources are returned ranked, each with a ready-to-paste Wikipedia cite template.
+CNfirmed locates every `{{citation needed}}`-family tag in a Wikipedia article, extracts the claim being cited (plus surrounding context), uses an LLM with web search to discover candidate sources, and judges whether the source *actually substantiates the specific claim* — not just mentions the topic. Supporting sources are returned ranked, each with a ready-to-paste Wikipedia cite template.
+
+This repo ships two things:
+
+- A **Wikipedia user script** (`userscript/cnfirmed.js`) — bring-your-own-key, runs entirely in the browser. Talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. No backend, no proxy.
+- A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal against the Anthropic API.
 
 ## Why
 
-Topical similarity isn't the same as substantiation. Existing citation-finders point at pages that sound related; CNfirmed asks Claude to read the candidate and answer: "does this passage support this specific claim?"
+Topical similarity isn't the same as substantiation. Existing citation-finders point at pages that sound related; CNfirmed asks the model to read the candidate and answer: "does this passage support this specific claim?"
 
-## Install
+## User script (recommended)
+
+The user script is the primary way to use CNfirmed. It runs entirely on the Wikipedia page — no server, no Cloudflare Worker, no allowlist. You provide an API key for Claude, Gemini, or OpenAI; it's kept in your browser's `localStorage` and only sent to the provider you chose.
+
+### Install
+
+1. Copy `userscript/cnfirmed.js` to `User:Yourname/cnfirmed.js` on en.wikipedia.org.
+2. Add to `User:Yourname/common.js`:
+   ```js
+   importScript('User:Yourname/cnfirmed.js');
+   ```
+3. Reload any article that has `{{citation needed}}` tags.
+
+### Usage
+
+- A 🔍 badge appears next to every `[citation needed]` superscript.
+- A **CNfirmed** portlet appears in the sidebar with a provider dropdown, an API-key control, and one row per citation-needed claim.
+- The first time you click a 🔍 badge or the **Verify all** button, you'll be prompted for an API key for the selected provider. Keys are stored in `localStorage`.
+- Click a 🔍 badge or a sidebar row to verify a single claim.
+- Click **Verify all** to run every unverified claim on the page (one API call per claim — cost scales linearly).
+
+The script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.org/wiki/User:Polygnotus/Helpers/Sidebar.js) for the sidebar portlet.
+
+### Providers
+
+| Provider | Default model           | Override (set on `window.…` before the script loads) |
+| -------- | ----------------------- | ---------------------------------------------------- |
+| Claude   | `claude-sonnet-4-6`     | `cnfirmedModelClaude`                                |
+| Gemini   | `gemini-2.5-flash`      | `cnfirmedModelGemini`                                |
+| OpenAI   | `gpt-4o`                | `cnfirmedModelOpenAI`                                |
+
+Each provider is invoked with its built-in web-search tool (Anthropic `web_search`, Google `googleSearch`+`urlContext`, OpenAI `web_search`) so source discovery and verification happen in a single round-trip per claim.
+
+### Output
+
+For each claim the script renders a popover with:
+
+- **Substantiation verdict** — `SUPPORTED` / `PARTIALLY SUPPORTED` / `NOT SUPPORTED` / `SOURCE UNAVAILABLE`, with a 0–100 confidence score.
+- **Reliability** — `high` / `medium` / `low` / `n/a`, judged in context (BLP, medical, news, history…).
+- The relevant quote from the source.
+- A **Copy `<ref>`** button that puts a ready-to-paste `<ref>{{cite ...}}</ref>` snippet on the clipboard.
+
+## Node CLI
+
+A standalone command-line tool against the Anthropic API. Useful for batch runs or scripting; the user script doesn't depend on it.
+
+### Install
 
 ```sh
 npm install
@@ -20,10 +71,10 @@ Set your API key:
 ```sh
 export ANTHROPIC_API_KEY=sk-ant-...
 # optional:
-export CNFIRMED_MODEL=claude-opus-4-6
+export CNFIRMED_MODEL=claude-sonnet-4-6
 ```
 
-## Usage
+### Usage
 
 ```sh
 # End-to-end on a Wikipedia article.
@@ -44,25 +95,29 @@ Add `--json` to any command for machine-readable output.
 ## Architecture
 
 ```
+userscript/
+  cnfirmed.js          # self-contained user script (no backend)
+
 src/
-  core/                # framework-agnostic library
+  core/                # framework-agnostic library, used by the CLI
     fetchArticle.ts    # Wikipedia API → wikitext + metadata
     extractClaims.ts   # wikitext → [{ claim, context, section, offset }]
     findSources.ts     # Claude + web_search → candidate sources
-    verifySource.ts    # (claim, source) → verdict  — separable
+    verifySource.ts    # (claim, source) → verdict — separable
     formatCitation.ts  # source → {{cite web|...}} / {{cite news|...}}
     runArticle.ts      # orchestrator
     anthropic.ts       # shared client + prompt-caching helper
+    prompts.ts         # disk-backed prompt loader
   cli/                 # thin Commander wrapper over core
-  prompts/             # verify_source.md (placeholder), find_sources.md
+  prompts/             # verify_source.md, find_sources.md
   policy/              # WP:RSP unreliable-source blocklist
 ```
 
-The core library has no CLI dependencies. Cloudflare Workers, a web UI, an MCP server, or a browser-extension backend can wrap it directly.
+The user script is intentionally standalone: it inlines its own prompt, blocklist, and citation formatter so it has no build step and no dependency on `src/`. The CLI continues to use the `src/` library.
 
-## The verifier is separable
+## The verifier is separable (CLI)
 
-`verifySource(claim, sourceUrl)` is exposed both as a library function and as the `cnfirmed verify` subcommand. It uses the prompt at `src/prompts/verify_source.md`, which is intended to be replaced with your own source-checking prompt. The function contract is stable.
+`verifySource(claim, sourceUrl)` is exposed both as a library function and as the `cnfirmed verify` subcommand. It uses the prompt at `src/prompts/verify_source.md`. The function contract is stable.
 
 The verifier grades **two independent axes**:
 
@@ -73,8 +128,8 @@ These are kept separate so callers can distinguish "doesn't say it" from "says i
 
 ## Policy handling (three layers)
 
-1. **Hard domain blocklist** — `src/policy/unreliable_sources.ts`, applied in `findSources` after web_search returns. Catches WP:RSP-deprecated outlets deterministically before spending verifier tokens.
-2. **Discovery-time prompt guidance** — `src/prompts/find_sources.md` steers the model toward WP:RS-compliant sources during search.
+1. **Hard domain blocklist** — `src/policy/unreliable_sources.ts` for the CLI, mirrored inline in `userscript/cnfirmed.js`. Catches WP:RSP-deprecated outlets deterministically.
+2. **Discovery-time prompt guidance** — `src/prompts/find_sources.md` (CLI) and the inlined system prompt (user script) steer the model toward WP:RS-compliant sources during search.
 3. **Verifier reliability axis** — the context-sensitive judgment the domain blocklist cannot express.
 
 ## Testing
@@ -83,70 +138,14 @@ These are kept separate so callers can distinguish "doesn't say it" from "says i
 npx tsx --test test/extractClaims.test.ts
 ```
 
-Fixture-based tests cover the wikitext claim extractor (the trickiest piece). Add more fixtures in `test/fixtures/*.wikitext` as edge cases appear.
-
-## Wikipedia user script
-
-A user script + thin backend lets editors run CNfirmed inline on Wikipedia: a 🔍 badge appears next to every `[citation needed]` superscript, and a sidebar portlet lists every CN tag with live status.
-
-### Backend: choose Node (local) or Cloudflare Worker (hosted)
-
-Same Hono app, two deploy targets.
-
-#### Option A — Local Node server
-
-```sh
-ANTHROPIC_API_KEY=sk-ant-... npm run server
-# cnfirmed: listening on http://localhost:3939
-```
-
-Works in Chrome and Edge (which allowlist HTTPS-page → HTTP-localhost). **Firefox blocks this as mixed content** — for Firefox use a tunnel (`cloudflared tunnel --url http://localhost:3939`) or Option B.
-
-#### Option B — Cloudflare Worker (recommended)
-
-Free tier handles everything we need (subrequests, SSE, runtime). Stable HTTPS URL works in every browser.
-
-```sh
-npm install
-npx wrangler login                            # one-time
-npx wrangler secret put ANTHROPIC_API_KEY     # paste your key when prompted
-npm run worker:deploy                         # → https://cnfirmed.<your-account>.workers.dev
-```
-
-Local dev against the deployed config:
-
-```sh
-npm run worker:dev                            # http://localhost:8787
-```
-
-#### Endpoints
-
-- `GET /scan?article=<title-or-url>` — `{ article, claims }`, no Claude calls.
-- `POST /verify-claim` — SSE stream for one claim by index.
-- `POST /verify-article` — SSE stream wrapping `runArticle`.
-
-CORS is restricted to `*.wikipedia.org` and `localhost`. API key stays in the Worker secret / server env.
-
-### Install the user script
-
-Copy `userscript/cnfirmed.js` to `User:Yourname/cnfirmed.js` on en.wikipedia.org, then add to `User:Yourname/common.js`:
-
-```js
-window.cnfirmedBackend = 'https://cnfirmed.your-account.workers.dev';
-importScript('User:Yourname/cnfirmed.js');
-```
-
-(Use `http://localhost:3939` instead if you're running the Node server.) Reload any article with `{{citation needed}}` tags. Click a 🔍 badge or a sidebar row to verify a single claim; use "Verify all" to run the whole article.
-
-The user script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.org/wiki/User:Polygnotus/Helpers/Sidebar.js) for sidebar portlet plumbing.
+Fixture-based tests cover the wikitext claim extractor (the trickiest piece in the CLI). Add more fixtures in `test/fixtures/*.wikitext` as edge cases appear.
 
 ## Status
 
-v1 ships the CLI + core library + user script + Node and Worker backends. Deferred:
+v1 ships the user script + the CLI + core library. Deferred:
 
-- BYO-key proxy mode on the Worker (so multiple users can share one deployment without sharing the operator's API budget)
 - Edit-mode integration (one-click insert `<ref>` into wikitext)
-- Browser extension (inline on Wikipedia, no backend needed)
+- Browser extension wrapper (no install via common.js)
 - MCP server wrapper
 - Bot / talk-page integration
 - Non-Wikipedia wikis
