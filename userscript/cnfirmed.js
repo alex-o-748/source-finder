@@ -28,7 +28,7 @@
 (function () {
   'use strict';
 
-  // ---- Boot guards ------------------------------------------------------
+  // ---- Boot guards ------------------------------------------
 
   if (window.cnfirmedLoaded) return;
   window.cnfirmedLoaded = true;
