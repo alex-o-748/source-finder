@@ -6,7 +6,7 @@ CNfirmed locates every `{{citation needed}}`-family tag in a Wikipedia article, 
 
 This repo ships two things:
 
-- A **Wikipedia user script** (`userscript/cnfirmed.js`) — bring-your-own-key, runs entirely in the browser. Talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. No backend, no proxy.
+- A **Wikipedia user script** (`userscript/cnfirmed.js`) — bring-your-own-key, runs entirely in the browser. Talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. No backend, no proxy. The user-facing description page (wikitext, modeled on the standard Wikipedia user-script layout) lives at `userscript/cnfirmed.wiki`.
 - A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal against the Anthropic API.
 
 ## Why

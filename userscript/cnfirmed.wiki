@@ -1,0 +1,85 @@
+{{User script
+| description = Find and verify sources for {{tlx|citation needed}} claims using AI with web search
+| author      = Alex-o-748
+| updated     = {{subst:#time:F j, Y}}
+| source      = User:Yourname/cnfirmed.js
+| skin        = vector-2022, vector, minerva, monobook, timeless
+| compat      = en.wikipedia.org (article namespace, view mode)
+}}
+
+'''CNfirmed''' uses large language models with web search to find sources for unsourced statements on Wikipedia and to judge whether each candidate source ''actually substantiates the specific claim'' — not just mentions the topic. Click any {{tlx|citation needed}} tag and the script will search the web, read the most promising candidates, and return a ranked list of sources with a verdict, a confidence score, a context-aware reliability judgment, and a ready-to-paste {{tag|ref|content=...}} snippet.
+
+== Installation ==
+{{Further|Wikipedia:User scripts § How do you install user scripts?}}
+
+First install [[User:Enterprisey/script-installer]], then return to this page and click the "Install" button in the infobox. Alternatively, add this line to your [[Special:MyPage/common.js]]:
+
+<syntaxhighlight lang="javascript">
+importScript('User:Yourname/cnfirmed.js'); // [[User:Yourname/cnfirmed.js]]
+</syntaxhighlight>
+
+The script is bring-your-own-key. The first time you run it, you will be prompted for an API key for the provider you select; the key is stored in your browser's <code>localStorage</code> on the Wikipedia origin and is only sent to the provider you chose.
+
+== Usage ==
+
+# Open any article that contains {{tlx|citation needed}} (or any of the [[Template:Citation needed#Redirects|CN-family]] tags).
+# A 🔍 badge appears next to every {{nowrap|[citation needed]}} superscript, and a '''CNfirmed''' portlet appears in the sidebar with a provider dropdown, an API-key control, and one row per CN tag.
+# Pick a provider, paste a key (once), and either:
+#* click a 🔍 badge (or sidebar row) to verify a single claim, or
+#* click '''Verify all''' to run every unverified claim on the page (one API call per claim — cost scales linearly).
+# For each claim a popover opens with the verdict, the relevant quote from the source, the reliability judgment, and a '''Copy {{tag|ref|content=...}}''' button.
+
+=== Supported AI providers ===
+
+[[Anthropic]] [[Claude (language model)|Claude]] (default model <code>claude-sonnet-4-6</code>), [[Google Gemini|Gemini]] (default <code>gemini-2.5-flash</code>), [[OpenAI]] [[GPT-4o]]. Each provider is invoked with its built-in web-search tool ([[Anthropic]] <code>web_search</code>, [[Google Gemini|Google]] <code>googleSearch</code> + <code>urlContext</code>, [[OpenAI]] <code>web_search</code>) so source discovery and verification happen in a single round-trip per claim. Default models can be overridden by setting <code>window.cnfirmedModelClaude</code>, <code>window.cnfirmedModelGemini</code>, or <code>window.cnfirmedModelOpenAI</code> before the script loads.
+
+=== Output ===
+
+For each candidate the script reports two independent axes:
+
+* '''Substantiation''' — one of <code>SUPPORTED</code>, <code>PARTIALLY SUPPORTED</code>, <code>NOT SUPPORTED</code>, <code>SOURCE UNAVAILABLE</code>, with a 0–100 confidence score and the relevant quote.
+* '''Reliability''' — <code>high</code>, <code>medium</code>, <code>low</code>, or <code>n/a</code>, judged ''in context for the kind of claim being made'' ([[WP:BLP]], [[WP:MEDRS]], [[WP:NEWSORG]], [[WP:HISTRS]], primary-vs-secondary, etc.).
+
+The two are kept separate so a candidate that ''says'' the claim but is the wrong kind of source is still surfaced — flagged — for a human editor to replace.
+
+== Feature requests ==
+
+Feel free to drop a note at the talk page. There is also an issue tracker at [https://github.com/alex-o-748/source-finder GitHub].
+
+== Performance and limitations ==
+
+Topical similarity isn't the same as substantiation. Existing source-finders point at pages that ''sound'' related; CNfirmed asks the model to read the candidate and answer: "does this passage support this specific claim?" In informal testing across a sample of articles, the verdict matches a human editor's reading of the source the large majority of the time when the source is online and openly accessible. Manual review is always required before pasting a citation: '''the script suggests, the editor decides'''.
+
+=== Limitations ===
+
+* '''Online sources only''': the script can only verify sources reachable on the open web. Paywalled, offline, or login-walled sources will come back as <code>SOURCE UNAVAILABLE</code>.
+* '''PDF and scan support is limited''': depends on the provider's web-search tool.
+* '''Compound sentences''': sentences that bundle several distinct facts (each potentially needing its own citation) are graded as a whole and may be marked <code>PARTIALLY SUPPORTED</code> when only some sub-claims are covered.
+* '''Accuracy varies by model''': commercial frontier models outperform smaller and open-weights models, sometimes substantially.
+* '''Cost scales linearly''' with the number of CN tags when you click "Verify all".
+
+=== Out of scope ===
+
+* '''Reliability of sources in general''': the script judges reliability ''for the specific claim being cited'', not the publication's overall standing.
+* '''Copyvio detection''': the script does not check whether article text is copied verbatim or closely paraphrased from a source.
+* '''Editing the article''': the script copies a {{tag|ref|content=...}} snippet to your clipboard but does not insert it into the wikitext for you. Edit-mode integration is on the roadmap.
+* '''Non-Wikipedia wikis''': only en.wikipedia.org is supported in v1.
+
+== Credits ==
+
+The sidebar plumbing reuses [[User:Polygnotus/Helpers/Sidebar.js]] (thanks!). The WP:RSP-derived hard blocklist mirrors the one shipped with the [https://github.com/alex-o-748/source-finder companion CLI]. Thanks to everyone who has tested the script and filed issues.
+
+== Technical details ==
+
+The script is self-contained: it inlines its own system prompt, its own [[WP:RSP]]-derived unreliable-source blocklist, and its own citation-template formatter, so it has no build step and no dependency on a backend, proxy, or [[Cloudflare]] worker. API keys live in <code>localStorage</code> on the Wikipedia origin and can be cleared at any time from the sidebar or via the browser's developer tools.
+
+For each CN tag the script:
+
+# extracts the surrounding sentence and a window of context from the article wikitext;
+# sends a single request to the selected provider with web search enabled, asking it to discover candidate sources, read the most promising ones, and grade substantiation and reliability;
+# parses the structured response into the popover and the sidebar row;
+# formats a {{tag|ref|content={{tlx|cite web}} / {{tlx|cite news}} / {{tlx|cite book}}}} snippet and exposes it via a "Copy" button.
+
+The companion repository at [https://github.com/alex-o-748/source-finder github.com/alex-o-748/source-finder] also ships a Node CLI that runs the same pipeline against the [[Anthropic]] API and exposes <code>verifySource(claim, sourceUrl)</code> as a separable library function — useful for batch runs or for wiring the verifier into other tools.
+
+[[Category:Wikipedia scripts]]
