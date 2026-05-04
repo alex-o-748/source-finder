@@ -53,14 +53,14 @@
     gemini: {
       name: 'Gemini',
       keyStorage: 'cnfirmed-key-gemini',
-      defaultModel: 'gemini-2.5-flash',
+      defaultModel: 'gemini-flash-latest',
       modelOverride: 'cnfirmedModelGemini',
       run: callGemini
     },
     openai: {
       name: 'OpenAI',
       keyStorage: 'cnfirmed-key-openai',
-      defaultModel: 'gpt-4o',
+      defaultModel: 'gpt-5-mini',
       modelOverride: 'cnfirmedModelOpenAI',
       run: callOpenAI
     }
