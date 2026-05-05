@@ -38,8 +38,6 @@
   if (WG_ACTION !== 'view' && WG_ACTION !== 'edit' && WG_ACTION !== 'submit') return;
   if (!/wikipedia\.org$/.test(mw.config.get('wgServer') || '')) return;
 
-  var TOOL_URL = 'https://github.com/alex-o-748/source-finder';
-
   var SIDEBAR_HELPER_URL =
     'https://en.wikipedia.org/w/index.php?title=User:Polygnotus/Helpers/Sidebar.js&action=raw&ctype=text/javascript';
 
@@ -1469,8 +1467,7 @@
       return;
     }
 
-    var summary = 'Added reference for [[' + (mw.config.get('wgTitle') || pageTitle) + ']] '
-      + '(via [' + TOOL_URL + ' CNfirmed])';
+    var summary = 'Added reference (via [[User:Alaexis/CNfirmed]])';
     window.location.href = appendQueryParam(editUrl, 'summary', summary);
   }
 

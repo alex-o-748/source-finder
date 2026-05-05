@@ -56,7 +56,7 @@ For each claim the script renders a popover with:
 - **Reliability** — `high` / `medium` / `low` / `n/a`, judged in context (BLP, medical, news, history…).
 - The relevant quote from the source.
 - A **Copy `<ref>`** button that puts a ready-to-paste `<ref>{{cite ...}}</ref>` snippet on the clipboard.
-- An **Insert `<ref>` in editor** button that opens the section's source editor with the chosen `<ref>` already substituted in for the `{{citation needed}}` tag, and a pre-filled edit summary linking back to this tool. Review the diff and save.
+- An **Insert `<ref>` in editor** button that opens the section's source editor with the chosen `<ref>` already substituted in for the `{{citation needed}}` tag, and a pre-filled edit summary linking to [[User:Alaexis/CNfirmed]]. Review the diff and save.
 
 ## Node CLI
 
