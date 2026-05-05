@@ -34,7 +34,8 @@
   window.cnfirmedLoaded = true;
 
   if (mw.config.get('wgNamespaceNumber') !== 0) return;
-  if (mw.config.get('wgAction') !== 'view') return;
+  var WG_ACTION = mw.config.get('wgAction');
+  if (WG_ACTION !== 'view' && WG_ACTION !== 'edit' && WG_ACTION !== 'submit') return;
   if (!/wikipedia\.org$/.test(mw.config.get('wgServer') || '')) return;
 
   var SIDEBAR_HELPER_URL =
@@ -220,6 +221,13 @@
     '.cnfirmed-badge[data-cnfirmed-status="error"] { color: #b32424; opacity: 1; }',
     '@keyframes cnfirmed-spin { to { transform: rotate(360deg); } }',
 
+    '#p-cnfirmed .cnfirmed-tool-link {',
+    '  color: inherit; text-decoration: none;',
+    '  border-bottom: 1px dotted currentColor;',
+    '}',
+    '#p-cnfirmed .cnfirmed-tool-link:hover,',
+    '#p-cnfirmed .cnfirmed-tool-link:focus { color: #36c; }',
+
     '#p-cnfirmed .cnfirmed-controls {',
     '  padding: 4px 6px 8px 6px; border-bottom: 1px solid #eaecf0;',
     '  margin-bottom: 4px; font-size: 0.85em;',
@@ -297,6 +305,11 @@
   // ---- Boot sequence ----------------------------------------------------
 
   $(function () {
+    if (WG_ACTION === 'edit' || WG_ACTION === 'submit') {
+      handlePendingEditorInsertion();
+      return;
+    }
+
     cnSups = Array.prototype.slice.call(
       document.querySelectorAll('sup.Template-Fact')
     );
@@ -337,6 +350,48 @@
       't-cnfirmed-test',
       'CNfirmed loaded, but this page has no citation-needed tags. Pick an article from this category to try the script.'
     );
+    linkifyPortletHeading();
+  }
+
+  // Turn the literal "CNfirmed" inside the portlet heading into a link to the
+  // on-wiki docs page, so users have one click from the sidebar to "what is
+  // this?". Robust across skins (legacy h3, Vector 2022 span heading-label).
+  function linkifyPortletHeading() {
+    var portlet = document.getElementById('p-cnfirmed');
+    if (!portlet) return;
+    if (portlet.querySelector('.cnfirmed-tool-link')) return;
+    var url = (mw.util && typeof mw.util.getUrl === 'function')
+      ? mw.util.getUrl('User:Alaexis/CNfirmed')
+      : '/wiki/User:Alaexis/CNfirmed';
+    var headings = portlet.querySelectorAll(
+      'h2, h3, h4, .vector-menu-heading-label, .mw-portlet-heading, label'
+    );
+    for (var i = 0; i < headings.length; i++) {
+      if (replaceTextWithAnchor(headings[i], 'CNfirmed', url, 'cnfirmed-tool-link')) return;
+    }
+  }
+
+  function replaceTextWithAnchor(root, target, url, className) {
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while ((node = walker.nextNode())) {
+      var idx = node.nodeValue.indexOf(target);
+      if (idx < 0) continue;
+      var before = node.nodeValue.slice(0, idx);
+      var after = node.nodeValue.slice(idx + target.length);
+      var a = document.createElement('a');
+      a.href = url;
+      a.textContent = target;
+      a.className = className;
+      a.title = 'About CNfirmed';
+      var parent = node.parentNode;
+      parent.insertBefore(document.createTextNode(before), node);
+      parent.insertBefore(a, node);
+      parent.insertBefore(document.createTextNode(after), node);
+      parent.removeChild(node);
+      return true;
+    }
+    return false;
   }
 
   function loadSidebarHelper() {
@@ -499,6 +554,7 @@
     if (helper.markDataLoaded) helper.markDataLoaded();
     ensureControlsBar();
     addVerifyAllButton();
+    linkifyPortletHeading();
   }
 
   function buildSidebarUl() {
@@ -1323,6 +1379,11 @@
       });
     });
     $tools.append($copy);
+    var $insert = $('<button>')
+      .text('Insert <ref> in editor')
+      .attr('title', 'Open the source editor with this <ref> already substituted in for the {{citation needed}} tag')
+      .on('click', function () { openEditorWithRef(i, top); });
+    $tools.append($insert);
     if (result.suggestions.length > 1) {
       var $more = $('<button>').text('Show all (' + result.suggestions.length + ')')
         .on('click', function () { showAllDialog(i, result); });
@@ -1352,6 +1413,11 @@
         navigator.clipboard.writeText(s.citation.ref).then(function () { toast('Copied'); });
       });
       $row.append($copy);
+      var $insertRow = $('<button>')
+        .text('Insert <ref> in editor')
+        .css({ 'margin-top': '4px', 'margin-left': '4px' })
+        .on('click', function () { openEditorWithRef(i, s); });
+      $row.append($insertRow);
       $list.append($row);
     });
     OO.ui.alert($list, {
@@ -1370,6 +1436,234 @@
   function flash(el) {
     el.classList.add('cnfirmed-flash');
     setTimeout(function () { el.classList.remove('cnfirmed-flash'); }, 800);
+  }
+
+  // ---- Editor integration ------------------------------------------------
+  // The "Insert <ref> in editor" CTA stages the chosen <ref> in sessionStorage,
+  // then navigates to the section's edit URL with a pre-filled summary. The
+  // same script runs again on the edit page, picks up the staged payload, and
+  // replaces the corresponding {{citation needed}} template in the textarea.
+
+  var EDIT_INSERT_PREFIX = 'cnfirmed:pending-insert:';
+  var sectionEditLinksCache = null;
+
+  function pendingInsertKey() {
+    return EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
+  }
+
+  function sectionEditLinkFor(supEl) {
+    var node = supEl;
+    while (node && node !== document.body) {
+      var sib = node.previousElementSibling;
+      while (sib) {
+        var heading = null;
+        if (sib.matches && /^H[1-6]$/i.test(sib.tagName)) {
+          heading = sib;
+        } else if (sib.querySelector) {
+          heading = sib.querySelector('h1, h2, h3, h4, h5, h6');
+        }
+        if (heading) {
+          var a = heading.querySelector('.mw-editsection a[href*="action=edit"]');
+          if (a && a.href) return a.href;
+        }
+        sib = sib.previousElementSibling;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function getSectionEditLinks() {
+    if (sectionEditLinksCache) return sectionEditLinksCache;
+    sectionEditLinksCache = cnSups.map(sectionEditLinkFor);
+    return sectionEditLinksCache;
+  }
+
+  function buildLeadEditUrl() {
+    if (mw.util && typeof mw.util.getUrl === 'function') {
+      return mw.util.getUrl(pageTitle, { action: 'edit' });
+    }
+    return '/w/index.php?title=' + encodeURIComponent(pageTitle) + '&action=edit';
+  }
+
+  function appendQueryParam(url, key, value) {
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    return url + sep + encodeURIComponent(key) + '=' + encodeURIComponent(value);
+  }
+
+  function openEditorWithRef(i, suggestion) {
+    if (!suggestion || !suggestion.citation || !suggestion.citation.ref) {
+      toast('No <ref> to insert.');
+      return;
+    }
+    var links = getSectionEditLinks();
+    var link = links[i];
+    var k = 0;
+    for (var j = 0; j < i; j++) if (links[j] === link) k++;
+    var editUrl = link || buildLeadEditUrl();
+
+    var payload = {
+      pageTitle: pageTitle,
+      revid: revid,
+      cnIndexInSection: k,
+      ref: suggestion.citation.ref,
+      sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
+      stagedAt: Date.now()
+    };
+    try {
+      sessionStorage.setItem(pendingInsertKey(), JSON.stringify(payload));
+    } catch (e) {
+      toast('Could not stage edit (sessionStorage unavailable).');
+      return;
+    }
+
+    var summary = 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])';
+    window.location.href = appendQueryParam(editUrl, 'summary', summary);
+  }
+
+  // Edit-mode: locate the staged payload and apply it to the textarea.
+
+  function handlePendingEditorInsertion() {
+    var key = EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
+    var raw = null;
+    try { raw = sessionStorage.getItem(key); } catch (e) { return; }
+    if (!raw) return;
+    var payload;
+    try { payload = JSON.parse(raw); } catch (e) {
+      try { sessionStorage.removeItem(key); } catch (e2) {}
+      return;
+    }
+    try { sessionStorage.removeItem(key); } catch (e) {}
+
+    if (!payload || !payload.ref) return;
+
+    mw.loader.using(['mediawiki.util']).then(function () { applyPendingInsertion(payload); });
+  }
+
+  function applyPendingInsertion(payload) {
+    var ta = document.getElementById('wpTextbox1');
+    if (!ta) {
+      showEditBanner(
+        'CNfirmed: source editor textarea not found. Switch to the wikitext editor and try again — '
+        + 'your <ref> snippet is on the clipboard if you need to paste it manually.',
+        'warn'
+      );
+      try { navigator.clipboard.writeText(payload.ref); } catch (e) {}
+      return;
+    }
+
+    var text = ta.value;
+    var result = replaceNthCitationNeeded(text, payload.cnIndexInSection || 0, payload.ref);
+    if (!result.replaced) {
+      showEditBanner(
+        'CNfirmed: could not locate the {{citation needed}} tag in this section — '
+        + 'the page may have changed. Your <ref> snippet has been copied to the clipboard.',
+        'warn'
+      );
+      try { navigator.clipboard.writeText(payload.ref); } catch (e) {}
+      return;
+    }
+
+    ta.value = result.text;
+    try {
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      ta.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+
+    try {
+      ta.focus();
+      ta.setSelectionRange(result.replacementStart, result.replacementStart + payload.ref.length);
+      ta.scrollTop = Math.max(0, ta.scrollHeight * (result.replacementStart / Math.max(1, result.text.length)) - 100);
+    } catch (e) {}
+
+    showEditBanner(
+      'CNfirmed: <ref> inserted in place of the {{citation needed}} tag — review and save.',
+      'ok'
+    );
+  }
+
+  function replaceNthCitationNeeded(text, n, replacement) {
+    var aliases = {
+      'citation needed': true,
+      'cn': true,
+      'fact': true,
+      'citation-needed': true,
+      'citationneeded': true,
+      'cite needed': true,
+      'cite-needed': true,
+      'refneeded': true,
+      'ref needed': true,
+      'ref-needed': true
+    };
+    var i = 0;
+    var count = 0;
+    while (i < text.length - 1) {
+      if (text.charCodeAt(i) === 123 /* { */ && text.charCodeAt(i + 1) === 123) {
+        var end = findTemplateEnd(text, i);
+        if (end > 0) {
+          var inner = text.slice(i + 2, end - 2);
+          var pipe = inner.indexOf('|');
+          var name = (pipe >= 0 ? inner.slice(0, pipe) : inner)
+            .replace(/_/g, ' ')
+            .trim()
+            .toLowerCase();
+          if (Object.prototype.hasOwnProperty.call(aliases, name)) {
+            if (count === n) {
+              return {
+                replaced: true,
+                text: text.slice(0, i) + replacement + text.slice(end),
+                replacementStart: i
+              };
+            }
+            count++;
+          }
+          i = end;
+          continue;
+        }
+      }
+      i++;
+    }
+    return { replaced: false, text: text, replacementStart: -1 };
+  }
+
+  function findTemplateEnd(text, start) {
+    var depth = 0;
+    var i = start;
+    while (i < text.length - 1) {
+      if (text.charCodeAt(i) === 123 && text.charCodeAt(i + 1) === 123) {
+        depth++;
+        i += 2;
+        continue;
+      }
+      if (text.charCodeAt(i) === 125 /* } */ && text.charCodeAt(i + 1) === 125) {
+        depth--;
+        i += 2;
+        if (depth === 0) return i;
+        continue;
+      }
+      i++;
+    }
+    return -1;
+  }
+
+  function showEditBanner(message, kind) {
+    var box = document.createElement('div');
+    box.className = 'cnfirmed-edit-banner cnfirmed-edit-banner-' + (kind || 'ok');
+    box.style.cssText = [
+      'position:fixed', 'top:64px', 'right:16px', 'z-index:1000',
+      'max-width:340px', 'padding:10px 12px',
+      'border:1px solid ' + (kind === 'warn' ? '#fc3' : '#36c'),
+      'background:' + (kind === 'warn' ? '#fef6e7' : '#eaf3ff'),
+      'color:#202122', 'font-size:13px', 'line-height:1.4',
+      'border-radius:3px', 'box-shadow:0 1px 2px rgba(0,0,0,0.1)'
+    ].join(';');
+    box.textContent = message;
+    document.body.appendChild(box);
+    setTimeout(function () {
+      box.style.transition = 'opacity 0.3s';
+      box.style.opacity = '0';
+      setTimeout(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 350);
+    }, 8000);
   }
 
   var toastTimer = null;
