@@ -221,6 +221,13 @@
     '.cnfirmed-badge[data-cnfirmed-status="error"] { color: #b32424; opacity: 1; }',
     '@keyframes cnfirmed-spin { to { transform: rotate(360deg); } }',
 
+    '#p-cnfirmed .cnfirmed-tool-link {',
+    '  color: inherit; text-decoration: none;',
+    '  border-bottom: 1px dotted currentColor;',
+    '}',
+    '#p-cnfirmed .cnfirmed-tool-link:hover,',
+    '#p-cnfirmed .cnfirmed-tool-link:focus { color: #36c; }',
+
     '#p-cnfirmed .cnfirmed-controls {',
     '  padding: 4px 6px 8px 6px; border-bottom: 1px solid #eaecf0;',
     '  margin-bottom: 4px; font-size: 0.85em;',
@@ -343,6 +350,48 @@
       't-cnfirmed-test',
       'CNfirmed loaded, but this page has no citation-needed tags. Pick an article from this category to try the script.'
     );
+    linkifyPortletHeading();
+  }
+
+  // Turn the literal "CNfirmed" inside the portlet heading into a link to the
+  // on-wiki docs page, so users have one click from the sidebar to "what is
+  // this?". Robust across skins (legacy h3, Vector 2022 span heading-label).
+  function linkifyPortletHeading() {
+    var portlet = document.getElementById('p-cnfirmed');
+    if (!portlet) return;
+    if (portlet.querySelector('.cnfirmed-tool-link')) return;
+    var url = (mw.util && typeof mw.util.getUrl === 'function')
+      ? mw.util.getUrl('User:Alaexis/CNfirmed')
+      : '/wiki/User:Alaexis/CNfirmed';
+    var headings = portlet.querySelectorAll(
+      'h2, h3, h4, .vector-menu-heading-label, .mw-portlet-heading, label'
+    );
+    for (var i = 0; i < headings.length; i++) {
+      if (replaceTextWithAnchor(headings[i], 'CNfirmed', url, 'cnfirmed-tool-link')) return;
+    }
+  }
+
+  function replaceTextWithAnchor(root, target, url, className) {
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while ((node = walker.nextNode())) {
+      var idx = node.nodeValue.indexOf(target);
+      if (idx < 0) continue;
+      var before = node.nodeValue.slice(0, idx);
+      var after = node.nodeValue.slice(idx + target.length);
+      var a = document.createElement('a');
+      a.href = url;
+      a.textContent = target;
+      a.className = className;
+      a.title = 'About CNfirmed';
+      var parent = node.parentNode;
+      parent.insertBefore(document.createTextNode(before), node);
+      parent.insertBefore(a, node);
+      parent.insertBefore(document.createTextNode(after), node);
+      parent.removeChild(node);
+      return true;
+    }
+    return false;
   }
 
   function loadSidebarHelper() {
@@ -505,6 +554,7 @@
     if (helper.markDataLoaded) helper.markDataLoaded();
     ensureControlsBar();
     addVerifyAllButton();
+    linkifyPortletHeading();
   }
 
   function buildSidebarUl() {
@@ -1467,7 +1517,7 @@
       return;
     }
 
-    var summary = 'Added reference (via [[User:Alaexis/CNfirmed]])';
+    var summary = 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])';
     window.location.href = appendQueryParam(editUrl, 'summary', summary);
   }
 
