@@ -1338,16 +1338,28 @@
     var verdict = top.verdict.verdict;
     var rel = top.verdict.reliability;
 
-    var $head = $('<div>').css({ 'margin-bottom': '6px' });
-    $head.append(
+    var $head = $('<div>').css({
+      'margin-bottom': '6px',
+      display: 'flex',
+      'align-items': 'center',
+      gap: '6px'
+    });
+    var $headLeft = $('<span>').css({
+      display: 'inline-flex',
+      'align-items': 'center',
+      gap: '6px',
+      'min-width': 0,
+      flex: '1 1 auto'
+    });
+    $headLeft.append(
       $('<span class="cnfirmed-pill">').attr('data-status', verdict).text(pillLabel(verdict))
     );
-    $head.append(' ');
-    $head.append(
+    $headLeft.append(
       $('<span class="cnfirmed-rel">').attr('data-rel', rel).text('reliability: ' + rel)
     );
+    $head.append($headLeft);
     $head.append(
-      $('<span>').css({ float: 'right', 'font-size': '0.8em', color: '#54595d' })
+      $('<span>').css({ 'font-size': '0.8em', color: '#54595d', 'flex-shrink': 0 })
         .text('confidence ' + top.verdict.confidence + '/100')
     );
     $el.append($head);
