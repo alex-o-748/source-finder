@@ -47,3 +47,24 @@ test("extractClaims offsets point at the literal tag in the wikitext", () => {
     assert.equal(fixture.slice(c.offset, c.offset + c.tag.length), c.tag);
   }
 });
+
+test("extractClaims recognises {{Citation needed}} redirect family", () => {
+  const samples = [
+    "Claim one.{{Cn}}",
+    "Claim two.{{Cb}}",
+    "Claim three.{{Citation_needed|date=May 2024}}",
+    "Claim four.{{citation-needed}}",
+    "Claim five.{{citationneeded}}",
+    "Claim six.{{Cite needed}}",
+    "Claim seven.{{Ref-needed}}",
+    "Claim eight.{{needs citation}}",
+    "Claim nine.{{Need citation}}",
+    "Claim ten.{{citation requested}}",
+    "Claim eleven.{{Source needed}}",
+    "Claim twelve.{{subst:Citation needed}}",
+  ];
+  for (const s of samples) {
+    const claims = extractClaims(s);
+    assert.equal(claims.length, 1, `failed to match: ${s}`);
+  }
+});
