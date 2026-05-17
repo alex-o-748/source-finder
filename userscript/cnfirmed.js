@@ -1244,8 +1244,15 @@
     $body.empty();
     if (result) renderResultInto($body, i, result);
     else renderProgressInto($body, progress);
-    p.$element.css({ position: 'absolute', 'z-index': 9999 });
     p.toggle(true);
+    // PopupWidget mixes in FloatableElement. With no $floatableContainer
+    // configured, toggle(true) falls back to $element.parent() (the body),
+    // positions $element at body's offset (top of the page), and installs
+    // scroll/resize listeners that re-apply that position later — snapping
+    // the popup back near the top of the article. Disable that auto-position
+    // and clear its inline top/left before we place the popup ourselves.
+    if (typeof p.togglePositioning === 'function') p.togglePositioning(false);
+    p.$element.css({ position: 'absolute', 'z-index': 9999 });
     positionPopover(i);
   }
 
