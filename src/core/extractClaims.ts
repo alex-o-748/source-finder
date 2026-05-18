@@ -1,15 +1,15 @@
 import type { Claim } from "./types.js";
 
 /**
- * Matches a {{citation needed}}-style template call. Handles the main aliases
- * (cn, fact, citation needed, citation-needed) with optional parameters.
+ * Matches a {{citation needed}}-style template call, covering the redirects
+ * that render as <sup class="Template-Fact"> on en.wikipedia.
  *
  * Intentionally does not handle nested templates inside the parameters
  * ({{cn|reason={{foo}}}}) — rare in practice, and the match still succeeds
  * on the outer tag because we stop at the first `}}`.
  */
 const CN_REGEX =
-  /\{\{\s*(cn|fact|citation[ _-]?needed)(?:\s*\|[^{}]*)?\s*\}\}/gi;
+  /\{\{\s*(?:safesubst:|subst:)?\s*(cn|cb|fact|citation[ _-]?needed|cite[ _-]?needed|ref[ _-]?needed|needs?[ _-]citation|citation[ _-]requested|source[ _-]?needed|needs?[ _-]source|cn[ _-]needed)(?:\s*\|[^{}]*)?\s*\}\}/gi;
 
 /** Matches MediaWiki section headings: == Section ==, === Subsection ===, etc. */
 const HEADING_REGEX = /^(={2,6})\s*([^=\n][^\n]*?)\s*\1\s*$/gm;

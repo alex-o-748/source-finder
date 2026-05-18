@@ -1463,14 +1463,19 @@
     while (node && node !== document.body) {
       var sib = node.previousElementSibling;
       while (sib) {
-        var heading = null;
+        // Vector 2022 wraps the heading and its [edit] link together in a
+        // <div class="mw-heading">, so search the wrapper as a whole — not
+        // just inside the <h2>, where legacy Vector kept .mw-editsection.
+        var headingScope = null;
         if (sib.matches && /^H[1-6]$/i.test(sib.tagName)) {
-          heading = sib;
-        } else if (sib.querySelector) {
-          heading = sib.querySelector('h1, h2, h3, h4, h5, h6');
+          headingScope = sib;
+        } else if (sib.classList && sib.classList.contains('mw-heading')) {
+          headingScope = sib;
+        } else if (sib.querySelector && sib.querySelector('h1, h2, h3, h4, h5, h6')) {
+          headingScope = sib;
         }
-        if (heading) {
-          var a = heading.querySelector('.mw-editsection a[href*="action=edit"]');
+        if (headingScope) {
+          var a = headingScope.querySelector('.mw-editsection a[href*="action=edit"]');
           if (a && a.href) return a.href;
         }
         sib = sib.previousElementSibling;
@@ -1589,32 +1594,55 @@
     );
   }
 
+  // Aliases that all redirect to {{Citation needed}} on en.wikipedia and render
+  // as <sup class="Template-Fact">. Compared after stripping subst:/safesubst:
+  // prefixes, normalising underscores/dashes/whitespace, and lowercasing — so
+  // "Citation_needed", "CITATION-NEEDED", and "citation needed" all match.
+  var CN_ALIASES = {
+    'cn': true,
+    'cb': true,
+    'fact': true,
+    'citation needed': true,
+    'citationneeded': true,
+    'cite needed': true,
+    'citeneeded': true,
+    'refneeded': true,
+    'ref needed': true,
+    'need citation': true,
+    'needs citation': true,
+    'citation requested': true,
+    'source needed': true,
+    'sourceneeded': true,
+    'need source': true,
+    'needs source': true,
+    'cn needed': true
+  };
+
+  function normaliseTemplateName(raw) {
+    return raw
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/^\s*(?:safesubst|subst)\s*:\s*/i, '')
+      .replace(/[_\-\s]+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
   function replaceNthCitationNeeded(text, n, replacement) {
-    var aliases = {
-      'citation needed': true,
-      'cn': true,
-      'fact': true,
-      'citation-needed': true,
-      'citationneeded': true,
-      'cite needed': true,
-      'cite-needed': true,
-      'refneeded': true,
-      'ref needed': true,
-      'ref-needed': true
-    };
     var i = 0;
     var count = 0;
     while (i < text.length - 1) {
+      // Skip past comments and <nowiki> regions — CN templates inside them
+      // are not rendered, so they must not throw off the index.
+      var skip = skipNonRendered(text, i);
+      if (skip > i) { i = skip; continue; }
+
       if (text.charCodeAt(i) === 123 /* { */ && text.charCodeAt(i + 1) === 123) {
         var end = findTemplateEnd(text, i);
         if (end > 0) {
           var inner = text.slice(i + 2, end - 2);
           var pipe = inner.indexOf('|');
-          var name = (pipe >= 0 ? inner.slice(0, pipe) : inner)
-            .replace(/_/g, ' ')
-            .trim()
-            .toLowerCase();
-          if (Object.prototype.hasOwnProperty.call(aliases, name)) {
+          var name = normaliseTemplateName(pipe >= 0 ? inner.slice(0, pipe) : inner);
+          if (Object.prototype.hasOwnProperty.call(CN_ALIASES, name)) {
             if (count === n) {
               return {
                 replaced: true,
@@ -1631,6 +1659,20 @@
       i++;
     }
     return { replaced: false, text: text, replacementStart: -1 };
+  }
+
+  function skipNonRendered(text, i) {
+    if (text.charCodeAt(i) === 60 /* < */) {
+      if (text.substr(i, 4) === '<!--') {
+        var endC = text.indexOf('-->', i + 4);
+        return endC === -1 ? text.length : endC + 3;
+      }
+      if (text.substr(i, 8).toLowerCase() === '<nowiki>') {
+        var endN = text.toLowerCase().indexOf('</nowiki>', i + 8);
+        return endN === -1 ? text.length : endN + 9;
+      }
+    }
+    return i;
   }
 
   function findTemplateEnd(text, start) {
