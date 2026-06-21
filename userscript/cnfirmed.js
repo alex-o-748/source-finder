@@ -273,8 +273,9 @@
     '.cnfirmed-flash { background: #fef6e7 !important; transition: background 0.4s; }',
 
     '.cnfirmed-panel {',
-    '  position: fixed; z-index: 9999; top: 0; left: 0;',
-    '  width: 360px; max-width: calc(100vw - 16px);',
+    '  position: fixed; z-index: 9999;',
+    '  bottom: 12px; left: 50%; transform: translateX(-50%);',
+    '  width: 420px; max-width: calc(100vw - 16px);',
     '  background: #fff; color: #202122;',
     '  border: 1px solid #a2a9b1; border-radius: 4px;',
     '  box-shadow: 0 4px 18px rgba(0,0,0,0.25);',
@@ -283,7 +284,7 @@
     '.cnfirmed-panel.cnfirmed-panel-visible { display: block; }',
     '.cnfirmed-panel-header {',
     '  display: flex; align-items: center; gap: 6px;',
-    '  padding: 5px 6px 5px 10px; cursor: move;',
+    '  padding: 5px 6px 5px 10px;',
     '  background: #f8f9fa; border-bottom: 1px solid #eaecf0;',
     '  border-radius: 4px 4px 0 0; user-select: none;',
     '}',
@@ -1258,9 +1259,10 @@
   // flaky without a configured anchor container — the popover frequently
   // failed to appear at all (the badge would spin, verification would finish,
   // but nothing showed), or snapped to the top of the article. This panel is a
-  // plain DOM dialog that floats with the viewport (position: fixed), can be
-  // dragged by its header, and stays open until the user dismisses it
-  // (× button, Escape, or opening a different claim).
+  // plain DOM dialog docked to the bottom of the viewport (position: fixed), so
+  // it stays in a stable, predictable place as the article scrolls and is
+  // always visible while you look at the tag. It stays open until the user
+  // dismisses it (× button, Escape, or opening a different claim).
   function ensurePopover() {
     if (popup) return popup;
     var $el = $('<div class="cnfirmed-panel" role="dialog" aria-label="CNfirmed">');
@@ -1272,8 +1274,6 @@
     var $body = $('<div class="cnfirmed-panel-body cnfirmed-popover">');
     $el.append($header, $body);
     $(document.body).append($el);
-    enablePanelDrag($el, $header);
-    $(window).on('resize.cnfpanel', function () { if (panelVisible()) clampPanel(); });
     popup = { $element: $el, $body: $body, $title: $title };
     return popup;
   }
@@ -1287,7 +1287,6 @@
     if (result) renderResultInto(p.$body, i, result);
     else renderProgressInto(p.$body, progress);
     p.$element.addClass('cnfirmed-panel-visible');
-    positionPanel(i);
   }
 
   function closePopover() {
@@ -1297,69 +1296,6 @@
 
   function panelVisible() {
     return !!popup && popup.$element.hasClass('cnfirmed-panel-visible');
-  }
-
-  // Place the panel next to its badge on first open, then clamp fully into the
-  // viewport. Because the panel is position: fixed, these are viewport
-  // coordinates and it stays put (floats) while the article scrolls.
-  function positionPanel(i) {
-    if (!popup) return;
-    var anchor = badges[i] || cnSups[i];
-    if (!anchor) return;
-    var rect = anchor.getBoundingClientRect();
-    var el = popup.$element[0];
-    var h = el.offsetHeight;
-    var gap = 6;
-    var spaceBelow = window.innerHeight - rect.bottom;
-    var top = (h + gap > spaceBelow && rect.top > spaceBelow)
-      ? rect.top - h - gap   // not enough room below: flip above the badge
-      : rect.bottom + gap;   // default: just below the badge
-    setPanelPosition(rect.left, top);
-  }
-
-  // Re-clamp the panel into the viewport, preserving its current (possibly
-  // dragged) position as far as possible. Used after content grows/shrinks.
-  function clampPanel() {
-    if (!popup) return;
-    var r = popup.$element[0].getBoundingClientRect();
-    setPanelPosition(r.left, r.top);
-  }
-
-  function setPanelPosition(left, top) {
-    if (!popup) return;
-    var el = popup.$element[0];
-    var w = el.offsetWidth;
-    var h = el.offsetHeight;
-    var margin = 8;
-    if (left + w + margin > window.innerWidth) left = window.innerWidth - w - margin;
-    if (left < margin) left = margin;
-    if (top + h + margin > window.innerHeight) top = window.innerHeight - h - margin;
-    if (top < margin) top = margin;
-    popup.$element.css({ left: left + 'px', top: top + 'px' });
-  }
-
-  function enablePanelDrag($el, $handle) {
-    var startX, startY, originLeft, originTop, dragging = false;
-    $handle.on('mousedown', function (e) {
-      if (e.button !== 0) return;
-      if ($(e.target).closest('.cnfirmed-panel-close').length) return;
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      var r = $el[0].getBoundingClientRect();
-      originLeft = r.left;
-      originTop = r.top;
-      e.preventDefault();
-      $(document).on('mousemove.cnfdrag', onMove).on('mouseup.cnfdrag', onUp);
-    });
-    function onMove(e) {
-      if (!dragging) return;
-      setPanelPosition(originLeft + (e.clientX - startX), originTop + (e.clientY - startY));
-    }
-    function onUp() {
-      dragging = false;
-      $(document).off('.cnfdrag');
-    }
   }
 
   function renderProgressInto($el, progress) {
@@ -1375,21 +1311,18 @@
     if (popoverIndex !== i || !popup) return;
     popup.$body.empty();
     renderProgressInto(popup.$body, progress);
-    clampPanel();
   }
 
   function updatePopoverResult(i, result) {
     if (popoverIndex !== i || !popup) return;
     popup.$body.empty();
     renderResultInto(popup.$body, i, result);
-    clampPanel();
   }
 
   function updatePopoverError(i, message) {
     if (popoverIndex !== i || !popup) return;
     popup.$body.empty();
     popup.$body.append($('<div>').css('color', '#b32424').text('Error: ' + message));
-    clampPanel();
   }
 
   function renderResultInto($el, i, result) {
