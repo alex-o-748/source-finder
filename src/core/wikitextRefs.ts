@@ -66,22 +66,72 @@ export interface RefSource {
 
 const CITE_TEMPLATES = /^(?:cite\b|citation$|vcite\b)/;
 
+/**
+ * Citation templates on the largest non-English Wikipedias. Sister-wiki
+ * references are the point of this parser, and most of them are not written
+ * with `{{cite web}}`.
+ */
+const FOREIGN_CITE_TEMPLATES = new Set([
+  "internetquelle", "literatur", // de
+  "lien web", "ouvrage", "article", "périodique", "lien brisé", // fr
+  "cita web", "cita publicación", "cita libro", "cita noticia", // es
+  "cita libro", "cita news", "cita pubblicazione", "cita testo", // it
+  "citeer web", "citeer boek", "citeer nieuws", // nl
+  "cytuj stronę", "cytuj książkę", "cytuj pismo", "cytuj", // pl
+  "citar web", "citar livro", "citar jornal", "citar periódico", // pt
+  "статья", "книга", "публикация", "cite news2", // ru
+  "webbref", "bokref", "tidningsref", // sv
+  "citace elektronické monografie", "citace monografie", "citace periodika", // cs
+  "verkkoviite", "kirjaviite", "lehtiviite", // fi
+  "kilde www", "kilde bok", "kilde avis", // no/da
+  "web kaynağı", // tr
+  "hivatkozás", "cite web/hu", // hu
+]);
+
 const SHORT_FOOTNOTE_TEMPLATES =
   /^(?:sfn|sfnp|sfnm|harvnb|harv|harvtxt|harvp|r)$/;
 
-const WORK_KEYS = [
-  "work",
-  "website",
-  "newspaper",
-  "magazine",
-  "journal",
-  "publisher",
-  "periodical",
-  "encyclopedia",
-  "site",
+/**
+ * Parameter names carrying each field, across the wikis above. `parseTemplate`
+ * lower-cases and hyphen-normalises keys before these are looked up.
+ */
+const URL_KEYS = [
+  "url", "chapter-url", "article-url", "entry-url", "transcript-url",
+  "lien", "adresse", "ссылка",
 ];
 
-const AUTHOR_KEYS = ["author", "author1", "last", "last1", "authors", "first"];
+const TITLE_KEYS = [
+  "title", "chapter", "article", "entry",
+  "titel", "titre", "título", "titulo", "titolo", "tytuł", "tytul",
+  "otsikko", "tittel", "заголовок", "название", "başlık",
+];
+
+const WORK_KEYS = [
+  "work", "website", "newspaper", "magazine", "journal", "publisher",
+  "periodical", "encyclopedia", "site",
+  "werk", "hrsg", "herausgeber", "verlag", "éditeur", "editeur", "site-web",
+  "obra", "editorial", "editore", "opublikowany", "wydawca", "uitgever",
+  "utgivare", "julkaisija", "издательство", "издание", "periódico",
+];
+
+const AUTHOR_KEYS = [
+  "author", "author1", "last", "last1", "authors", "first",
+  "autor", "auteur", "autore", "författare", "forfatter", "tekijä",
+  "автор", "авторы", "yazar",
+];
+
+const DATE_KEYS = [
+  "date", "year", "publication-date",
+  "datum", "jahr", "fecha", "año", "ano", "data", "rok", "année",
+  "vuosi", "år", "дата", "год", "tarih",
+];
+
+const QUOTE_KEYS = ["quote", "quotation", "zitat", "cita", "cytat", "цитата"];
+
+/** True for a template that is a full citation on some Wikipedia. */
+function isCitationTemplate(name: string): boolean {
+  return CITE_TEMPLATES.test(name) || FOREIGN_CITE_TEMPLATES.has(name);
+}
 
 /** Parses the attributes of a `<ref …>` opening tag, respecting quoting. */
 function parseAttributes(raw: string): Record<string, string> {
@@ -261,18 +311,13 @@ export function refToSource(content: string): RefSource | null {
         raw,
       };
     }
-    if (CITE_TEMPLATES.test(name)) {
+    if (isCitationTemplate(name)) {
       const dead = /^(?:dead|unfit|usurped|bot: unknown)$/i.test(
         named["url-status"] ?? "",
       );
-      const archive = named["archive-url"] || named.archiveurl || null;
-      const live =
-        named.url ||
-        named["chapter-url"] ||
-        named["article-url"] ||
-        named["entry-url"] ||
-        named["transcript-url"] ||
-        null;
+      const archive =
+        named["archive-url"] || named.archiveurl || named.archiv_url || null;
+      const live = URL_KEYS.map((k) => named[k]).find((v) => v && v.trim()) ?? null;
       const url =
         (dead && archive ? archive : live || archive) || identifierUrl(named);
       const surname = named.last1 || named.last;
@@ -284,12 +329,12 @@ export function refToSource(content: string): RefSource | null {
       return {
         url: url ? url.trim() : null,
         title:
-          firstOf(named, ["title", "chapter", "article", "entry"]) ??
+          firstOf(named, TITLE_KEYS) ??
           (positional[0] ? stripWikitext(positional[0]) : null),
         work: firstOf(named, WORK_KEYS),
         author,
-        date: firstOf(named, ["date", "year", "publication-date"]),
-        quote: firstOf(named, ["quote", "quotation"]),
+        date: firstOf(named, DATE_KEYS),
+        quote: firstOf(named, QUOTE_KEYS),
         template: name,
         shortFootnote: false,
         raw,

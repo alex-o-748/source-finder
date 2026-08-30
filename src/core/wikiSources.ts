@@ -357,14 +357,44 @@ function candidateTitle(source: RefSource): string {
   return source.title || source.work || source.url || "untitled reference";
 }
 
+/** Escapes pipes so a value cannot break out of its template parameter. */
+function escapePipes(value: string): string {
+  return value.replace(/\|/g, "{{!}}");
+}
+
+/**
+ * Citation wikitext that will actually render on the wiki being edited.
+ *
+ * A reference copied from another language edition may be written with a
+ * template that only exists there ({{Internetquelle}}, {{Lien web}}), so
+ * anything that is not an English `cite`/`citation` call is rebuilt from the
+ * fields that were parsed out of it.
+ */
+function portableCitation(source: RefSource): string {
+  if (source.template && /^(?:cite\b|citation$)/.test(source.template)) {
+    return source.raw;
+  }
+  const parts = [
+    "cite web",
+    `url=${source.url ?? ""}`,
+    `title=${escapePipes(source.title ?? source.url ?? "")}`,
+  ];
+  if (source.work) parts.push(`work=${escapePipes(source.work)}`);
+  if (source.author) parts.push(`author=${escapePipes(source.author)}`);
+  if (source.date) parts.push(`date=${escapePipes(source.date)}`);
+  return `{{${parts.join(" |")}}}`;
+}
+
 /** Builds the `<ref>` an editor would paste for a wiki-local candidate. */
 function reuseRef(ref: IndexedRef, sameArticle: boolean): string {
-  // Re-using a name already defined on the page is the smallest possible edit,
-  // but only within the same article, where that name exists.
-  if (sameArticle && ref.occurrence.name) {
-    return `<ref name="${ref.occurrence.name}" />`;
+  if (sameArticle) {
+    // Re-using a name already defined on the page is the smallest possible
+    // edit; failing that, this wiki's own markup can be copied as written.
+    return ref.occurrence.name
+      ? `<ref name="${ref.occurrence.name}" />`
+      : `<ref>${ref.source.raw}</ref>`;
   }
-  return `<ref>${ref.source.raw}</ref>`;
+  return `<ref>${portableCitation(ref.source)}</ref>`;
 }
 
 function truncate(text: string, max: number): string {

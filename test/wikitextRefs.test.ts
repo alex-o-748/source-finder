@@ -114,6 +114,23 @@ test("refToSource handles bare and bracketed external links", () => {
   assert.equal(bracketed?.title, "Bracketed title");
 });
 
+test("refToSource reads citation templates from other language editions", () => {
+  const de = refToSource(
+    "{{Internetquelle |url=https://x.de/a |titel=Der Titel |hrsg=Amt |datum=2020-01-02}}",
+  );
+  assert.equal(de?.url, "https://x.de/a");
+  assert.equal(de?.title, "Der Titel");
+  assert.equal(de?.work, "Amt");
+  assert.equal(de?.date, "2020-01-02");
+
+  const fr = refToSource(
+    "{{Lien web |lien=https://x.fr/a |titre=Le Titre |auteur=Dupont}}",
+  );
+  assert.equal(fr?.url, "https://x.fr/a");
+  assert.equal(fr?.title, "Le Titre");
+  assert.equal(fr?.author, "Dupont");
+});
+
 test("refToSource flags shortened footnotes, which have no URL of their own", () => {
   const sfn = refToSource("{{sfn|Smith|2003|p=45}}");
   assert.equal(sfn?.shortFootnote, true);

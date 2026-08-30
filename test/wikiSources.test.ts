@@ -78,6 +78,23 @@ test("sister-wiki pass lifts the citation attached to the same fact", () => {
   assert.match(top.relevance, /cited on de\.wikipedia/);
 });
 
+test("a citation written with a template only that wiki has is rebuilt to render here", () => {
+  const found = findWikiCandidates(
+    corpusWith({ lang: "de", title: "Leuchtturm Karsten Point", wikitext: DE }),
+    heightClaim,
+  );
+  const foreign = found.find((c) => c.url === "https://seezeichen.example.de/karsten");
+  assert.ok(foreign, "expected the {{Internetquelle}} reference to be a candidate");
+  // {{Internetquelle}} does not exist on en.wikipedia, so pasting it verbatim
+  // would leave a red link where the citation should be.
+  assert.doesNotMatch(foreign.ref, /Internetquelle/);
+  assert.equal(
+    foreign.ref,
+    "<ref>{{cite web |url=https://seezeichen.example.de/karsten " +
+      "|title=Seezeichenverzeichnis: Karsten Point |work=Seezeichenamt}}</ref>",
+  );
+});
+
 test("a sister-wiki lead pastes the citation itself, not a name from another wiki", () => {
   const [top] = findWikiCandidates(
     corpusWith({ lang: "de", title: "Leuchtturm Karsten Point", wikitext: DE }),

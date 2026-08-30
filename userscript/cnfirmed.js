@@ -1186,13 +1186,24 @@
     var out = {};
     var batches = [];
     for (var i = 0; i < unique.length; i += 50) batches.push(unique.slice(i, i + 50));
+    // lllang filters server-side but takes a single code, and asking for every
+    // language at once can exceed lllimit and truncate without saying so. One
+    // request per wanted language keeps each response bounded by the batch.
+    var targets = (langs && langs.length) ? langs.slice() : [null];
+    var jobs = [];
+    targets.forEach(function (target) {
+      batches.forEach(function (batch) { jobs.push({ target: target, batch: batch }); });
+    });
 
-    return batches.reduce(function (chain, batch) {
+    return jobs.reduce(function (chain, job) {
+      var batch = job.batch;
       return chain.then(function () {
-        return mwApiGet(code, {
+        var params = {
           action: 'query', prop: 'langlinks', lllimit: 'max',
           titles: batch.join('|'), redirects: '1'
-        }).then(function (data) {
+        };
+        if (job.target) params.lllang = job.target;
+        return mwApiGet(code, params).then(function (data) {
           var q = (data && data.query) || {};
           // Fold normalisation and redirects back so callers can look up the
           // title they asked for, not the one MediaWiki resolved it to.
@@ -1211,7 +1222,10 @@
           batch.forEach(function (requested) {
             var current = requested;
             for (var hop = 0; hop < 4 && alias[current]; hop++) current = alias[current];
-            if (byTitle[current]) out[requested] = byTitle[current];
+            var links = byTitle[current];
+            if (!links || !Object.keys(links).length) return;
+            if (!out[requested]) out[requested] = {};
+            Object.keys(links).forEach(function (k) { out[requested][k] = links[k]; });
           });
         });
       });
@@ -1521,6 +1535,48 @@
     return null;
   }
 
+  // Citation templates on the largest non-English Wikipedias, and the parameter
+  // names they carry. Sister-wiki references are the point of this parser, and
+  // most of them are not written with {{cite web}}.
+  // Mirrors FOREIGN_CITE_TEMPLATES and the *_KEYS lists in wikitextRefs.ts.
+  var FOREIGN_CITE_TEMPLATES = {};
+  ['internetquelle', 'literatur',
+   'lien web', 'ouvrage', 'article', 'périodique', 'lien brisé',
+   'cita web', 'cita publicación', 'cita libro', 'cita noticia',
+   'cita news', 'cita pubblicazione', 'cita testo',
+   'citeer web', 'citeer boek', 'citeer nieuws',
+   'cytuj stronę', 'cytuj książkę', 'cytuj pismo', 'cytuj',
+   'citar web', 'citar livro', 'citar jornal', 'citar periódico',
+   'статья', 'книга', 'публикация', 'cite news2',
+   'webbref', 'bokref', 'tidningsref',
+   'citace elektronické monografie', 'citace monografie', 'citace periodika',
+   'verkkoviite', 'kirjaviite', 'lehtiviite',
+   'kilde www', 'kilde bok', 'kilde avis',
+   'web kaynağı', 'hivatkozás', 'cite web/hu'
+  ].forEach(function (n) { FOREIGN_CITE_TEMPLATES[n] = true; });
+
+  var URL_KEYS = ['url', 'chapter-url', 'article-url', 'entry-url',
+    'transcript-url', 'lien', 'adresse', 'ссылка'];
+  var TITLE_KEYS = ['title', 'chapter', 'article', 'entry',
+    'titel', 'titre', 'título', 'titulo', 'titolo', 'tytuł', 'tytul',
+    'otsikko', 'tittel', 'заголовок', 'название', 'başlık'];
+  var WORK_KEYS = ['work', 'website', 'newspaper', 'magazine', 'journal',
+    'publisher', 'periodical', 'encyclopedia', 'site',
+    'werk', 'hrsg', 'herausgeber', 'verlag', 'éditeur', 'editeur', 'site-web',
+    'obra', 'editorial', 'editore', 'opublikowany', 'wydawca', 'uitgever',
+    'utgivare', 'julkaisija', 'издательство', 'издание', 'periódico'];
+  var AUTHOR_KEYS = ['author', 'author1', 'last', 'last1', 'authors', 'first',
+    'autor', 'auteur', 'autore', 'författare', 'forfatter', 'tekijä',
+    'автор', 'авторы', 'yazar'];
+  var DATE_KEYS = ['date', 'year', 'publication-date',
+    'datum', 'jahr', 'fecha', 'año', 'ano', 'data', 'rok', 'année',
+    'vuosi', 'år', 'дата', 'год', 'tarih'];
+  var QUOTE_KEYS = ['quote', 'quotation', 'zitat', 'cita', 'cytat', 'цитата'];
+
+  function isCitationTemplate(name) {
+    return /^(?:cite\b|citation$|vcite\b)/.test(name) || !!FOREIGN_CITE_TEMPLATES[name];
+  }
+
   function refToSource(content) {
     var raw = String(content || '').replace(/^\s+|\s+$/g, '');
     if (!raw) return null;
@@ -1536,25 +1592,26 @@
           template: t.name, shortFootnote: true, raw: raw
         };
       }
-      if (/^(?:cite\b|citation$|vcite\b)/.test(t.name)) {
+      if (isCitationTemplate(t.name)) {
         var dead = /^(?:dead|unfit|usurped|bot: unknown)$/i.test(t.named['url-status'] || '');
-        var archive = t.named['archive-url'] || t.named.archiveurl || null;
-        var live = t.named.url || t.named['chapter-url'] || t.named['article-url'] ||
-          t.named['entry-url'] || t.named['transcript-url'] || null;
+        var archive = t.named['archive-url'] || t.named.archiveurl || t.named.archiv_url || null;
+        var live = null;
+        for (var u = 0; u < URL_KEYS.length && !live; u++) {
+          if (t.named[URL_KEYS[u]] && t.named[URL_KEYS[u]].trim()) live = t.named[URL_KEYS[u]];
+        }
         var url = (dead && archive ? archive : live || archive) || identifierUrl(t.named);
         var surname = t.named.last1 || t.named.last;
         var given = t.named.first1 || t.named.first;
         return {
           url: url ? url.trim() : null,
-          title: firstOf(t.named, ['title', 'chapter', 'article', 'entry']) ||
+          title: firstOf(t.named, TITLE_KEYS) ||
             (t.positional[0] ? stripWikitext(t.positional[0]) : null),
-          work: firstOf(t.named, ['work', 'website', 'newspaper', 'magazine',
-            'journal', 'publisher', 'periodical', 'encyclopedia', 'site']),
+          work: firstOf(t.named, WORK_KEYS),
           author: surname && given
             ? stripWikitext(surname) + ', ' + stripWikitext(given)
-            : firstOf(t.named, ['author', 'author1', 'last', 'last1', 'authors', 'first']),
-          date: firstOf(t.named, ['date', 'year', 'publication-date']),
-          quote: firstOf(t.named, ['quote', 'quotation']),
+            : firstOf(t.named, AUTHOR_KEYS),
+          date: firstOf(t.named, DATE_KEYS),
+          quote: firstOf(t.named, QUOTE_KEYS),
           template: t.name, shortFootnote: false, raw: raw
         };
       }
@@ -1937,6 +1994,25 @@
     return source.title || source.work || source.url || 'untitled reference';
   }
 
+  // Citation wikitext that will actually render on this wiki. A reference
+  // copied from another language edition may use a template that only exists
+  // there ({{Internetquelle}}, {{Lien web}}), so anything that is not an
+  // English cite/citation call is rebuilt from the fields parsed out of it.
+  function portableCitation(source) {
+    if (source.template && /^(?:cite\b|citation$)/.test(source.template)) {
+      return source.raw;
+    }
+    var parts = [
+      'cite web',
+      'url=' + (source.url || ''),
+      'title=' + escapePipes(source.title || source.url || '')
+    ];
+    if (source.work) parts.push('work=' + escapePipes(source.work));
+    if (source.author) parts.push('author=' + escapePipes(source.author));
+    if (source.date) parts.push('date=' + escapePipes(source.date));
+    return '{{' + parts.join(' |') + '}}';
+  }
+
   function sameArticleCandidates(corpus, ctx, index) {
     var background = tokenSetOf(pageTitle.replace(/_/g, ' ') + ' ' + (ctx.section || ''));
     var query = weightedTokensOf(ctx.claim + ' ' + ctx.context, background);
@@ -1967,6 +2043,8 @@
         title: candidateTitleOf(ref.source),
         relevance: 'already cited in this article for: “' + truncate(ref.sentence, 160) + '”',
         snippet: ref.source.quote || ref.sentence,
+        // Re-using a name already defined on the page is the smallest possible
+        // edit; failing that, this wiki's own markup can be copied as written.
         ref: ref.occurrence.name
           ? '<ref name="' + ref.occurrence.name + '" />'
           : '<ref>' + ref.source.raw + '</ref>',
@@ -2023,7 +2101,7 @@
           relevance: 'cited on ' + sister.lang + '.wikipedia (' + sister.title +
             ') for: “' + truncate(ref.sentence, 160) + '”',
           snippet: ref.source.quote || ref.sentence,
-          ref: '<ref>' + ref.source.raw + '</ref>',
+          ref: '<ref>' + portableCitation(ref.source) + '</ref>',
           evidence: {
             origin: 'sister-wiki',
             lang: sister.lang,

@@ -4,7 +4,7 @@ Der '''Leuchtturm Karsten Point''' steht an der Nordküste von [[Fyrland]].
 
 Der Turm wurde von [[Anna Berg]] entworfen und am 14. Oktober 1878 zum ersten Mal entzündet.<ref>{{cite book |title=Leuchttürme der Nordküste |year=1954}}</ref>
 
-Der Turm ist 41 Meter hoch, und sein Feuer war auf 21 Seemeilen sichtbar.<ref name="reg">{{cite web |url=https://leuchtturmregister.example.de/karsten |title=Leuchtturmregister: Karsten Point |website=Leuchtturmregister |quote=Turmhöhe 41 m, Tragweite 21 sm.}}</ref> 1963 wurde er automatisiert.<ref name="reg" />
+Der Turm ist 41 Meter hoch, und sein Feuer war auf 21 Seemeilen sichtbar.<ref name="reg">{{cite web |url=https://leuchtturmregister.example.de/karsten |title=Leuchtturmregister: Karsten Point |website=Leuchtturmregister |quote=Turmhöhe 41 m, Tragweite 21 sm.}}</ref><ref>{{Internetquelle |url=https://seezeichen.example.de/karsten |titel=Seezeichenverzeichnis: Karsten Point |hrsg=Seezeichenamt |abruf=2024-02-01}}</ref> 1963 wurde er automatisiert.<ref name="reg" />
 
 == Wärter ==
 

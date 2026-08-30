@@ -132,52 +132,62 @@ export async function fetchLangLinks(
   const out = new Map<string, Map<string, string>>();
   const unique = [...new Set(titles.map((t) => t.trim()).filter(Boolean))];
 
-  for (let i = 0; i < unique.length; i += TITLES_PER_REQUEST) {
-    const batch = unique.slice(i, i + TITLES_PER_REQUEST);
-    const params: Record<string, string> = {
-      action: "query",
-      prop: "langlinks",
-      lllimit: "max",
-      titles: batch.join("|"),
-      redirects: "1",
-    };
-    // `lllang` filters server-side; it accepts one code, so only use it when a
-    // single target language is wanted (the common case for a claim lookup).
-    if (options.langs?.length === 1) params.lllang = options.langs[0];
+  // `lllang` filters server-side but takes a single code, and asking for every
+  // language at once can exceed `lllimit` and truncate without saying so. One
+  // request per wanted language keeps each response bounded by the batch size.
+  const targets: (string | null)[] = options.langs?.length
+    ? [...options.langs]
+    : [null];
 
-    const data = await mwApi<QueryPagesResponse>(lang, params);
+  for (const target of targets) {
+    for (let i = 0; i < unique.length; i += TITLES_PER_REQUEST) {
+      const batch = unique.slice(i, i + TITLES_PER_REQUEST);
+      const params: Record<string, string> = {
+        action: "query",
+        prop: "langlinks",
+        lllimit: "max",
+        titles: batch.join("|"),
+        redirects: "1",
+      };
+      if (target) params.lllang = target;
 
-    // Rebuild "requested title -> canonical title" so callers can look up what
-    // they asked for rather than what MediaWiki normalised it to.
-    const alias = new Map<string, string>();
-    for (const step of [
-      ...(data.query?.normalized ?? []),
-      ...(data.query?.redirects ?? []),
-    ]) {
-      alias.set(step.from, step.to);
-    }
-    const canonical = (requested: string): string => {
-      let current = requested;
-      for (let hop = 0; hop < 4; hop++) {
-        const next = alias.get(current);
-        if (!next) break;
-        current = next;
+      const data = await mwApi<QueryPagesResponse>(lang, params);
+
+      // Rebuild "requested title -> canonical title" so callers can look up
+      // what they asked for rather than what MediaWiki normalised it to.
+      const alias = new Map<string, string>();
+      for (const step of [
+        ...(data.query?.normalized ?? []),
+        ...(data.query?.redirects ?? []),
+      ]) {
+        alias.set(step.from, step.to);
       }
-      return current;
-    };
+      const canonical = (requested: string): string => {
+        let current = requested;
+        for (let hop = 0; hop < 4; hop++) {
+          const next = alias.get(current);
+          if (!next) break;
+          current = next;
+        }
+        return current;
+      };
 
-    const byTitle = new Map<string, Map<string, string>>();
-    for (const page of data.query?.pages ?? []) {
-      const links = new Map<string, string>();
-      for (const link of page.langlinks ?? []) {
-        if (options.langs && !options.langs.includes(link.lang)) continue;
-        links.set(link.lang, link.title);
+      const byTitle = new Map<string, Map<string, string>>();
+      for (const page of data.query?.pages ?? []) {
+        const links = new Map<string, string>();
+        for (const link of page.langlinks ?? []) {
+          if (options.langs && !options.langs.includes(link.lang)) continue;
+          links.set(link.lang, link.title);
+        }
+        byTitle.set(page.title, links);
       }
-      byTitle.set(page.title, links);
-    }
-    for (const requested of batch) {
-      const links = byTitle.get(canonical(requested));
-      if (links) out.set(requested, links);
+      for (const requested of batch) {
+        const links = byTitle.get(canonical(requested));
+        if (!links || links.size === 0) continue;
+        const merged = out.get(requested) ?? new Map<string, string>();
+        for (const [code, foreignTitle] of links) merged.set(code, foreignTitle);
+        out.set(requested, merged);
+      }
     }
   }
   return out;
