@@ -1,0 +1,14 @@
+Der '''Leuchtturm Karsten Point''' steht an der Nordküste von [[Fyrland]].
+
+== Geschichte ==
+
+Der Turm wurde von [[Anna Berg]] entworfen und am 14. Oktober 1878 zum ersten Mal entzündet.<ref>{{cite book |title=Leuchttürme der Nordküste |year=1954}}</ref>
+
+Der Turm ist 41 Meter hoch, und sein Feuer war auf 21 Seemeilen sichtbar.<ref name="reg">{{cite web |url=https://leuchtturmregister.example.de/karsten |title=Leuchtturmregister: Karsten Point |website=Leuchtturmregister |quote=Turmhöhe 41 m, Tragweite 21 sm.}}</ref> 1963 wurde er automatisiert.<ref name="reg" />
+
+== Wärter ==
+
+Nils Haugen war von 1901 bis 1927 Oberwärter des Leuchtturms.<ref>{{cite journal |title=Die Wärter von Karsten Point |journal=Nordische Küstenkunde |year=1998 |doi=10.1000/nk.1998.41}}</ref>
+
+== Einzelnachweise ==
+<references />

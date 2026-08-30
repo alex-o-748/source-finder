@@ -1,0 +1,18 @@
+The '''Karsten Point Lighthouse''' is a lighthouse on the north coast of [[Fyrland]].
+
+== History ==
+
+The lighthouse was designed by [[Anna Berg]] and first lit on 14 October 1878.<ref name="berg">{{cite book |last=Berg |first=Anna |title=Lighthouses of the Northern Coast |publisher=Harbour Press |year=1954 |page=112}}</ref> Construction used granite quarried on the mainland and took four years.<ref name="survey">{{cite web |url=https://coastalsurvey.example.org/karsten |title=Karsten Point: construction record 1874-1878 |website=Coastal Survey |access-date=2024-01-02}}</ref>
+
+The tower stands 41 metres tall and its light was visible for 21 nautical miles.{{citation needed|date=March 2024}} It was automated in 1963.<ref name="auto">{{cite news |url=https://harbourtimes.example.com/1963-automation |title=Karsten Point light goes automatic |work=Harbour Times |date=1963-06-04}}</ref>
+
+== Keepers ==
+
+Nils Haugen served as head keeper from 1901 until 1927.{{cn}} The keeper's cottage was demolished in 1971.<ref>{{cite web |url=https://coastalsurvey.example.org/cottages |title=Demolished keepers' cottages |website=Coastal Survey}}</ref>
+
+== Preservation ==
+
+A restoration fund was established in 1998.<ref>{{cite news |url=https://www.dailymail.co.uk/story |title=Lighthouse appeal |work=Daily Mail}}</ref>
+
+== References ==
+{{reflist}}

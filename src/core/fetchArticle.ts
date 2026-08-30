@@ -1,3 +1,4 @@
+import { fetchWikitext } from "./mediawiki.js";
 import type { Article } from "./types.js";
 
 /**
@@ -26,62 +27,26 @@ export function parseArticleRef(urlOrTitle: string): { lang: string; title: stri
   return { lang: "en", title: trimmed.replace(/_/g, " ") };
 }
 
-interface MwParseResponse {
-  parse?: {
-    title: string;
-    pageid: number;
-    revid: number;
-    wikitext: { "*": string };
-  };
-  error?: { code: string; info: string };
-}
-
 /**
  * Fetches the raw wikitext for a Wikipedia article via the MediaWiki action API.
- * No HTML scraping — wikitext is authoritative for {{cn}} positions.
+ * No HTML scraping — wikitext is authoritative for {{cn}} positions, and it is
+ * also what the wiki-local source finders read `<ref>` tags out of.
  */
 export async function fetchArticle(urlOrTitle: string): Promise<Article> {
   const { lang, title } = parseArticleRef(urlOrTitle);
-  const endpoint = `https://${lang}.wikipedia.org/w/api.php`;
-  const params = new URLSearchParams({
-    action: "parse",
-    page: title,
-    prop: "wikitext|revid",
-    format: "json",
-    formatversion: "1",
-    redirects: "1",
-    origin: "*",
-  });
-
-  const res = await fetch(`${endpoint}?${params.toString()}`, {
-    headers: {
-      "user-agent":
-        "CNfirmed/0.1 (https://github.com/alex-o-748/source-finder; +cnfirmed)",
-      accept: "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(
-      `Wikipedia API error: ${res.status} ${res.statusText} for ${title}`,
-    );
-  }
-
-  const data = (await res.json()) as MwParseResponse;
-  if (data.error) {
-    throw new Error(`Wikipedia API error [${data.error.code}]: ${data.error.info}`);
-  }
-  if (!data.parse) {
-    throw new Error(`No parse result for "${title}" on ${lang}.wikipedia.org`);
-  }
-
+  const page = await fetchWikitext(lang, title);
   return {
-    title: data.parse.title,
+    title: page.title,
     lang,
-    revid: data.parse.revid,
-    wikitext: data.parse.wikitext["*"],
-    url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(
-      data.parse.title.replace(/ /g, "_"),
-    )}`,
+    revid: page.revid,
+    wikitext: page.wikitext,
+    url: articleUrl(lang, page.title),
   };
+}
+
+/** Canonical article URL for a title on a given language edition. */
+export function articleUrl(lang: string, title: string): string {
+  return `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(
+    title.replace(/ /g, "_"),
+  )}`;
 }
