@@ -1,7 +1,10 @@
 # Source quality and cost: directions and a plan
 
-**Status:** exploratory — no implementation yet. Written up so the thinking
-doesn't have to be redone before work starts.
+**Status:** partly implemented. Two of Direction 1's four items — the article's
+own reference list and other-language editions — are built and running ahead of
+the web search in both the CLI and the user script; see "What's built" below.
+The rest is still exploratory, written up so the thinking doesn't have to be
+redone before work starts.
 
 ## The two problems
 
@@ -37,6 +40,37 @@ being "search the web and judge" and becomes "read this passage and judge
 whether it supports this sentence" — textual entailment, which is a much
 smaller task than open-ended research.
 
+## What's built
+
+The **wiki-local stage** (`src/core/wikiSources.ts`, mirrored inline in
+`userscript/cnfirmed.js`) runs before the web search in both the CLI and the
+user script. No model, no API key, no cost:
+
+- **The article's own reference list.** Existing `<ref>`s are parsed (named
+  refs, list-defined refs in `{{reflist|refs=}}`, cite templates, bare and
+  bracketed links, DOI/PMID/PMC/JSTOR/arXiv identifiers, archive fallback when
+  `url-status=dead`) and scored on proximity to the tag plus weighted token
+  overlap with the reference's title, publisher and `quote=`. A hit pastes as
+  `<ref name="existing" />`.
+- **Other-language editions.** Up to four counterpart articles are fetched via
+  interlanguage links, and the corresponding sentence is located with anchors
+  that survive translation: numbers (normalised across numeral systems), proper
+  nouns (folded, and only between wikis sharing a script), and wikilink targets
+  mapped to their counterpart titles — which is what makes the match work into
+  a different script.
+
+Both passes emit **evidence, not verdicts** — the source, the sentence it was
+cited for, which wiki, which anchors matched, and a ready `<ref>` — which is the
+"change what the tool promises" idea below, arrived at early because these leads
+genuinely cannot be graded without reading the source.
+
+`cnfirmed wiki <article>` runs the stage alone and reports how many claims it
+covers: that is the coverage measurement Phase 2 asks for, minus the eval set.
+
+Still open from Direction 1: **Wikidata** (entity-attribute matching is a
+different shape of problem from sentence matching) and **Citoid** (citation
+metadata is currently formatted by hand).
+
 ## What's already true in the code (found while reading)
 
 - The WP:RSP blocklist is applied **after** search — the deprecated domain
@@ -48,9 +82,9 @@ smaller task than open-ended research.
   the page, and the next run re-pays for all of them.
 - `medium.com` / `substack.com` are hard-blocked, though some outlets
   Wikipedia treats as reliable now publish there.
-- A claim is never checked against sources the article already cites, or
-  against Wikidata, or against other-language editions — all of which can
-  resolve a claim for free, without touching the open web.
+- ~~A claim is never checked against sources the article already cites, or
+  against Wikidata, or against other-language editions~~ — done for the
+  article's own references and other-language editions; Wikidata is still open.
 
 ## Direction 1: mine Wikimedia's own data before touching the web
 
@@ -65,13 +99,19 @@ All free, unlimited for reasonable use, and need no model at all.
   inline citation. Following the interlanguage link to find the
   corresponding sentence and lifting its reference is pure API work and
   targets exactly the "sources that exist but a web search won't surface"
-  case.
+  case. *(Built. Locating the corresponding sentence needed no translation
+  model: numbers, folded proper nouns and interlanguage-mapped wikilink titles
+  are enough, and the mapped titles are what carry the match across scripts.)*
 - **The article's own reference list.** A tagged sentence is often already
   supported by a citation elsewhere in the same article. Cheap to check
   (one entailment pass over text already in hand) and worth doing first.
+  *(Built — and it turned out not to need an entailment pass at all: proximity
+  plus token overlap is enough to produce a lead worth a human's attention.)*
 - **Citoid** for turning a URL/DOI into correct `{{cite ...}}` metadata,
   instead of having a model write citation fields (a source of invented
-  volume/issue numbers today).
+  volume/issue numbers today). *(Still open. Partly sidestepped for wiki-local
+  candidates, whose citation template is copied from the wiki verbatim rather
+  than written by a model.)*
 
 ## Direction 2: route the rest to open corpora by claim type
 
@@ -141,6 +181,10 @@ fluent wrong answer), and lowers the bar the model has to clear.
    sister-language reference mining, check-existing-references-first,
    Citoid formatting. Measure coverage on the eval set — this sizes how
    much of the problem never needed a model.
+   *(Sister-language mining and check-existing-references-first are built and
+   wired ahead of the web search in both front ends; `cnfirmed wiki` reports
+   per-article coverage. Wikidata and Citoid remain. The coverage number itself
+   waits on Phase 1's eval set.)*
 3. **Deterministic retrieval + a free reader** (2–4 weeks): a retriever
    interface with one implementation per corpus (start with scholarly and
    Internet Archive), query construction from wikilinks/entities/dates,
@@ -158,11 +202,19 @@ fluent wrong answer), and lowers the bar the model has to clear.
   Crossref, Europe PMC, GDELT, Wikidata, Citoid, the WP:RSP page) — the
   environment this plan was written in blocked all outbound network access
   except Anthropic's own docs. Endpoints, rate limits, and CORS behavior
-  all need a live check before Phase 3 is scoped.
+  all need a live check before Phase 3 is scoped. **This is still true**: the
+  wiki-local stage was built in the same conditions, so its `api.php` calls
+  (`prop=revisions` for wikitext, `prop=langlinks` batched 50 titles at a time,
+  `origin=*` for the cross-wiki fetches) are tested only against fixtures. They
+  are the first thing to check on a networked machine — along with whether
+  Wikipedia's CSP lets the user script reach other language editions at all,
+  which is the next question below.
 - **Wikipedia's CSP.** Whether a userscript can fetch third-party APIs and
   model weights at all decides between userscript / browser-extension /
   backend architectures. Test this first — it constrains more than
-  anything else here.
+  anything else here. The wiki-local stage narrows the question usefully: it
+  only needs `*.wikipedia.org`, so if cross-wiki `fetch` is blocked the free
+  stage degrades to same-article references rather than failing outright.
 - **Toolforge terms and LiftWing access** are both free but both have a
   process; worth starting that conversation early.
 - **Does the small model actually hold up?** The whole plan rests on
