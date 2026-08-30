@@ -151,3 +151,6 @@ v1 ships the user script + the CLI + core library. Deferred:
 - MCP server wrapper
 - Bot / talk-page integration
 - Non-Wikipedia wikis
+
+See `docs/source-quality-and-cost-plan.md` for directions on source
+quality and making the tool free to run without an API key.
