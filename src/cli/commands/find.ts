@@ -3,12 +3,20 @@ import { runArticle } from "../../core/runArticle.js";
 interface FindArgs {
   urlOrTitle: string;
   maxClaims?: number;
+  sisterWikis?: number;
+  skipWikiSources?: boolean;
+  wikiOnly?: boolean;
+  alwaysWebSearch?: boolean;
   json: boolean;
 }
 
 export async function findCommand(args: FindArgs): Promise<void> {
   const run = await runArticle(args.urlOrTitle, {
     maxClaims: args.maxClaims,
+    skipWikiSources: args.skipWikiSources,
+    wikiOnly: args.wikiOnly,
+    alwaysWebSearch: args.alwaysWebSearch,
+    wiki: { maxSisterWikis: args.sisterWikis },
     onProgress: (done, total, claim) => {
       if (!args.json) {
         process.stderr.write(
@@ -22,14 +30,25 @@ export async function findCommand(args: FindArgs): Promise<void> {
     const { wikitext: _omit, ...article } = run.article;
     void _omit;
     process.stdout.write(
-      JSON.stringify({ article, results: run.results }, null, 2) + "\n",
+      JSON.stringify(
+        { article, results: run.results, warnings: run.warnings },
+        null,
+        2,
+      ) + "\n",
     );
     return;
   }
 
+  const skipped = run.results.filter((r) => r.webSearchSkipped).length;
   console.log(`# ${run.article.title}`);
   console.log(`  ${run.article.url}`);
   console.log(`  ${run.results.length} claim(s) processed`);
+  if (skipped > 0) {
+    console.log(
+      `  ${skipped} resolved from wiki-local sources — no web search needed`,
+    );
+  }
+  for (const warning of run.warnings ?? []) console.log(`  ! ${warning}`);
   console.log();
 
   run.results.forEach((r, i) => {
@@ -55,6 +74,9 @@ export async function findCommand(args: FindArgs): Promise<void> {
         `    ${mark} [${j + 1}] ${s.verdict.verdict} (conf=${s.verdict.confidence}/100, rel=${s.verdict.reliability}) ${s.source.title}${flag}`,
       );
       console.log(`       ${s.source.url}`);
+      if (s.source.evidence) {
+        console.log(`       via: ${s.source.relevance}`);
+      }
       console.log(`       ${truncate(s.verdict.comments, 240)}`);
       if (s.verdict.reliabilityReason) {
         console.log(`       reliability: ${s.verdict.reliabilityReason}`);

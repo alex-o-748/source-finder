@@ -1,0 +1,10 @@
+'''カルステン岬灯台'''は、[[フュルラン]]の北岸にある灯台である。
+
+== 歴史 ==
+
+灯台は[[アンナ・ベリ]]によって設計され、1878年10月14日に初点灯した。<ref>{{cite book |title=北岸の灯台 |year=1954}}</ref>
+
+塔の高さは41メートルで、光達距離は21海里であった。<ref>{{cite web |url=https://kaijo.example.jp/karsten |title=カルステン岬灯台の記録 |website=海上保安庁}}</ref>
+
+== 脚注 ==
+<references />

@@ -30,7 +30,41 @@ export interface Claim {
   tag: string;
 }
 
-/** A candidate source returned from web search. */
+/**
+ * Where a candidate source came from. Wiki-local origins cost nothing to
+ * discover and are tried before the web search.
+ */
+export type SourceOrigin = "web" | "same-article" | "sister-wiki";
+
+/**
+ * Why a wiki-local candidate is believed to fit the claim: the citation was
+ * already attached, by a human editor, to a sentence we matched to this claim.
+ * Recorded so an editor can judge the lead without re-deriving it — and so a
+ * miss shows up as weak evidence rather than a confident wrong answer.
+ */
+export interface WikiEvidence {
+  origin: "same-article" | "sister-wiki";
+  /** Language edition the citation was lifted from. */
+  lang: string;
+  /** Title of the article the citation was lifted from. */
+  article: string;
+  /** URL of that article. */
+  articleUrl: string;
+  /** The sentence that citation is attached to, in that article. */
+  sentence: string;
+  /** Section heading the citation sits under, if any. */
+  section: string | null;
+  /** Matching signal, 0-1. Not a substantiation verdict — only a lead. */
+  score: number;
+  /** For sister wikis: the translation-stable anchors that matched. */
+  matchedAnchors?: string[];
+  /** `name=` of the ref, when it can be re-used as `<ref name="…" />`. */
+  refName: string | null;
+  /** The ref body as written, so the citation can be copied verbatim. */
+  refWikitext: string;
+}
+
+/** A candidate source: from web search, or lifted from a wiki citation. */
 export interface CandidateSource {
   url: string;
   title: string;
@@ -38,6 +72,27 @@ export interface CandidateSource {
   snippet: string;
   /** Claude's relevance note for this candidate. */
   relevance: string;
+  /** Defaults to "web" when absent. */
+  origin?: SourceOrigin;
+  /** Present only for wiki-local candidates. */
+  evidence?: WikiEvidence;
+}
+
+/**
+ * A citation found on a wiki. Unlike `CandidateSource` the URL may be absent:
+ * books and shortened footnotes are real leads for a human editor even though
+ * nothing can be fetched and verified automatically.
+ */
+export interface WikiCandidate {
+  url: string | null;
+  title: string;
+  /** One-line provenance, e.g. "cited on de.wikipedia for: …". */
+  relevance: string;
+  /** The sentence the citation supports on its home wiki. */
+  snippet: string;
+  evidence: WikiEvidence;
+  /** Ready-to-paste `<ref>` re-using the existing citation. */
+  ref: string;
 }
 
 /** Substantiation verdict values emitted by the verifier. */
@@ -100,6 +155,14 @@ export interface ClaimSuggestion {
 export interface ClaimResult {
   claim: Claim;
   suggestions: ClaimSuggestion[];
+  /**
+   * Wiki-local candidates found before (and possibly instead of) the web
+   * search, including the ones with no fetchable URL that never reach the
+   * verifier. Kept so callers can report what the free layer covered.
+   */
+  wikiCandidates?: WikiCandidate[];
+  /** True when the web search was skipped because wiki-local sources sufficed. */
+  webSearchSkipped?: boolean;
   /** If the pipeline failed for this claim, the error message. */
   error?: string;
 }
@@ -108,4 +171,6 @@ export interface ClaimResult {
 export interface ArticleRun {
   article: Article;
   results: ClaimResult[];
+  /** Non-fatal problems from the wiki-local stage (unreachable sister wikis…). */
+  warnings?: string[];
 }
