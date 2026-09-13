@@ -1923,9 +1923,13 @@
 
   function loadWikiCorpus() {
     if (wikiCorpusPromise) return wikiCorpusPromise;
+    console.log('[CNfirmed] wiki-local stage: fetching', WIKI_CODE + ':' + pageTitle);
     wikiCorpusPromise = wikiFetchWikitext(WIKI_CODE, pageTitle).then(function (page) {
       var local = indexWikiArticle(WIKI_CODE, page.title, page.wikitext);
       var offsets = citationNeededOffsets(page.wikitext);
+      console.log('[CNfirmed] wiki-local stage: parsed', local.refs.length, 'ref(s) in',
+        WIKI_CODE + ':' + page.title, '|', offsets.length, 'citation-needed tag(s) in wikitext vs',
+        cnSups.length, 'rendered on page');
       var corpus = {
         local: local,
         sisters: [],
@@ -1935,6 +1939,12 @@
         claimOffsets: offsets.length === cnSups.length ? offsets : null,
         warnings: []
       };
+      if (!corpus.claimOffsets) {
+        corpus.warnings.push(
+          offsets.length + ' {{cn}}-family tag(s) found in wikitext but ' + cnSups.length +
+          ' rendered on page — same-article matching falls back to section-only'
+        );
+      }
       wikiCorpus = corpus;
 
       return wikiFetchLangLinks(WIKI_CODE, [page.title]).then(function (links) {
@@ -1945,6 +1955,8 @@
           if (code === WIKI_CODE || !available[code]) return;
           chosen.push({ lang: code, title: available[code] });
         });
+        console.log('[CNfirmed] wiki-local stage: sister wikis chosen:',
+          chosen.map(function (c) { return c.lang; }));
         if (!chosen.length) {
           corpus.warnings.push('no counterpart article on the larger language editions');
           return corpus;
@@ -2154,15 +2166,18 @@
     wikiState[index] = entry;
     renderRow(index); renderBadge(index);
     entry.promise = loadWikiCorpus().then(function (corpus) {
-      wikiState[index] = {
-        status: 'done',
-        candidates: findWikiCandidates(corpus, index),
-        warnings: corpus.warnings
-      };
+      if (corpus.warnings && corpus.warnings.length) {
+        console.warn('[CNfirmed] wiki-local stage:', corpus.warnings.join('; '));
+      }
+      var candidates = findWikiCandidates(corpus, index);
+      console.log('[CNfirmed] wiki-local claim', index, ':', candidates.length,
+        'candidate(s)', candidates);
+      wikiState[index] = { status: 'done', candidates: candidates, warnings: corpus.warnings };
       persistWiki();
       renderRow(index); renderBadge(index);
       return wikiState[index];
     }).catch(function (err) {
+      console.error('[CNfirmed] wiki-local stage failed for claim', index, ':', err);
       wikiState[index] = { status: 'error', error: (err && err.message) || String(err) };
       renderRow(index); renderBadge(index);
       return wikiState[index];
