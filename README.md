@@ -4,7 +4,7 @@ Find and verify sources for Wikipedia `{{citation needed}}` claims.
 
 CNfirmed locates every `{{citation needed}}`-family tag in a Wikipedia article and extracts the claim being cited, plus surrounding context. It then looks for a source in two stages:
 
-1. **On wiki, free.** Citations this article already carries, and citations other language editions attach to the same fact. No model, no API key, no cost.
+1. **On wiki, free.** Citations this article already carries, references attached to the Wikidata statement asserting the same value, and citations other language editions attach to the same fact. No model, no API key, no cost.
 2. **On the web, paid.** Only for the claims stage 1 could not answer: an LLM with web search discovers candidates and judges whether each *actually substantiates the specific claim* — not just mentions the topic.
 
 Results are returned ranked, each with a ready-to-paste Wikipedia cite template.
@@ -121,6 +121,7 @@ node dist/cli/index.js extract "Eiffel Tower"
 | --- | --- |
 | `--sister-wikis <n>` | Language editions to mine (default 4; `0` uses only this article's own references). |
 | `--no-wiki` | Skip the wiki-local stage entirely and go straight to web search. |
+| `--no-wikidata` | Skip the Wikidata pass, keeping the other two wiki-local passes. |
 | `--wiki-only` | Never run the web search, whatever the wiki stage finds. |
 | `--always-web` | Run the web search even when a wiki-local source already substantiates. |
 
@@ -167,9 +168,13 @@ These are kept separate so callers can distinguish "doesn't say it" from "says i
 
 ## Sources already on Wikipedia (the free stage)
 
-Before anything is billed, CNfirmed looks for a citation Wikimedia already holds. Two passes, both deterministic code with no model in the loop:
+Before anything is billed, CNfirmed looks for a citation Wikimedia already holds. Three passes, all deterministic code with no model in the loop:
 
 **The article's own references.** A tagged sentence usually sits beside sourced text, and the neighbouring citation often covers it too. Each existing `<ref>` is scored on proximity to the tag (same paragraph, same section, elsewhere) plus weighted token overlap with the reference's own title, publisher and `quote=`. Outside the claim's section, proximity counts for nothing and the reference has to earn its place on what it is actually about. A hit pastes as `<ref name="existing" />`, re-using the citation already on the page.
+
+**Wikidata.** Many tags mark entity-attribute facts — a founding year, a population, a height — and Wikidata often holds the same statement with a reference already attached. This reaches the claims the other two passes are worst at: a short, figure-only sentence has too little vocabulary to match lexically, but the figure itself is what a value comparison keys off. A wikilink in the tagged paragraph is already a disambiguated entity, so `pageprops` turns it into a QID with no entity-recognition step; matching is then exact rather than fuzzy. Dates match on the year (tighter when the day is there too), quantities on the figure as the claim's anchors normalise it (and, more weakly, on its rounded integer part), and item-valued statements resolve through the paragraph's own wikilinks — so they work on a non-English wiki with no translation step.
+
+The reference, never the statement, is the lead: Wikidata is a wiki and cannot substantiate a Wikipedia claim itself. References that are only "imported from Wikimedia project", or that point at a Wikimedia host, are dropped as circular (WP:CIRCULAR), as are deprecated statements, which Wikidata itself believes are wrong.
 
 **Other language editions.** Their references are precisely the sources a web search will not surface. The corresponding sentence is located without a translation model, using anchors that survive translation:
 
@@ -177,11 +182,11 @@ Before anything is billed, CNfirmed looks for a citation Wikimedia already holds
 - **Proper nouns** — folded for case and diacritics, and only used between wikis that share a script.
 - **Wikilink targets** — resolved to the counterpart title on the target wiki through interlanguage links. This is what makes a claim locatable on a wiki whose script shares nothing with ours.
 
-A match on the exact sentence is the real signal; the same anchors elsewhere in the paragraph count for less. Both passes deduplicate by URL, drop blocklisted domains, and rank by match strength.
+A match on the exact sentence is the real signal; the same anchors elsewhere in the paragraph count for less. All three passes deduplicate by URL, drop blocklisted domains, and rank by match strength — a citation attached to this very fact, by another wiki or to the Wikidata statement asserting it, outranks one this article merely happens to use nearby.
 
 What comes out is **evidence, not a verdict**: a human editor cited that source for a sentence that looks like your claim. The CLI's `find` still verifies these leads with the model before ranking them alongside web results; `cnfirmed wiki` and the user script's free stage present them unverified, with the sentence and the matched anchors, and leave the judgment to the editor.
 
-Deliberately out of scope for now: Wikidata statements and their references, which need entity-attribute matching rather than sentence matching. See the plan doc.
+Deliberately out of scope for now: Citoid, which would turn a URL or DOI into correct `{{cite ...}}` metadata instead of the fields being assembled here by hand. See the plan doc.
 
 ## Policy handling (three layers)
 
@@ -196,14 +201,13 @@ npm test                                  # everything
 npx tsx --test test/wikiSources.test.ts   # one file
 ```
 
-Fixture-based and fully offline — no network, no API key. Coverage: the wikitext claim extractor, `<ref>` parsing (named refs, list-defined refs, identifiers, archive fallback), the relevance scoring, the two wiki-local passes end to end (including a cross-script Japanese fixture), and the user-script parity test. Add fixtures in `test/fixtures/` as edge cases appear.
+Fixture-based and fully offline — no network, no API key. Coverage: the wikitext claim extractor, `<ref>` parsing (named refs, list-defined refs, identifiers, archive fallback), the relevance scoring, the three wiki-local passes end to end (including a cross-script Japanese fixture and a Wikidata entity fixture covering circular, deprecated and blocklisted references), and the user-script parity test. Add fixtures in `test/fixtures/` as edge cases appear.
 
 ## Status
 
 v1 ships the user script + the CLI + core library, with the wiki-local stage
 in front of the web search in both. Deferred:
 
-- Wikidata statements and their references
 - Citoid for citation metadata, instead of formatting templates by hand
 - Browser extension wrapper (no install via common.js)
 - MCP server wrapper
@@ -212,6 +216,12 @@ in front of the web search in both. Deferred:
 
 See `docs/source-quality-and-cost-plan.md` for the wider plan on source
 quality and making the tool free to run without an API key. The wiki-local
-stage is phase 2 of that plan; the MediaWiki API calls it makes have not yet
-been exercised against the live API (the environment it was built in had no
-outbound network access to wikipedia.org), so that wants a live check.
+stage is phase 2 of that plan.
+
+The same-article and sister-wiki passes have been exercised against the live
+API from a user script on en.wikipedia.org, which also settles the question
+that constrained the architecture: the page's CSP permits both cross-wiki and
+third-party `fetch` from page context. The Wikidata pass was built in an
+environment with no outbound access to `wikidata.org`, so its requests are
+tested only against fixtures and want the same live check — it fails soft, so
+a refused request costs that pass alone.

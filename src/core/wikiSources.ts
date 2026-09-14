@@ -3,7 +3,7 @@
  * among sources Wikimedia already holds, before spending anything on a web
  * search.
  *
- * Two passes, both free:
+ * Three passes, all free:
  *
  *   1. **The article's own references.** A tagged sentence often sits beside
  *      sourced text, and the neighbouring citation frequently covers it too.
@@ -22,7 +22,8 @@
  *      links.
  *
  * Nothing here judges substantiation. A hit means "a human editor cited this
- * source for a sentence that looks like your claim" - a lead, to be verified.
+ * source for a sentence that looks like your claim, or for the statement
+ * asserting the same value" - a lead, to be verified.
  */
 
 import { articleUrl, fetchArticle } from "./fetchArticle.js";
