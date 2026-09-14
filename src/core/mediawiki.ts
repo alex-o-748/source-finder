@@ -2,9 +2,10 @@
  * Thin MediaWiki action-API client.
  *
  * Every wiki-local lookup goes through here: the article's own wikitext, the
- * interlanguage links that name its counterparts on other Wikipedias, and those
- * counterparts' wikitext. All of it is free and unmetered for reasonable use,
- * which is the whole reason this layer runs before the web search.
+ * interlanguage links that name its counterparts on other Wikipedias, those
+ * counterparts' wikitext, and the Wikidata item ids behind its wikilinks. All
+ * of it is free and unmetered for reasonable use, which is the whole reason
+ * this layer runs before the web search.
  */
 
 export const USER_AGENT =
@@ -33,9 +34,15 @@ interface MwError {
   error?: { code: string; info: string };
 }
 
-/** Issues a GET against `<lang>.wikipedia.org/w/api.php` and returns the JSON. */
-export async function mwApi<T>(
-  lang: string,
+/**
+ * Issues a GET against any MediaWiki action API and returns the JSON.
+ *
+ * Host-based rather than wiki-based because Wikidata is not a Wikipedia:
+ * `www.wikidata.org` serves the same action API from a different host, and the
+ * entity lookups go through here too.
+ */
+export async function mwHostApi<T>(
+  host: string,
   params: Record<string, string>,
 ): Promise<T> {
   const query = new URLSearchParams({
@@ -45,7 +52,7 @@ export async function mwApi<T>(
     origin: "*",
     ...params,
   });
-  const url = `https://${lang}.wikipedia.org/w/api.php?${query.toString()}`;
+  const url = `https://${host}/w/api.php?${query.toString()}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -61,16 +68,24 @@ export async function mwApi<T>(
 
   if (!res.ok) {
     throw new Error(
-      `MediaWiki API error on ${lang}.wikipedia.org: ${res.status} ${res.statusText}`,
+      `MediaWiki API error on ${host}: ${res.status} ${res.statusText}`,
     );
   }
   const data = (await res.json()) as T & MwError;
   if (data.error) {
     throw new Error(
-      `MediaWiki API error [${data.error.code}] on ${lang}.wikipedia.org: ${data.error.info}`,
+      `MediaWiki API error [${data.error.code}] on ${host}: ${data.error.info}`,
     );
   }
   return data;
+}
+
+/** Issues a GET against `<lang>.wikipedia.org/w/api.php`. */
+export async function mwApi<T>(
+  lang: string,
+  params: Record<string, string>,
+): Promise<T> {
+  return mwHostApi<T>(`${lang}.wikipedia.org`, params);
 }
 
 interface QueryPagesResponse {
@@ -80,9 +95,34 @@ interface QueryPagesResponse {
       missing?: boolean;
       revisions?: { revid: number; slots?: { main?: { content?: string } } }[];
       langlinks?: { lang: string; title: string }[];
+      pageprops?: { wikibase_item?: string };
     }[];
     normalized?: { from: string; to: string }[];
     redirects?: { from: string; to: string }[];
+  };
+}
+
+/**
+ * MediaWiki answers under the *canonical* title, not the one that was asked
+ * for: "eiffel tower" normalises, and a redirect resolves to its target. This
+ * rebuilds the mapping so a caller can look up what it asked for.
+ */
+function canonicaliser(data: QueryPagesResponse): (requested: string) => string {
+  const alias = new Map<string, string>();
+  for (const step of [
+    ...(data.query?.normalized ?? []),
+    ...(data.query?.redirects ?? []),
+  ]) {
+    alias.set(step.from, step.to);
+  }
+  return (requested: string): string => {
+    let current = requested;
+    for (let hop = 0; hop < 4; hop++) {
+      const next = alias.get(current);
+      if (!next) break;
+      current = next;
+    }
+    return current;
   };
 }
 
@@ -152,25 +192,7 @@ export async function fetchLangLinks(
       if (target) params.lllang = target;
 
       const data = await mwApi<QueryPagesResponse>(lang, params);
-
-      // Rebuild "requested title -> canonical title" so callers can look up
-      // what they asked for rather than what MediaWiki normalised it to.
-      const alias = new Map<string, string>();
-      for (const step of [
-        ...(data.query?.normalized ?? []),
-        ...(data.query?.redirects ?? []),
-      ]) {
-        alias.set(step.from, step.to);
-      }
-      const canonical = (requested: string): string => {
-        let current = requested;
-        for (let hop = 0; hop < 4; hop++) {
-          const next = alias.get(current);
-          if (!next) break;
-          current = next;
-        }
-        return current;
-      };
+      const canonical = canonicaliser(data);
 
       const byTitle = new Map<string, Map<string, string>>();
       for (const page of data.query?.pages ?? []) {
@@ -205,4 +227,45 @@ export async function fetchArticleLangLinks(
     lang: code,
     title: foreignTitle,
   }));
+}
+
+/**
+ * Maps article titles to the Wikidata item ids behind them, in batches.
+ *
+ * This is what makes the Wikidata pass need no entity recognition: a wikilink
+ * in a tagged paragraph is already a disambiguated entity, and `pageprops`
+ * turns it into a QID with one request per 50 titles — on the article's own
+ * wiki, so it costs nothing extra in reach or permissions.
+ *
+ * Keyed by the *requested* title, with normalisation and redirects folded back.
+ */
+export async function fetchWikibaseItems(
+  lang: string,
+  titles: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const unique = [...new Set(titles.map((t) => t.trim()).filter(Boolean))];
+
+  for (let i = 0; i < unique.length; i += TITLES_PER_REQUEST) {
+    const batch = unique.slice(i, i + TITLES_PER_REQUEST);
+    const data = await mwApi<QueryPagesResponse>(lang, {
+      action: "query",
+      prop: "pageprops",
+      ppprop: "wikibase_item",
+      titles: batch.join("|"),
+      redirects: "1",
+    });
+    const canonical = canonicaliser(data);
+
+    const byTitle = new Map<string, string>();
+    for (const page of data.query?.pages ?? []) {
+      const qid = page.pageprops?.wikibase_item;
+      if (qid) byTitle.set(page.title, qid);
+    }
+    for (const requested of batch) {
+      const qid = byTitle.get(canonical(requested));
+      if (qid) out.set(requested, qid);
+    }
+  }
+  return out;
 }

@@ -1,0 +1,116 @@
+{
+  "Q100": {
+    "id": "Q100",
+    "labels": { "en": { "language": "en", "value": "Karsten Point Lighthouse" } },
+    "claims": {
+      "P2048": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P2048",
+            "datavalue": {
+              "value": { "amount": "+41", "unit": "http://www.wikidata.org/entity/Q11573" },
+              "type": "quantity"
+            }
+          },
+          "rank": "normal",
+          "references": [
+            {
+              "snaks": {
+                "P854": [{ "snaktype": "value", "property": "P854", "datavalue": { "value": "https://harbourauthority.example.org/registry-wd", "type": "string" } }],
+                "P248": [{ "snaktype": "value", "property": "P248", "datavalue": { "value": { "entity-type": "item", "id": "Q200" }, "type": "wikibase-entityid" } }],
+                "P813": [{ "snaktype": "value", "property": "P813", "datavalue": { "value": { "time": "+2023-05-01T00:00:00Z", "precision": 11 }, "type": "time" } }]
+              }
+            },
+            {
+              "snaks": {
+                "P854": [{ "snaktype": "value", "property": "P854", "datavalue": { "value": "https://www.dailymail.co.uk/lighthouse", "type": "string" } }]
+              }
+            }
+          ]
+        }
+      ],
+      "P2929": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P2929",
+            "datavalue": {
+              "value": { "amount": "+21", "unit": "http://www.wikidata.org/entity/Q93318" },
+              "type": "quantity"
+            }
+          },
+          "rank": "normal",
+          "references": [
+            {
+              "snaks": {
+                "P143": [{ "snaktype": "value", "property": "P143", "datavalue": { "value": { "entity-type": "item", "id": "Q328" }, "type": "wikibase-entityid" } }]
+              }
+            }
+          ]
+        }
+      ],
+      "P2044": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P2044",
+            "datavalue": {
+              "value": { "amount": "+41", "unit": "http://www.wikidata.org/entity/Q11573" },
+              "type": "quantity"
+            }
+          },
+          "rank": "deprecated",
+          "references": [
+            {
+              "snaks": {
+                "P854": [{ "snaktype": "value", "property": "P854", "datavalue": { "value": "https://example.org/deprecated-elevation", "type": "string" } }]
+              }
+            }
+          ]
+        }
+      ],
+      "P580": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P580",
+            "datavalue": {
+              "value": { "time": "+1901-01-01T00:00:00Z", "precision": 9 },
+              "type": "time"
+            }
+          },
+          "rank": "normal",
+          "references": [
+            {
+              "snaks": {
+                "P248": [{ "snaktype": "value", "property": "P248", "datavalue": { "value": { "entity-type": "item", "id": "Q200" }, "type": "wikibase-entityid" } }],
+                "P1476": [{ "snaktype": "value", "property": "P1476", "datavalue": { "value": { "text": "Keeper records 1880-1930", "language": "en" }, "type": "monolingualtext" } }]
+              }
+            }
+          ]
+        }
+      ],
+      "P571": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P571",
+            "datavalue": {
+              "value": { "time": "+1878-10-14T00:00:00Z", "precision": 11 },
+              "type": "time"
+            }
+          },
+          "rank": "normal",
+          "references": [
+            {
+              "snaks": {
+                "P854": [{ "snaktype": "value", "property": "P854", "datavalue": { "value": "https://coastalsurvey.example.org/inception", "type": "string" } }]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
