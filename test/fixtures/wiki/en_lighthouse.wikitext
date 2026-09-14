@@ -4,7 +4,7 @@ The '''Karsten Point Lighthouse''' is a lighthouse on the north coast of [[Fyrla
 
 The lighthouse was designed by [[Anna Berg]] and first lit on 14 October 1878.<ref name="berg">{{cite book |last=Berg |first=Anna |title=Lighthouses of the Northern Coast |publisher=Harbour Press |year=1954 |page=112}}</ref> Construction used granite quarried on the mainland and took four years.<ref name="survey">{{cite web |url=https://coastalsurvey.example.org/karsten |title=Karsten Point: construction record 1874-1878 |website=Coastal Survey |access-date=2024-01-02}}</ref>
 
-The tower stands 41 metres tall and its light was visible for 21 nautical miles.{{citation needed|date=March 2024}} It was automated in 1963.<ref name="auto">{{cite news |url=https://harbourtimes.example.com/1963-automation |title=Karsten Point light goes automatic |work=Harbour Times |date=1963-06-04}}</ref>
+The tower stands 41 metres tall and its light was visible for 21 nautical miles.{{citation needed|date=March 2024}} The harbour authority's registry lists the tower's height as 41 metres with a light range of 21 nautical miles.<ref name="registry">{{cite web |url=https://harbourauthority.example.org/karsten-registry |title=Lighthouse registry: Karsten Point — height 41 m, range 21 nm |website=Harbour Authority}}</ref> It was automated in 1963.<ref name="auto">{{cite news |url=https://harbourtimes.example.com/1963-automation |title=Karsten Point light goes automatic |work=Harbour Times |date=1963-06-04}}</ref>
 
 == Keepers ==
 

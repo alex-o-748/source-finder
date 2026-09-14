@@ -44,11 +44,11 @@ test("the fixture article yields the two tagged claims", () => {
   assert.match(keeperClaim.claim, /Nils Haugen/);
 });
 
-test("same-article pass surfaces a reference from the claim's own paragraph", () => {
+test("same-article pass surfaces a reference that actually shares content with the claim", () => {
   const found = findWikiCandidates(corpusWith(), heightClaim);
   const local = found.filter((c) => c.evidence.origin === "same-article");
   assert.ok(local.length > 0, "expected at least one same-article lead");
-  assert.equal(local[0].url, "https://harbourtimes.example.com/1963-automation");
+  assert.equal(local[0].url, "https://harbourauthority.example.org/karsten-registry");
   assert.match(local[0].relevance, /already cited in this article/);
 });
 
@@ -56,7 +56,31 @@ test("a same-article lead re-uses the existing named ref, the smallest edit", ()
   const [top] = findWikiCandidates(corpusWith(), heightClaim).filter(
     (c) => c.evidence.origin === "same-article",
   );
-  assert.equal(top.ref, '<ref name="auto" />');
+  assert.equal(top.ref, '<ref name="registry" />');
+});
+
+// Regression test for a real false-positive: a reference sitting in the same
+// paragraph as the tagged sentence, but attached to a completely different
+// fact ("automated in 1963" next to a claim about height and light range).
+// Proximity alone used to be enough to surface it — the paragraph's *own*
+// text was folded into the query, so the neighbouring sentence matched
+// trivially against itself. Actual content overlap is now required.
+test("a same-paragraph reference for a different fact is not surfaced just because it is nearby", () => {
+  const found = findWikiCandidates(corpusWith(), heightClaim);
+  const urls = found.map((c) => c.url);
+  assert.ok(
+    !urls.includes("https://harbourtimes.example.com/1963-automation"),
+    "the automation reference is not about the height/range claim and should not be a lead",
+  );
+});
+
+test("a same-paragraph reference for a different fact is excluded even with no sister wiki to fall back on", () => {
+  // The keeper claim's only same-paragraph reference is about the cottages
+  // being demolished in 1971 — a different fact from the keeper's 1901-1927
+  // tenure. With no sister wiki loaded, the pass should find nothing rather
+  // than reach for the nearest unrelated citation.
+  const found = findWikiCandidates(buildWikiCorpus(article), keeperClaim);
+  assert.equal(found.length, 0);
 });
 
 test("blocklisted domains never become candidates", () => {

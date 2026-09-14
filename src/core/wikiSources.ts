@@ -408,7 +408,13 @@ function sameArticleCandidates(
   minScore: number,
 ): WikiCandidate[] {
   const background = tokenSet(`${corpus.article.title} ${claim.section ?? ""}`);
-  const query = weightedTokens(`${claim.claim} ${claim.context}`, background);
+  // Deliberately just the tagged sentence, not `claim.context` (the whole
+  // paragraph): a paragraph strings several sentences together, each with
+  // its own citation, so including it would let a neighbouring reference
+  // match trivially against its own sentence sitting right there in the
+  // query — which is exactly how a wrong-fact-but-nearby reference used to
+  // sail through the lexical check below.
+  const query = weightedTokens(claim.claim, background);
   const paragraph = paragraphRangeAt(corpus.local.wikitext, claim.offset);
 
   const out: WikiCandidate[] = [];
@@ -420,18 +426,25 @@ function sameArticleCandidates(
       ref.occurrence.offset >= paragraph.start &&
       ref.occurrence.offset < paragraph.end;
     const sameSection = claim.section !== null && ref.section === claim.section;
-    const proximity = sameParagraph ? 1 : sameSection ? 0.55 : 0.15;
+    if (!sameParagraph && !sameSection) continue;
 
     const lexical = coverage(query, `${refText(ref.source)} ${ref.sentence}`);
-    // Outside the claim's own section, proximity says nothing: the reference
-    // has to earn its place on what it is actually about.
-    if (!sameParagraph && !sameSection && lexical < 0.3) continue;
+    // A real paragraph usually strings several sentences together, each
+    // citing a different specific fact — "sits in the same paragraph" says
+    // almost nothing about whether THIS reference is about THIS sentence.
+    // Actual shared vocabulary with the reference's title/work/quote or the
+    // sentence it supports has to carry the match; distance only narrows
+    // the field further, never substitutes for it.
+    if (lexical < (sameParagraph ? 0.2 : 0.35)) continue;
 
-    const score = 0.6 * lexical + 0.4 * proximity;
+    const distance = Math.abs(ref.occurrence.offset - claim.offset);
+    const proximity = sameParagraph ? (distance < 200 ? 1 : 0.5) : 0.25;
+    const score = 0.75 * lexical + 0.25 * proximity;
     if (score < minScore) continue;
     if (ref.source.url && isUnreliableSource(ref.source.url)) continue;
-    // Without a URL there is nothing to verify, so demand a stronger match.
-    if (!ref.source.url && score < minScore + 0.2) continue;
+    // Without a URL there is nothing to verify, so a nearby reference is not
+    // enough on its own — demand real content overlap.
+    if (!ref.source.url && lexical < 0.4) continue;
 
     out.push({
       url: ref.source.url,

@@ -195,7 +195,12 @@ test("the user script re-uses an existing named ref for a same-article hit", () 
     .findWikiCandidates(scriptCorpus(false), 0)
     .filter((c) => c.evidence.origin === "same-article");
   assert.ok(local.length > 0);
-  assert.equal(local[0].ref, '<ref name="auto" />');
+  assert.equal(local[0].ref, '<ref name="registry" />');
+});
+
+test("the user script also excludes a same-paragraph reference for a different fact", () => {
+  const found = script.findWikiCandidates(scriptCorpus(false), 0);
+  assert.ok(!found.some((c) => c.url === "https://harbourtimes.example.com/1963-automation"));
 });
 
 test("both implementations rank and score the same candidates the same way", () => {
