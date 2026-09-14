@@ -1653,7 +1653,7 @@
   ('the and for that with from this was were are has have had not but they ' +
    'his her its their our your which who whom whose been being other than ' +
    'into over under after before during between about above below such more ' +
-   'most some any all can could would should may might will shall must ' +
+   'most some any all can could would should might will shall must ' +
    'also however therefore because since while when where what how why ' +
    'der die das den dem des und ist sind war waren nicht auch aber oder ' +
    'les des une del las los por para con como que qui est sont pour dans ' +
@@ -1923,9 +1923,13 @@
 
   function loadWikiCorpus() {
     if (wikiCorpusPromise) return wikiCorpusPromise;
+    console.log('[CNfirmed] wiki-local stage: fetching', WIKI_CODE + ':' + pageTitle);
     wikiCorpusPromise = wikiFetchWikitext(WIKI_CODE, pageTitle).then(function (page) {
       var local = indexWikiArticle(WIKI_CODE, page.title, page.wikitext);
       var offsets = citationNeededOffsets(page.wikitext);
+      console.log('[CNfirmed] wiki-local stage: parsed', local.refs.length, 'ref(s) in',
+        WIKI_CODE + ':' + page.title, '|', offsets.length, 'citation-needed tag(s) in wikitext vs',
+        cnSups.length, 'rendered on page');
       var corpus = {
         local: local,
         sisters: [],
@@ -1935,6 +1939,12 @@
         claimOffsets: offsets.length === cnSups.length ? offsets : null,
         warnings: []
       };
+      if (!corpus.claimOffsets) {
+        corpus.warnings.push(
+          offsets.length + ' {{cn}}-family tag(s) found in wikitext but ' + cnSups.length +
+          ' rendered on page — same-article matching falls back to section-only'
+        );
+      }
       wikiCorpus = corpus;
 
       return wikiFetchLangLinks(WIKI_CODE, [page.title]).then(function (links) {
@@ -1945,6 +1955,8 @@
           if (code === WIKI_CODE || !available[code]) return;
           chosen.push({ lang: code, title: available[code] });
         });
+        console.log('[CNfirmed] wiki-local stage: sister wikis chosen:',
+          chosen.map(function (c) { return c.lang; }));
         if (!chosen.length) {
           corpus.warnings.push('no counterpart article on the larger language editions');
           return corpus;
@@ -2015,7 +2027,12 @@
 
   function sameArticleCandidates(corpus, ctx, index) {
     var background = tokenSetOf(pageTitle.replace(/_/g, ' ') + ' ' + (ctx.section || ''));
-    var query = weightedTokensOf(ctx.claim + ' ' + ctx.context, background);
+    // Deliberately just the tagged sentence, not ctx.context (the whole
+    // paragraph): a paragraph strings several sentences together, each with
+    // its own citation, so including it would let a neighbouring reference
+    // match trivially against its own sentence sitting right there in the
+    // query.
+    var query = weightedTokensOf(ctx.claim, background);
     var range = corpus.claimOffsets
       ? paragraphRangeAt(corpus.local.wikitext, corpus.claimOffsets[index].start)
       : null;
@@ -2026,17 +2043,25 @@
       var sameParagraph = !!range &&
         ref.occurrence.offset >= range.start && ref.occurrence.offset < range.end;
       var sameSection = !!ctx.section && ref.section === ctx.section;
-      var proximity = sameParagraph ? 1 : sameSection ? 0.55 : 0.15;
+      if (!sameParagraph && !sameSection) return;
 
       var lexical = coverageOf(query, refTextOf(ref.source) + ' ' + ref.sentence);
-      // Outside the claim's own section, proximity says nothing: the reference
-      // has to earn its place on what it is actually about.
-      if (!sameParagraph && !sameSection && lexical < 0.3) return;
+      // A real paragraph usually strings several sentences together, each
+      // citing a different specific fact — "sits in the same paragraph" says
+      // almost nothing about whether THIS reference is about THIS sentence.
+      // Actual shared vocabulary with the reference's title/work/quote or the
+      // sentence it supports has to carry the match; distance only narrows
+      // the field further, never substitutes for it.
+      if (lexical < (sameParagraph ? 0.2 : 0.35)) return;
 
-      var score = 0.6 * lexical + 0.4 * proximity;
+      var distance = Math.abs(ref.occurrence.offset - (corpus.claimOffsets ? corpus.claimOffsets[index].start : 0));
+      var proximity = sameParagraph ? (distance < 200 ? 1 : 0.5) : 0.25;
+      var score = 0.75 * lexical + 0.25 * proximity;
       if (score < WIKI_MIN_SCORE) return;
       if (ref.source.url && isUnreliableDomain(ref.source.url)) return;
-      if (!ref.source.url && score < WIKI_MIN_SCORE + 0.2) return;
+      // Without a URL there is nothing to verify, so a nearby reference is
+      // not enough on its own — demand real content overlap.
+      if (!ref.source.url && lexical < 0.4) return;
 
       out.push({
         url: ref.source.url,
@@ -2154,15 +2179,18 @@
     wikiState[index] = entry;
     renderRow(index); renderBadge(index);
     entry.promise = loadWikiCorpus().then(function (corpus) {
-      wikiState[index] = {
-        status: 'done',
-        candidates: findWikiCandidates(corpus, index),
-        warnings: corpus.warnings
-      };
+      if (corpus.warnings && corpus.warnings.length) {
+        console.warn('[CNfirmed] wiki-local stage:', corpus.warnings.join('; '));
+      }
+      var candidates = findWikiCandidates(corpus, index);
+      console.log('[CNfirmed] wiki-local claim', index, ':', candidates.length,
+        'candidate(s)', candidates);
+      wikiState[index] = { status: 'done', candidates: candidates, warnings: corpus.warnings };
       persistWiki();
       renderRow(index); renderBadge(index);
       return wikiState[index];
     }).catch(function (err) {
+      console.error('[CNfirmed] wiki-local stage failed for claim', index, ':', err);
       wikiState[index] = { status: 'error', error: (err && err.message) || String(err) };
       renderRow(index); renderBadge(index);
       return wikiState[index];
