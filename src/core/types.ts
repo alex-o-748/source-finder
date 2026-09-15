@@ -34,7 +34,7 @@ export interface Claim {
  * Where a candidate source came from. Wiki-local origins cost nothing to
  * discover and are tried before the web search.
  */
-export type SourceOrigin = "web" | "same-article" | "sister-wiki";
+export type SourceOrigin = "web" | "same-article" | "sister-wiki" | "wikidata";
 
 /**
  * Why a wiki-local candidate is believed to fit the claim: the citation was
@@ -43,14 +43,20 @@ export type SourceOrigin = "web" | "same-article" | "sister-wiki";
  * miss shows up as weak evidence rather than a confident wrong answer.
  */
 export interface WikiEvidence {
-  origin: "same-article" | "sister-wiki";
-  /** Language edition the citation was lifted from. */
+  origin: "same-article" | "sister-wiki" | "wikidata";
+  /**
+   * Language edition the citation was lifted from. For "wikidata" there is no
+   * language edition: this is the language its labels were rendered in.
+   */
   lang: string;
-  /** Title of the article the citation was lifted from. */
+  /** Title of the article the citation was lifted from, or the entity's label. */
   article: string;
-  /** URL of that article. */
+  /** URL of that article, or of the Wikidata entity. */
   articleUrl: string;
-  /** The sentence that citation is attached to, in that article. */
+  /**
+   * The sentence that citation is attached to, in that article. For
+   * "wikidata", the statement it is attached to, rendered as "property: value".
+   */
   sentence: string;
   /** Section heading the citation sits under, if any. */
   section: string | null;
@@ -62,6 +68,17 @@ export interface WikiEvidence {
   refName: string | null;
   /** The ref body as written, so the citation can be copied verbatim. */
   refWikitext: string;
+  /** For "wikidata": the statement the reference is attached to. */
+  statement?: {
+    /** Property id, e.g. "P571". */
+    property: string;
+    /** Property label in the article's language, e.g. "inception". */
+    propertyLabel: string;
+    /** The value as rendered for a reader, e.g. "1889-03-31". */
+    value: string;
+    /** Wikidata entity the statement belongs to, e.g. "Q243". */
+    entity: string;
+  };
 }
 
 /** A candidate source: from web search, or lifted from a wiki citation. */

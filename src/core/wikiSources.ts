@@ -3,13 +3,18 @@
  * among sources Wikimedia already holds, before spending anything on a web
  * search.
  *
- * Two passes, both free:
+ * Three passes, all free:
  *
  *   1. **The article's own references.** A tagged sentence often sits beside
  *      sourced text, and the neighbouring citation frequently covers it too.
  *      Scored on proximity plus token overlap with the reference's own title,
  *      publisher and `quote=`.
- *   2. **Other language editions.** Other Wikipedias are often stricter about
+ *   2. **Wikidata.** Entity-attribute facts — a founding year, a population,
+ *      a height — often exist as a Wikidata statement with a reference already
+ *      attached. Matching is exact value comparison rather than sentence
+ *      similarity, which is why it reaches the short, figure-only sentences
+ *      the other two passes are worst at.
+ *   3. **Other language editions.** Other Wikipedias are often stricter about
  *      inline citation, and their references are exactly the sources a web
  *      search will not surface. The corresponding sentence is located without a
  *      translation model, using anchors that survive translation: numbers and
@@ -17,12 +22,28 @@
  *      links.
  *
  * Nothing here judges substantiation. A hit means "a human editor cited this
- * source for a sentence that looks like your claim" - a lead, to be verified.
+ * source for a sentence that looks like your claim, or for the statement
+ * asserting the same value" - a lead, to be verified.
  */
 
 import { articleUrl, fetchArticle } from "./fetchArticle.js";
 import { extractClaims } from "./extractClaims.js";
-import { fetchArticleLangLinks, fetchLangLinks, fetchWikitext } from "./mediawiki.js";
+import {
+  fetchArticleLangLinks,
+  fetchLangLinks,
+  fetchWikibaseItems,
+  fetchWikitext,
+} from "./mediawiki.js";
+import {
+  decodeSnak,
+  fetchEntities,
+  labelOf,
+  matchValue,
+  referenceToSource,
+  referencedItemIds,
+  renderValue,
+} from "./wikidata.js";
+import type { WdEntity, WdReference, WdValue } from "./wikidata.js";
 import { isUnreliableSource } from "../policy/unreliable_sources.js";
 import {
   anchorCount,
@@ -70,6 +91,10 @@ export interface WikiSourceOptions {
   minAnchorScore?: number;
   /** Concurrent sister-wiki fetches (default 3). */
   concurrency?: number;
+  /** Skip the Wikidata pass entirely. */
+  skipWikidata?: boolean;
+  /** Entities fetched from Wikidata per article (default 20). */
+  maxWikidataEntities?: number;
 }
 
 /** A reference located in an article, with the text it is attached to. */
@@ -95,11 +120,27 @@ export interface IndexedArticle {
   latin: boolean;
 }
 
+/** Wikidata entities and the labels needed to render their statements. */
+export interface WikidataCorpus {
+  /** QID to entity, for the article's subject and the wikilinks near claims. */
+  entities: Map<string, WdEntity>;
+  /** Wikilink target title on this wiki, to the QID behind it. */
+  titleQids: Map<string, string>;
+  /** Property and item ids to their labels, for rendering matched statements. */
+  labels: Map<string, string>;
+}
+
+/** An empty Wikidata corpus: the pass then contributes nothing. */
+export function emptyWikidataCorpus(): WikidataCorpus {
+  return { entities: new Map(), titleQids: new Map(), labels: new Map() };
+}
+
 /** Everything the wiki-local passes need, fetched once per article run. */
 export interface WikiCorpus {
   article: Article;
   local: IndexedArticle;
   sisters: IndexedArticle[];
+  wikidata: WikidataCorpus;
   /** Wikilink target in the article's language to { lang: title on that wiki }. */
   linkTranslations: Map<string, Map<string, string>>;
   /** Non-fatal problems: a sister wiki that could not be fetched, etc. */
@@ -248,11 +289,13 @@ export function buildWikiCorpus(
   article: Article,
   sisters: { lang: string; title: string; wikitext: string }[] = [],
   linkTranslations: Map<string, Map<string, string>> = new Map(),
+  wikidata: WikidataCorpus = emptyWikidataCorpus(),
 ): WikiCorpus {
   return {
     article,
     local: indexWikiArticle(article.lang, article.title, article.wikitext),
     sisters: sisters.map((s) => indexWikiArticle(s.lang, s.title, s.wikitext)),
+    wikidata,
     linkTranslations,
     warnings: [],
   };
@@ -278,10 +321,32 @@ export async function loadWikiCorpus(
     article,
     local,
     sisters: [],
+    wikidata: emptyWikidataCorpus(),
     linkTranslations: new Map(),
     warnings,
   };
-  if (maxSisters <= 0 || claims.length === 0) return corpus;
+  if (claims.length === 0) return corpus;
+
+  // Wikilinks in the tagged paragraphs are pre-resolved entities: they feed
+  // both the Wikidata pass (as QIDs) and the sister-wiki pass (as translated
+  // titles), so they are collected once here.
+  const linkTargets = new Set<string>();
+  for (const claim of claims) {
+    const { start, end } = paragraphRangeAt(article.wikitext, claim.offset);
+    for (const target of extractWikilinks(article.wikitext.slice(start, end))) {
+      linkTargets.add(target);
+    }
+  }
+
+  if (!options.skipWikidata) {
+    try {
+      corpus.wikidata = await loadWikidataCorpus(article, claims, linkTargets, options);
+    } catch (err) {
+      warnings.push(`Wikidata unavailable: ${(err as Error).message}`);
+    }
+  }
+
+  if (maxSisters <= 0) return corpus;
 
   let links;
   try {
@@ -306,16 +371,8 @@ export async function loadWikiCorpus(
     return corpus;
   }
 
-  // Wikilinks near the tagged claims are pre-resolved entities: translating
-  // their titles gives anchors that work even when the target wiki uses a
-  // different script.
-  const linkTargets = new Set<string>();
-  for (const claim of claims) {
-    const { start, end } = paragraphRangeAt(article.wikitext, claim.offset);
-    for (const target of extractWikilinks(article.wikitext.slice(start, end))) {
-      linkTargets.add(target);
-    }
-  }
+  // Translating those same titles gives sister-wiki anchors that work even
+  // when the target wiki uses a different script.
   if (linkTargets.size > 0) {
     try {
       corpus.linkTranslations = await fetchLangLinks(
@@ -339,6 +396,62 @@ export async function loadWikiCorpus(
   });
   corpus.sisters = fetched.filter((a): a is IndexedArticle => a !== null);
   return corpus;
+}
+
+/**
+ * Fetches the Wikidata side of the corpus: the QIDs behind the article and the
+ * wikilinks near its tagged claims, those entities' statements, and the labels
+ * needed to render whatever matched.
+ *
+ * Three batched requests at most, all free and unmetered — the same bargain as
+ * the rest of this layer.
+ */
+async function loadWikidataCorpus(
+  article: Article,
+  claims: Claim[],
+  linkTargets: Set<string>,
+  options: WikiSourceOptions,
+): Promise<WikidataCorpus> {
+  const wd = emptyWikidataCorpus();
+  wd.titleQids = await fetchWikibaseItems(article.lang, [
+    article.title,
+    ...linkTargets,
+  ]);
+  if (wd.titleQids.size === 0) return wd;
+
+  // The article's own subject is the entity most of its claims are about, so
+  // it takes the first slot when the budget has to cut the list short.
+  const own = wd.titleQids.get(article.title);
+  const ordered = [...(own ? [own] : []), ...wd.titleQids.values()];
+  const qids = [...new Set(ordered)].slice(0, options.maxWikidataEntities ?? 20);
+  wd.entities = await fetchEntities(qids, { languages: [article.lang] });
+  if (wd.entities.size === 0) return wd;
+
+  // Labels are fetched for the statements that actually matched a claim, not
+  // for everything these entities say — usually a handful of ids rather than
+  // the several hundred a large entity would otherwise pull in.
+  const needed = new Set<string>();
+  for (const claim of claims) {
+    for (const hit of wikidataHits(wd, article, claim)) {
+      needed.add(hit.property);
+      needed.add(hit.entity);
+      if (hit.value.kind === "item") needed.add(hit.value.id);
+      for (const reference of hit.references) {
+        for (const id of referencedItemIds(reference)) needed.add(id);
+      }
+    }
+  }
+  if (needed.size === 0) return wd;
+
+  const labelled = await fetchEntities([...needed], {
+    languages: [article.lang],
+    props: ["labels"],
+  });
+  for (const [id, entity] of labelled) {
+    const label = labelOf(entity, [article.lang]);
+    if (label) wd.labels.set(id, label);
+  }
+  return wd;
 }
 
 /** Normalised URL key, used to collapse duplicate candidates across passes. */
@@ -540,6 +653,141 @@ function sisterWikiCandidates(
   return out;
 }
 
+/** A Wikidata statement whose value the claim asserts. */
+interface StatementHit {
+  entity: string;
+  property: string;
+  value: WdValue;
+  /** Strength of the value match, 0-1. */
+  score: number;
+  /** The figure or QID that matched, for the evidence trail. */
+  anchor: string;
+  references: WdReference[];
+}
+
+/**
+ * Statements on the entities near `claim` whose value the claim asserts.
+ *
+ * Shared by the candidate pass and by `loadWikidataCorpus`, which runs it once
+ * up front purely to learn which property and item labels are worth fetching —
+ * so the label request is bounded by what actually matched rather than by
+ * everything the entities happen to say.
+ */
+function wikidataHits(
+  wd: WikidataCorpus,
+  article: Article,
+  claim: Claim,
+): StatementHit[] {
+  if (wd.entities.size === 0) return [];
+
+  // Only the tagged sentence, never the surrounding paragraph: a neighbouring
+  // sentence's figures would otherwise match a statement this claim says
+  // nothing about — the same trap the same-article pass had to close.
+  const claimNumbers = new Set(anchorsOf(claim.claim).numbers);
+
+  const { start, end } = paragraphRangeAt(article.wikitext, claim.offset);
+  const linkedQids = new Set<string>();
+  for (const target of extractWikilinks(article.wikitext.slice(start, end))) {
+    const qid = wd.titleQids.get(target);
+    if (qid) linkedQids.add(qid);
+  }
+  // The article's own subject is what most of its sentences are about, so it
+  // is always a candidate entity even when the paragraph never links to it.
+  const subjects = new Set(linkedQids);
+  const own = wd.titleQids.get(article.title);
+  if (own) subjects.add(own);
+  if (claimNumbers.size === 0 && linkedQids.size === 0) return [];
+
+  const hits: StatementHit[] = [];
+  for (const qid of subjects) {
+    const entity = wd.entities.get(qid);
+    if (!entity?.claims) continue;
+    for (const [property, statements] of Object.entries(entity.claims)) {
+      for (const statement of statements) {
+        // A deprecated statement is one Wikidata itself believes is wrong.
+        if (statement.rank === "deprecated") continue;
+        const references = statement.references ?? [];
+        if (references.length === 0) continue;
+
+        const value = decodeSnak(statement.mainsnak);
+        if (!value) continue;
+        // "X is X" is not a fact anyone tagged.
+        if (value.kind === "item" && value.id === qid) continue;
+
+        const match = matchValue(value, claimNumbers, linkedQids);
+        if (!match) continue;
+        hits.push({
+          entity: qid,
+          property,
+          value,
+          score: match.score,
+          anchor: match.anchor,
+          references,
+        });
+      }
+    }
+  }
+  return hits;
+}
+
+/** The Wikidata entity page for a QID. */
+function entityUrl(qid: string): string {
+  return `https://www.wikidata.org/wiki/${qid}`;
+}
+
+/**
+ * Candidates lifted from referenced Wikidata statements matching the claim.
+ *
+ * The reference, not the statement, is the lead: Wikidata is a wiki and cannot
+ * substantiate a Wikipedia claim itself (WP:CIRCULAR), so an unreferenced
+ * statement — or one referenced only to a Wikimedia import — yields nothing.
+ */
+function wikidataCandidates(corpus: WikiCorpus, claim: Claim): WikiCandidate[] {
+  const wd = corpus.wikidata;
+  const out: WikiCandidate[] = [];
+
+  for (const hit of wikidataHits(wd, corpus.article, claim)) {
+    const entityLabel = wd.labels.get(hit.entity) ?? hit.entity;
+    const propertyLabel = wd.labels.get(hit.property) ?? hit.property;
+    const rendered = renderValue(hit.value, wd.labels);
+    const statementText = `${propertyLabel}: ${rendered}`;
+
+    for (const reference of hit.references) {
+      const source = referenceToSource(reference, wd.labels);
+      if (!source) continue;
+      if (source.url && isUnreliableSource(source.url)) continue;
+
+      out.push({
+        url: source.url,
+        title: candidateTitle(source),
+        relevance:
+          `cited on Wikidata (${entityLabel}) for ${statementText}`,
+        snippet: statementText,
+        evidence: {
+          origin: "wikidata",
+          lang: corpus.article.lang,
+          article: `${entityLabel} (${hit.entity})`,
+          articleUrl: entityUrl(hit.entity),
+          sentence: statementText,
+          section: null,
+          score: Number(hit.score.toFixed(3)),
+          matchedAnchors: [hit.anchor],
+          refName: null,
+          refWikitext: source.raw,
+          statement: {
+            property: hit.property,
+            propertyLabel,
+            value: rendered,
+            entity: hit.entity,
+          },
+        },
+        ref: `<ref>${source.raw}</ref>`,
+      });
+    }
+  }
+  return out;
+}
+
 /**
  * Finds citations already on Wikimedia that could support `claim`. Pure and
  * synchronous: all the network work happened in `loadWikiCorpus`.
@@ -554,6 +802,7 @@ export function findWikiCandidates(
 ): WikiCandidate[] {
   const all = [
     ...sameArticleCandidates(corpus, claim, options.minScore ?? 0.3),
+    ...(options.skipWikidata ? [] : wikidataCandidates(corpus, claim)),
     ...sisterWikiCandidates(corpus, claim, options.minAnchorScore ?? 0.5),
   ];
 
@@ -573,10 +822,11 @@ export function findWikiCandidates(
       if (b.evidence.score !== a.evidence.score) {
         return b.evidence.score - a.evidence.score;
       }
-      // A citation another wiki attached to this very fact beats one this
-      // article merely happens to use nearby.
+      // A citation attached to this very fact — by another wiki, or to the
+      // Wikidata statement asserting it — beats one this article merely
+      // happens to use nearby.
       const rank = (c: WikiCandidate): number =>
-        c.evidence.origin === "sister-wiki" ? 0 : 1;
+        c.evidence.origin === "same-article" ? 1 : 0;
       return rank(a) - rank(b);
     })
     .slice(0, options.maxCandidates ?? 5);

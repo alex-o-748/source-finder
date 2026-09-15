@@ -24,6 +24,7 @@ program
     parseCountArg,
   )
   .option("--no-wiki", "skip the wiki-local stage and go straight to web search")
+  .option("--no-wikidata", "skip the Wikidata pass within the wiki-local stage")
   .option("--wiki-only", "never run the web search, whatever the wiki stage finds", false)
   .option(
     "--always-web",
@@ -41,6 +42,7 @@ program
         maxClaims?: number;
         sisterWikis?: number;
         wiki: boolean;
+        wikidata: boolean;
         wikiOnly: boolean;
         alwaysWeb: boolean;
         json: boolean;
@@ -51,6 +53,7 @@ program
         maxClaims: opts.maxClaims,
         sisterWikis: opts.sisterWikis,
         skipWikiSources: !opts.wiki,
+        skipWikidata: !opts.wikidata,
         wikiOnly: opts.wikiOnly,
         alwaysWebSearch: opts.alwaysWeb,
         json: opts.json,
@@ -67,19 +70,26 @@ program
     "language editions to mine for citations (default 4)",
     parseCountArg,
   )
+  .option("--no-wikidata", "skip the Wikidata pass")
   .option("--json", "emit machine-readable JSON", false)
   .description(
-    "Free stage only: look for citations in this article and other language editions. No model, no API key.",
+    "Free stage only: look for citations in this article, on Wikidata, and in other language editions. No model, no API key.",
   )
   .action(
     async (
       urlOrTitle: string,
-      opts: { maxClaims?: number; sisterWikis?: number; json: boolean },
+      opts: {
+        maxClaims?: number;
+        sisterWikis?: number;
+        wikidata: boolean;
+        json: boolean;
+      },
     ) => {
       await wikiCommand({
         urlOrTitle,
         maxClaims: opts.maxClaims,
         sisterWikis: opts.sisterWikis,
+        skipWikidata: !opts.wikidata,
         json: opts.json,
       });
     },

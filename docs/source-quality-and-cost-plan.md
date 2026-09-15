@@ -1,10 +1,11 @@
 # Source quality and cost: directions and a plan
 
-**Status:** partly implemented. Two of Direction 1's four items — the article's
-own reference list and other-language editions — are built and running ahead of
-the web search in both the CLI and the user script; see "What's built" below.
-The rest is still exploratory, written up so the thinking doesn't have to be
-redone before work starts.
+**Status:** partly implemented. Three of Direction 1's four items — the
+article's own reference list, other-language editions, and Wikidata — are built
+and running ahead of the web search in both the CLI and the user script; see
+"What's built" below. Citoid is the remaining one. The rest is still
+exploratory, written up so the thinking doesn't have to be redone before work
+starts.
 
 ## The two problems
 
@@ -52,6 +53,16 @@ user script. No model, no API key, no cost:
   `url-status=dead`) and scored on proximity to the tag plus weighted token
   overlap with the reference's title, publisher and `quote=`. A hit pastes as
   `<ref name="existing" />`.
+- **Wikidata.** The wikilinks in a tagged paragraph are turned into QIDs with
+  `pageprops` — no entity recognition needed, since a wikilink is already a
+  disambiguated entity — and the resulting entities' statements are compared
+  against the claim by exact value: the year of a date (tighter when the day is
+  present too), a quantity normalised the way the claim's own anchors are, and
+  item values resolved through the paragraph's wikilinks, which needs no
+  translation step on a non-English wiki. The reference attached to a matching
+  statement is the lead; the statement itself never is, because Wikidata is a
+  wiki. References that are only "imported from Wikimedia project" or point at
+  a Wikimedia host are dropped as circular, as are deprecated statements.
 - **Other-language editions.** Up to four counterpart articles are fetched via
   interlanguage links, and the corresponding sentence is located with anchors
   that survive translation: numbers (normalised across numeral systems), proper
@@ -59,17 +70,18 @@ user script. No model, no API key, no cost:
   mapped to their counterpart titles — which is what makes the match work into
   a different script.
 
-Both passes emit **evidence, not verdicts** — the source, the sentence it was
-cited for, which wiki, which anchors matched, and a ready `<ref>` — which is the
+All three passes emit **evidence, not verdicts** — the source, the sentence or
+statement it was cited for, where it came from, what matched, and a ready
+`<ref>` — which is the
 "change what the tool promises" idea below, arrived at early because these leads
 genuinely cannot be graded without reading the source.
 
 `cnfirmed wiki <article>` runs the stage alone and reports how many claims it
-covers: that is the coverage measurement Phase 2 asks for, minus the eval set.
+covers, now broken down per origin: that is the coverage measurement Phase 2
+asks for, minus the eval set.
 
-Still open from Direction 1: **Wikidata** (entity-attribute matching is a
-different shape of problem from sentence matching) and **Citoid** (citation
-metadata is currently formatted by hand).
+Still open from Direction 1: **Citoid** (citation metadata is currently
+formatted by hand).
 
 ## What's already true in the code (found while reading)
 
@@ -83,8 +95,8 @@ metadata is currently formatted by hand).
 - `medium.com` / `substack.com` are hard-blocked, though some outlets
   Wikipedia treats as reliable now publish there.
 - ~~A claim is never checked against sources the article already cites, or
-  against Wikidata, or against other-language editions~~ — done for the
-  article's own references and other-language editions; Wikidata is still open.
+  against Wikidata, or against other-language editions~~ — all three are now
+  done.
 
 ## Direction 1: mine Wikimedia's own data before touching the web
 
@@ -94,7 +106,11 @@ All free, unlimited for reasonable use, and need no model at all.
   entity-attribute facts (founding years, populations, dates, awards).
   Wikidata often has the same statement *with a reference already
   attached*. The paragraph's wikilinks give you the QID directly — no NER
-  step needed.
+  step needed. *(Built. The wikilinks-give-you-the-QID assumption held, and
+  matching turned out to need no similarity measure at all: a decoded value is
+  either in the sentence or it is not. The unanticipated work was WP:CIRCULAR —
+  a large share of Wikidata's references are Wikipedia imports, and shipping
+  those would have been the fastest way to lose the community's trust.)*
 - **Other-language editions.** Other Wikipedias are often stricter about
   inline citation. Following the interlanguage link to find the
   corresponding sentence and lifting its reference is pure API work and
@@ -181,10 +197,10 @@ fluent wrong answer), and lowers the bar the model has to clear.
    sister-language reference mining, check-existing-references-first,
    Citoid formatting. Measure coverage on the eval set — this sizes how
    much of the problem never needed a model.
-   *(Sister-language mining and check-existing-references-first are built and
-   wired ahead of the web search in both front ends; `cnfirmed wiki` reports
-   per-article coverage. Wikidata and Citoid remain. The coverage number itself
-   waits on Phase 1's eval set.)*
+   *(Wikidata lookup, sister-language mining and check-existing-references-first
+   are built and wired ahead of the web search in both front ends; `cnfirmed
+   wiki` reports per-article coverage per origin. Citoid remains. The coverage
+   number itself waits on Phase 1's eval set.)*
 3. **Deterministic retrieval + a free reader** (2–4 weeks): a retriever
    interface with one implementation per corpus (start with scholarly and
    Internet Archive), query construction from wikilinks/entities/dates,
@@ -198,23 +214,26 @@ fluent wrong answer), and lowers the bar the model has to clear.
 
 ## Open questions to verify before committing
 
-- **No API access was available to verify any of this live** (OpenAlex,
-  Crossref, Europe PMC, GDELT, Wikidata, Citoid, the WP:RSP page) — the
-  environment this plan was written in blocked all outbound network access
-  except Anthropic's own docs. Endpoints, rate limits, and CORS behavior
-  all need a live check before Phase 3 is scoped. **This is still true**: the
-  wiki-local stage was built in the same conditions, so its `api.php` calls
-  (`prop=revisions` for wikitext, `prop=langlinks` batched 50 titles at a time,
-  `origin=*` for the cross-wiki fetches) are tested only against fixtures. They
-  are the first thing to check on a networked machine — along with whether
-  Wikipedia's CSP lets the user script reach other language editions at all,
-  which is the next question below.
-- **Wikipedia's CSP.** Whether a userscript can fetch third-party APIs and
-  model weights at all decides between userscript / browser-extension /
-  backend architectures. Test this first — it constrains more than
-  anything else here. The wiki-local stage narrows the question usefully: it
-  only needs `*.wikipedia.org`, so if cross-wiki `fetch` is blocked the free
-  stage degrades to same-article references rather than failing outright.
+- ~~**Wikipedia's CSP.**~~ **Answered, permissively.** Running the user script
+  on en.wikipedia.org returns leads sourced from es.wikipedia — so cross-wiki
+  `fetch` works — and the key-based path reaches `api.anthropic.com` from the
+  same page context, which is a third-party origin. The script is loaded with
+  `importScript` and uses plain `fetch`, with no `GM_xmlhttpRequest` escape
+  hatch, so the page's CSP genuinely applies and genuinely permits this. That
+  removes the constraint that would have forced a browser extension or a
+  backend: **Phase 3 retrieval can stay in the user script**, talking to
+  OpenAlex, Crossref and the rest directly. Model *weights* are a separate
+  question — a large binary from a CDN is a different kind of request — and are
+  still untested.
+- **Endpoints and rate limits are still unverified live** (OpenAlex, Crossref,
+  Europe PMC, GDELT, Wikidata, Citoid, the WP:RSP page). The `*.wikipedia.org`
+  calls are now exercised in production, but the Wikidata pass was built in the
+  same no-network conditions as the rest, so its `wbgetentities` and
+  `pageprops` requests are tested only against fixtures. It fails soft — a
+  refused request costs that pass and nothing else — but it is the next thing
+  to check on a networked machine, and it is the first evidence of whether
+  `www.wikidata.org` is reachable from a user script, which the es.wikipedia
+  result does not establish.
 - **Toolforge terms and LiftWing access** are both free but both have a
   process; worth starting that conversation early.
 - **Does the small model actually hold up?** The whole plan rests on

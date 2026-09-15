@@ -5,6 +5,7 @@ interface FindArgs {
   maxClaims?: number;
   sisterWikis?: number;
   skipWikiSources?: boolean;
+  skipWikidata?: boolean;
   wikiOnly?: boolean;
   alwaysWebSearch?: boolean;
   json: boolean;
@@ -16,7 +17,7 @@ export async function findCommand(args: FindArgs): Promise<void> {
     skipWikiSources: args.skipWikiSources,
     wikiOnly: args.wikiOnly,
     alwaysWebSearch: args.alwaysWebSearch,
-    wiki: { maxSisterWikis: args.sisterWikis },
+    wiki: { maxSisterWikis: args.sisterWikis, skipWikidata: args.skipWikidata },
     onProgress: (done, total, claim) => {
       if (!args.json) {
         process.stderr.write(
