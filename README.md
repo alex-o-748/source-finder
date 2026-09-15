@@ -218,10 +218,8 @@ See `docs/source-quality-and-cost-plan.md` for the wider plan on source
 quality and making the tool free to run without an API key. The wiki-local
 stage is phase 2 of that plan.
 
-The same-article and sister-wiki passes have been exercised against the live
-API from a user script on en.wikipedia.org, which also settles the question
-that constrained the architecture: the page's CSP permits both cross-wiki and
-third-party `fetch` from page context. The Wikidata pass was built in an
-environment with no outbound access to `wikidata.org`, so its requests are
-tested only against fixtures and want the same live check — it fails soft, so
-a refused request costs that pass alone.
+All three passes have now been exercised against the live API from a user
+script on en.wikipedia.org, which also settles the question that constrained
+the architecture: the page's CSP permits cross-wiki, `www.wikidata.org`, and
+third-party `fetch` alike from page context. Coverage of the Wikidata pass on
+real articles is still unmeasured — that waits on the plan's evaluation set.

@@ -14,6 +14,7 @@ import { extractClaims } from "../src/core/extractClaims.js";
 import { buildWikiCorpus, findWikiCandidates } from "../src/core/wikiSources.js";
 import type { WikidataCorpus } from "../src/core/wikiSources.js";
 import {
+  claimFigures,
   decodeSnak,
   isCircularReference,
   matchValue,
@@ -188,10 +189,33 @@ test("decodeSnak reads the value shapes worth matching", () => {
   assert.equal(decodeSnak({ snaktype: "somevalue", property: "P571" }), null);
 });
 
-test("quantityKeys normalises the way claim anchors do", () => {
-  // anchorsOf strips separators, so "1,234" is looked up as "1234".
-  assert.deepEqual(quantityKeys("+1,234"), { exact: "1234", whole: "1234" });
-  assert.deepEqual(quantityKeys("+324.8"), { exact: "3248", whole: "324" });
+test("quantityKeys and claimFigures agree on the same figure", () => {
+  // The two sides of the comparison have to normalise identically, or a
+  // grouped figure can never match. They did not, once: claim figures came
+  // from anchorsOf, which reads "616,093" as "616" and "093", so every
+  // population, area and elevation in every geo article missed silently.
+  const pairs: [string, string][] = [
+    ["The population was 616,093 in 2022.", "+616093"],
+    ["Die Einwohnerzahl betrug 616.093.", "+616093"],
+    ["It covers 297.8 square kilometres.", "+297.8"],
+    ["The summit reaches 1,344 metres.", "+1344"],
+    ["The census recorded 1,234,567 residents.", "+1234567"],
+  ];
+  for (const [claim, amount] of pairs) {
+    assert.ok(
+      claimFigures(claim).has(quantityKeys(amount).exact),
+      `${amount} should be found in ${JSON.stringify(claim)}`,
+    );
+  }
+});
+
+test("claimFigures does not invent a figure by grouping across a space", () => {
+  assert.deepEqual([...claimFigures("in 2022 15 people")], ["2022", "15"]);
+});
+
+test("claimFigures ignores trailing punctuation and single digits", () => {
+  assert.deepEqual([...claimFigures("It opened in 1889.")], ["1889"]);
+  assert.deepEqual([...claimFigures("It had 4 rooms.")], []);
 });
 
 test("matchValue accepts a rounded figure, but scores it below an exact one", () => {
@@ -258,4 +282,52 @@ test("referenceToSource returns nothing when there is no work and no URL", () =>
     },
   });
   assert.equal(source, null);
+});
+
+// -- the geo case that failed in the wild --
+
+const TOWN = fixture("en_town.wikitext");
+const TOWN_ENTITIES = JSON.parse(fixture("wikidata_town.json")) as Record<
+  string,
+  WdEntity
+>;
+
+const town: Article = {
+  title: "Borough of Haverhill",
+  lang: "en",
+  revid: 1,
+  wikitext: TOWN,
+  url: "https://en.wikipedia.org/wiki/Borough_of_Haverhill",
+};
+
+const townCorpus = buildWikiCorpus(town, [], new Map(), {
+  entities: new Map(Object.entries(TOWN_ENTITIES)),
+  titleQids: new Map([["Borough of Haverhill", "Q500"]]),
+  labels: new Map([
+    ["Q500", "Borough of Haverhill"],
+    ["Q600", "National Statistics Office"],
+    ["P1082", "population"],
+    ["P2046", "area"],
+  ]),
+});
+const townClaims = extractClaims(TOWN);
+
+test("a grouped population figure matches its Wikidata statement", () => {
+  const [lead] = findWikiCandidates(townCorpus, townClaims[0]).filter(
+    (c) => c.evidence.origin === "wikidata",
+  );
+  assert.ok(lead, "expected '616,093' to match the population statement");
+  assert.equal(lead.url, "https://statistics.example.gov/haverhill-2021");
+  assert.equal(lead.evidence.statement?.value, "616093");
+  assert.equal(lead.evidence.score, 0.9);
+  assert.match(lead.ref, /access-date=2024-02-11/);
+});
+
+test("a decimal area figure matches its Wikidata statement", () => {
+  const [lead] = findWikiCandidates(townCorpus, townClaims[1]).filter(
+    (c) => c.evidence.origin === "wikidata",
+  );
+  assert.ok(lead, "expected '297.8' to match the area statement");
+  assert.equal(lead.evidence.statement?.propertyLabel, "area");
+  assert.equal(lead.title, "Statistical yearbook 2022");
 });

@@ -35,6 +35,7 @@ import {
   fetchWikitext,
 } from "./mediawiki.js";
 import {
+  claimFigures,
   decodeSnak,
   fetchEntities,
   labelOf,
@@ -683,7 +684,7 @@ function wikidataHits(
   // Only the tagged sentence, never the surrounding paragraph: a neighbouring
   // sentence's figures would otherwise match a statement this claim says
   // nothing about — the same trap the same-article pass had to close.
-  const claimNumbers = new Set(anchorsOf(claim.claim).numbers);
+  const claimNumbers = claimFigures(claim.claim);
 
   const { start, end } = paragraphRangeAt(article.wikitext, claim.offset);
   const linkedQids = new Set<string>();

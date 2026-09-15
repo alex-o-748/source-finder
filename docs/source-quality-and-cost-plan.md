@@ -225,15 +225,22 @@ fluent wrong answer), and lowers the bar the model has to clear.
   OpenAlex, Crossref and the rest directly. Model *weights* are a separate
   question — a large binary from a CDN is a different kind of request — and are
   still untested.
-- **Endpoints and rate limits are still unverified live** (OpenAlex, Crossref,
-  Europe PMC, GDELT, Wikidata, Citoid, the WP:RSP page). The `*.wikipedia.org`
-  calls are now exercised in production, but the Wikidata pass was built in the
-  same no-network conditions as the rest, so its `wbgetentities` and
-  `pageprops` requests are tested only against fixtures. It fails soft — a
-  refused request costs that pass and nothing else — but it is the next thing
-  to check on a networked machine, and it is the first evidence of whether
-  `www.wikidata.org` is reachable from a user script, which the es.wikipedia
-  result does not establish.
+- ~~**Is `www.wikidata.org` reachable from a user script?**~~ **Yes** — a live
+  run returned `wbgetentities` results to the page. Wikimedia's own hosts and
+  arbitrary third-party hosts are both open from page context.
+- **Endpoints and rate limits are still unverified live** for the Phase 3
+  corpora (OpenAlex, Crossref, Europe PMC, GDELT, Citoid, the WP:RSP page).
+- **Fixtures written from the code's assumptions verify nothing.** The Wikidata
+  pass shipped with passing tests and matched nothing on a dozen real articles.
+  Claim figures came from `anchorsOf`, whose tokeniser splits on punctuation
+  and so reads "616,093" as "616" and "093", while a stored amount keys as
+  "616093" — so every population, area and elevation missed. The fixture used
+  "41" and "21", plain two-digit numbers chosen to match what the code already
+  did. A second bug hid the same way: the claim extractor read the "." in
+  "297.8" as a sentence end and truncated the claim to "8 square kilometres",
+  discarding the figure before any pass — or the paid model — saw it. Both are
+  fixed; the lesson is that a fixture has to be drawn from a real article's
+  shape, not from the implementation's.
 - **Toolforge terms and LiftWing access** are both free but both have a
   process; worth starting that conversation early.
 - **Does the small model actually hold up?** The whole plan rests on

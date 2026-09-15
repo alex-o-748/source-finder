@@ -1379,14 +1379,44 @@
     return null;
   }
 
-  // anchorsOf strips group and decimal separators when it collects a claim's
-  // numbers, so a quantity has to be normalised the same way to be found. The
-  // integer part is offered too: prose rounds, and that is a real match.
+  // Separators that group or decimalise digits, across locales.
+  var FIGURE_SEPARATORS = /[.,   ']/g;
+
+  // Every figure in a claim, keyed the way quantityKeysOf keys a stored
+  // amount: separators stripped, so "616,093" and the German "616.093" both
+  // key as "616093".
+  //
+  // Deliberately not anchorsOf. That tokeniser splits on punctuation, so it
+  // reads "616,093" as the two anchors "616" and "093" — right for
+  // cross-language sentence matching, where grouping separators differ by
+  // locale and the groups are what survive translation, and wrong here, where
+  // the figure is compared exactly against a value. Using it was the reason
+  // this pass never matched a population, area or elevation.
+  //
+  // A plain space is not a separator — "in 2022 15 people" must not key as
+  // "202215".
+  function claimFiguresOf(text) {
+    var out = [];
+    var re = /\d(?:[\d.,   ']*\d)?/g;
+    var src = normaliseDigits(text);
+    for (;;) {
+      var m = re.exec(src);
+      if (!m) break;
+      var digits = m[0].replace(FIGURE_SEPARATORS, '');
+      // Single digits are everywhere in prose; they are not evidence.
+      if (digits.length >= 2 && out.indexOf(digits) === -1) out.push(digits);
+    }
+    return out;
+  }
+
+  // Digit strings a stored value should be looked for under, normalised to
+  // match claimFiguresOf. The integer part is offered too: prose rounds, and
+  // that is a real match, just a weaker one.
   function quantityKeysOf(amount) {
     var digits = String(amount).replace(/^[+-]/, '');
     return {
-      exact: digits.replace(/[,.]/g, ''),
-      whole: digits.split('.')[0].replace(/,/g, '')
+      exact: digits.replace(FIGURE_SEPARATORS, ''),
+      whole: digits.split('.')[0].replace(FIGURE_SEPARATORS, '')
     };
   }
 
@@ -2505,7 +2535,7 @@
     // Only the tagged sentence, never the surrounding paragraph: a
     // neighbouring sentence's figures would otherwise match a statement this
     // claim says nothing about.
-    var claimNumbers = anchorsOf(ctx.claim).numbers;
+    var claimNumbers = claimFiguresOf(ctx.claim);
     var linkedQids = [];
     (ctx.links || []).forEach(function (target) {
       var qid = wd.titleQids[target];

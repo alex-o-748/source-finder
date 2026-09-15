@@ -19,6 +19,7 @@ import { extractClaims } from "../src/core/extractClaims.js";
 import { extractWikilinks, paragraphRangeAt } from "../src/core/wikitext.js";
 import { buildWikiCorpus, findWikiCandidates } from "../src/core/wikiSources.js";
 import type { WikidataCorpus } from "../src/core/wikiSources.js";
+import { claimFigures } from "../src/core/wikidata.js";
 import type { WdEntity } from "../src/core/wikidata.js";
 import type { Article } from "../src/core/types.js";
 
@@ -67,6 +68,7 @@ interface UserScriptModule {
   refToSource(content: string): { url: string | null; title: string | null } | null;
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
+  claimFiguresOf(text: string): string[];
 }
 
 /** Loads the user script with browser globals stubbed, exposing its internals. */
@@ -85,7 +87,8 @@ function loadUserScript(): UserScriptModule {
       stripWikitext: stripWikitext,
       refToSource: refToSource,
       setClaimContexts: function (v) { claimContexts = v; },
-      setCnSups: function (v) { cnSups = v; }
+      setCnSups: function (v) { cnSups = v; },
+      claimFiguresOf: claimFiguresOf
     };`;
 
   const config: Record<string, unknown> = {
@@ -279,4 +282,22 @@ test("the user script drops circular Wikidata references too", () => {
     script.findWikiCandidates(scriptCorpus(true), i),
   );
   assert.ok(!leads.some((c) => c.evidence.statement?.property === "P2929"));
+});
+
+test("the user script extracts the same figures from a claim as the core", () => {
+  const samples = [
+    "The population was 616,093 at the 2021 census.",
+    "Die Einwohnerzahl betrug 616.093.",
+    "The borough covers 297.8 square kilometres.",
+    "in 2022 15 people",
+    "It opened in 1889.",
+    "It had 4 rooms.",
+  ];
+  for (const sample of samples) {
+    assert.deepEqual(
+      script.claimFiguresOf(sample).slice().sort(),
+      [...claimFigures(sample)].sort(),
+      `figures should match for ${JSON.stringify(sample)}`,
+    );
+  }
 });

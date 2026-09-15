@@ -1,0 +1,45 @@
+{
+  "Q500": {
+    "id": "Q500",
+    "labels": { "en": { "language": "en", "value": "Borough of Haverhill" } },
+    "claims": {
+      "P1082": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P1082",
+            "datavalue": { "value": { "amount": "+616093", "unit": "1" }, "type": "quantity" }
+          },
+          "rank": "normal",
+          "references": [
+            {
+              "snaks": {
+                "P854": [{ "snaktype": "value", "property": "P854", "datavalue": { "value": "https://statistics.example.gov/haverhill-2021", "type": "string" } }],
+                "P248": [{ "snaktype": "value", "property": "P248", "datavalue": { "value": { "entity-type": "item", "id": "Q600" }, "type": "wikibase-entityid" } }],
+                "P813": [{ "snaktype": "value", "property": "P813", "datavalue": { "value": { "time": "+2024-02-11T00:00:00Z", "precision": 11 }, "type": "time" } }]
+              }
+            }
+          ]
+        }
+      ],
+      "P2046": [
+        {
+          "mainsnak": {
+            "snaktype": "value",
+            "property": "P2046",
+            "datavalue": { "value": { "amount": "+297.8", "unit": "http://www.wikidata.org/entity/Q712226" }, "type": "quantity" }
+          },
+          "rank": "normal",
+          "references": [
+            {
+              "snaks": {
+                "P248": [{ "snaktype": "value", "property": "P248", "datavalue": { "value": { "entity-type": "item", "id": "Q600" }, "type": "wikibase-entityid" } }],
+                "P1476": [{ "snaktype": "value", "property": "P1476", "datavalue": { "value": { "text": "Statistical yearbook 2022", "language": "en" }, "type": "monolingualtext" } }]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -68,3 +68,20 @@ test("extractClaims recognises {{Citation needed}} redirect family", () => {
     assert.equal(claims.length, 1, `failed to match: ${s}`);
   }
 });
+
+test("a decimal figure does not end the claim sentence", () => {
+  // "297.8" was read as a sentence boundary, truncating the claim to
+  // "8 square kilometres." — discarding the figure the sentence is about
+  // before any source pass, or the model, could use it.
+  const [claim] = extractClaims(
+    "The borough covers 297.8 square kilometres.{{cn}}\n",
+  );
+  assert.equal(claim.claim, "The borough covers 297.8 square kilometres.");
+});
+
+test("a genuine sentence boundary before a figure still splits", () => {
+  const [claim] = extractClaims(
+    "The harbour opened in 1861. 297 ships called that year.{{cn}}\n",
+  );
+  assert.equal(claim.claim, "297 ships called that year.");
+});

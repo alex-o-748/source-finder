@@ -21,6 +21,7 @@
  */
 
 import { mwHostApi } from "./mediawiki.js";
+import { normaliseDigits } from "./relevance.js";
 import type { RefSource } from "./wikitextRefs.js";
 
 const WIKIDATA_HOST = "www.wikidata.org";
@@ -177,20 +178,49 @@ export function decodeSnak(snak: WdSnak): WdValue | null {
   return null;
 }
 
+/** Separators that group or decimalise digits, across locales. */
+const FIGURE_SEPARATORS = /[.,\u00a0\u202f\u2009']/g;
+
 /**
- * Digit strings a value should be looked for under.
+ * Every figure in a claim, keyed the way `quantityKeys` keys a stored amount:
+ * separators stripped, so "616,093" and the German "616.093" both key as
+ * "616093".
  *
- * `anchorsOf` strips group and decimal separators when it collects a claim's
- * numbers ("1,234" and "324.5" become "1234" and "3245"), so a quantity has to
- * be normalised the same way to be found. The integer part is offered too:
- * prose rounds ("324 metres" for 324.8), and that is a real match, just a
- * weaker one.
+ * Deliberately not `anchorsOf`. That tokeniser splits on punctuation, so it
+ * reads "616,093" as the two anchors "616" and "093" — which is right for
+ * cross-language sentence matching, where grouping separators differ by locale
+ * and the groups are what survive translation, and wrong here, where the
+ * figure is compared exactly against a value. Using it was the reason this
+ * pass never matched a population, area or elevation: every grouped figure in
+ * an article missed.
+ *
+ * A plain space is not treated as a separator — "in 2022 15 people" must not
+ * key as "202215".
+ */
+export function claimFigures(text: string): Set<string> {
+  const out = new Set<string>();
+  const re = /\d(?:[\d.,\u00a0\u202f\u2009']*\d)?/g;
+  const src = normaliseDigits(text);
+  for (;;) {
+    const m = re.exec(src);
+    if (!m) break;
+    const digits = m[0].replace(FIGURE_SEPARATORS, "");
+    // Single digits are everywhere in prose; they are not evidence.
+    if (digits.length >= 2) out.add(digits);
+  }
+  return out;
+}
+
+/**
+ * Digit strings a stored value should be looked for under, normalised to match
+ * `claimFigures`. The integer part is offered too: prose rounds ("324 metres"
+ * for a stored 324.8), and that is a real match, just a weaker one.
  */
 export function quantityKeys(amount: string): { exact: string; whole: string } {
   const digits = amount.replace(/^[+-]/, "");
   return {
-    exact: digits.replace(/[,.]/g, ""),
-    whole: digits.split(".")[0].replace(/,/g, ""),
+    exact: digits.replace(FIGURE_SEPARATORS, ""),
+    whole: digits.split(".")[0].replace(FIGURE_SEPARATORS, ""),
   };
 }
 
@@ -335,8 +365,8 @@ export function referencedItemIds(ref: WdReference): string[] {
  * the figure is either in the sentence or it is not, which is what makes this
  * pass free and why it works on sentences too short to match lexically.
  *
- * `claimNumbers` is an `anchorsOf(...).numbers` set; `linkedQids` are the
- * Wikidata ids of the wikilinks in the tagged paragraph.
+ * `claimNumbers` is a `claimFigures(...)` set; `linkedQids` are the Wikidata
+ * ids of the wikilinks in the tagged paragraph.
  */
 export function matchValue(
   value: WdValue,
