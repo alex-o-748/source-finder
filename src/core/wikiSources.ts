@@ -113,7 +113,7 @@ export interface WikiCorpus {
 const MARK = String.fromCharCode(1);
 
 /** Runs `fn` over `items` with bounded concurrency, preserving order. */
-async function pool<T, R>(
+export async function pool<T, R>(
   items: T[],
   limit: number,
   fn: (item: T, index: number) => Promise<R>,

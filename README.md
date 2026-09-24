@@ -106,6 +106,11 @@ node dist/cli/index.js find "https://en.wikipedia.org/wiki/Eiffel_Tower" --max-c
 # Just the free stage: what can be sourced from wiki alone. No API key needed.
 node dist/cli/index.js wiki "Eiffel Tower"
 
+# Public-domain books on the Internet Archive whose text carries each claim.
+# No API key. Prints how many books survive each step of the funnel.
+node dist/cli/index.js archive "Eiffel Tower" --max-claims 5
+node dist/cli/index.js archive "Eiffel Tower" --record fixtures-out/  # save raw responses
+
 # Just the verifier — useful as its own service.
 node dist/cli/index.js verify \
   --claim "The Eiffel Tower was 300 metres tall when first built." \
@@ -141,6 +146,8 @@ src/
     wikitextRefs.ts    # <ref> parsing → url, title, work, quote, reusable name
     relevance.ts       # deterministic scoring: token overlap + translation anchors
     wikiSources.ts     # stage 1 — citations already on wiki (no model)
+    internetArchive.ts # Internet Archive client: full-text search, metadata, book text
+    archiveSources.ts  # public-domain books whose text carries the claim (no model; CLI only)
     findSources.ts     # stage 2 — Claude + web_search → candidate sources
     verifySource.ts    # (claim, source) → verdict — separable
     formatCitation.ts  # source → {{cite web|...}} / {{cite news|...}}
@@ -182,6 +189,19 @@ A match on the exact sentence is the real signal; the same anchors elsewhere in 
 What comes out is **evidence, not a verdict**: a human editor cited that source for a sentence that looks like your claim. The CLI's `find` still verifies these leads with the model before ranking them alongside web results; `cnfirmed wiki` and the user script's free stage present them unverified, with the sentence and the matched anchors, and leave the judgment to the editor.
 
 Deliberately out of scope: **Wikidata statements and their references.** This was built, shipped and then removed — it found nothing on real articles. See the plan doc for why, before building it again.
+
+## Public-domain books on the Internet Archive (experimental, CLI only)
+
+`cnfirmed archive` looks for the claim in the OCR text of public-domain books, with no model. It is a funnel, so a handful of passages at most would ever reach the paid verifier:
+
+1. **Search** — one to three full-text queries, strictest first: the article's subject with every number and name in the claim, then with the numbers only, then with the strongest anchor. A claim with no number or name is skipped: the subject alone matches every book about it.
+2. **Public-domain gate** — each book's metadata is read; anything published after the US cutoff (this year − 96, so 1930 in 2026), access-restricted, or in a lending collection is dropped. "Public domain" stands in for what matters: the full text is openly readable, so the passage can be checked.
+3. **Passage** — the matching paragraph: from the search hit if it carries one, else by searching inside the book (which also gives the page), else from the book's OCR text.
+4. **Score and dedupe** — the sister-wiki scoring: the passage must contain one of the claim's numbers and mention the subject, then anchors and weighted token coverage decide. One passage per work, however many scans of it the Archive holds.
+
+Each lead comes with the passage, the anchors it matched, the funnel counts, and a `{{cite book … |via=Internet Archive}}` linking to the page. Old sources can be outdated or primary — see WP:AGEMATTERS.
+
+**Not yet verified live.** The full-text endpoint is the one the official `internetarchive` package uses (`be-api.us.archive.org/ia-pub-fts-api`), but its response shape, whether it returns matching text and page numbers, and whether it honours the public-domain filter inside the query are undocumented, and the environment this was built in could not reach archive.org. The parsers accept every shape the reference clients read, and the gate re-checks every book's metadata regardless. Run with `--record <dir>` to capture the real responses, and `--no-query-filter` if the search rejects the filter. It is not wired into `find` or the user script until those numbers are in.
 
 ## Policy handling (three layers)
 

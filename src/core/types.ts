@@ -34,7 +34,11 @@ export interface Claim {
  * Where a candidate source came from. Wiki-local origins cost nothing to
  * discover and are tried before the web search.
  */
-export type SourceOrigin = "web" | "same-article" | "sister-wiki";
+export type SourceOrigin =
+  | "web"
+  | "same-article"
+  | "sister-wiki"
+  | "internet-archive";
 
 /**
  * Why a wiki-local candidate is believed to fit the claim: the citation was
@@ -93,6 +97,43 @@ export interface WikiCandidate {
   evidence: WikiEvidence;
   /** Ready-to-paste `<ref>` re-using the existing citation. */
   ref: string;
+}
+
+/**
+ * Why an Internet Archive book is believed to fit the claim: a passage in its
+ * OCR text carries the claim's anchors. Like `WikiEvidence`, a lead to be read
+ * or verified, not a verdict.
+ */
+export interface ArchiveEvidence {
+  origin: "internet-archive";
+  /** Archive item identifier. */
+  identifier: string;
+  /** Publication year, which is also what makes the book public domain. */
+  year: number;
+  /** The matching passage from the OCR text, as found (OCR errors included). */
+  passage: string;
+  /** Page index in the Archive's viewer (`/page/n{leaf}`), when known. */
+  leaf: number | null;
+  /** How the passage was found: search hit, search inside the book, or the full OCR text. */
+  passageFrom: "search-hit" | "search-inside" | "plain-text";
+  /** Matching signal, 0-1. Not a substantiation verdict — only a lead. */
+  score: number;
+  /** The claim's numbers and names that the passage contains. */
+  matchedAnchors: string[];
+  /** The full-text query that surfaced the book. */
+  query: string;
+}
+
+/** A public-domain book on the Internet Archive with a passage matching the claim. */
+export interface ArchiveCandidate {
+  url: string;
+  title: string;
+  /** One-line provenance, e.g. "Internet Archive, 1889 — matched 1889, 300". */
+  relevance: string;
+  /** The passage, trimmed for display. */
+  snippet: string;
+  evidence: ArchiveEvidence;
+  citation: Citation;
 }
 
 /** Substantiation verdict values emitted by the verifier. */

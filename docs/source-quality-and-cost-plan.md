@@ -128,6 +128,19 @@ property of where you searched rather than something to prompt for.
 | Statistics | The issuing body directly (national stats offices, Eurostat, World Bank) | no |
 | Dead links | Wayback CDX API | no |
 
+**Internet Archive, public domain first: built, not yet measured.**
+`src/core/archiveSources.ts` and `cnfirmed archive` implement the funnel
+(search → public-domain gate on metadata → passage → deterministic score and
+edition dedupe → at most three leads), described in the README. Endpoints were
+taken from the official `internetarchive` Python package and the IA skill
+(`github.com/internetarchive/internet-archive-skills`); archive.org was
+unreachable from the build environment, so the full-text response shape is
+still assumed. Next: run `cnfirmed archive --record` over ~20 real articles,
+replace the synthetic test fixtures with the recorded ones, and read the funnel
+counts — how many claims get a lead, and where books drop out — before wiring
+it into `find` (verifying passages via `verifySource`'s `sourceText`) and the
+user script (which needs a CORS check on both hosts).
+
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and
 the section heading plus infobox type give topical scope and a cheap
