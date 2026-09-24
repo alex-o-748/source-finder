@@ -24,7 +24,6 @@ export {
   claimTerms,
   findArchiveCandidates,
   findArticleArchiveSources,
-  publicDomainCutoff,
 } from "./archiveSources.js";
 export type {
   ArchiveFunnel,

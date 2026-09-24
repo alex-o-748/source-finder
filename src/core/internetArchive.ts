@@ -6,7 +6,7 @@
  *   - Full-text search over OCRed books, the endpoint archive.org's own search
  *     page uses (`/services/search/beta/page_production/?service_backend=fts`).
  *     Each hit carries the book's year, collections and matching passages, so
- *     the public-domain check and the scoring need no further request.
+ *     the access check and the scoring need no further request.
  *   - Item metadata (`/metadata/{id}`), for what a hit lacks: the publisher,
  *     and the access-restriction flag, checked once more for the few books
  *     kept.

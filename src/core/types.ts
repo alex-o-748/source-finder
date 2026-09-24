@@ -108,8 +108,10 @@ export interface ArchiveEvidence {
   origin: "internet-archive";
   /** Archive item identifier. */
   identifier: string;
-  /** Publication year, which is also what makes the book public domain. */
-  year: number;
+  /** Publication year, when the Archive records one. */
+  year: number | null;
+  /** Readable by anyone, or borrowable with a free archive.org account. */
+  access: "open" | "borrow";
   /**
    * The matching passages from the OCR text, best first, as the search
    * returned them (OCR errors included). Each is scored on its own: two
@@ -126,7 +128,7 @@ export interface ArchiveEvidence {
   viewerUrl: string;
 }
 
-/** A public-domain book on the Internet Archive with a passage matching the claim. */
+/** A book on the Internet Archive, open or borrowable, with a passage matching the claim. */
 export interface ArchiveCandidate {
   /** The book's page on archive.org: what the citation links to. */
   url: string;

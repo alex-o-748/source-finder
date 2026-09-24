@@ -4,19 +4,19 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
+  accessGate,
   buildArchiveQueries,
   claimTerms,
+  detailsGate,
   editionKey,
   findArchiveCandidates,
   formatArchiveCitation,
   parseSearchHits,
-  publicDomainCutoff,
-  publicDomainGate,
   rankArchiveHits,
+  sameWork,
   scorePassage,
   scoringContext,
   viewerUrl,
-  withPublicDomainFilter,
 } from "../src/core/archiveSources.js";
 import { searchParams } from "../src/core/internetArchive.js";
 import type {
@@ -40,11 +40,6 @@ function claimOf(text: string): Claim {
   return { claim: text, context: text, section: "History", offset: 0, tag: "{{cn}}" };
 }
 
-test("publicDomainCutoff: published in Y, public domain from 1 January of Y + 96", () => {
-  assert.equal(publicDomainCutoff(new Date("2026-09-24")), 1930);
-  assert.equal(publicDomainCutoff(new Date("2027-01-01")), 1931);
-});
-
 test("claimTerms: numbers as written with years first, names beyond the subject", () => {
   const t = claimTerms(
     "The population of 616,093 was recorded in 1921 by Anna Berg in Eiffel Tower",
@@ -64,11 +59,7 @@ test("buildArchiveQueries: strictest first, and nothing for a claim with no anch
   assert.deepEqual(buildArchiveQueries(claimTerms("It was very tall and quite famous", TITLE)), []);
 });
 
-test("the public-domain filter is a year range in the query, as checked live", () => {
-  assert.equal(
-    withPublicDomainFilter('"Eiffel Tower" AND "1889"', 1930),
-    '"Eiffel Tower" AND "1889" AND year:[1450 TO 1930]',
-  );
+test("searchParams: the full-text backend on archive.org", () => {
   const p = searchParams({ query: "q", size: 50 });
   assert.equal(p.get("service_backend"), "fts");
   assert.equal(p.get("user_query"), "q");
@@ -77,7 +68,7 @@ test("the public-domain filter is a year range in the query, as checked live", (
 
 test("parseSearchHits reads the recorded shape and strips highlight markers", () => {
   const hits = parseSearchHits(SEARCH, "q");
-  assert.equal(hits.length, 9);
+  assert.equal(hits.length, 10);
   const [pezzi] = hits;
   assert.equal(pezzi.identifier, "eiffeltower0000pezz");
   assert.equal(pezzi.year, 2008);
@@ -91,15 +82,27 @@ test("parseSearchHits reads the recorded shape and strips highlight markers", ()
   assert.equal(hits[4].year, 1925, "year falls back to date");
 });
 
-test("publicDomainGate: open, old texts only", () => {
-  const gate = (year: number | null, collections: string[] = [], mediatype = "texts") =>
-    publicDomainGate({ year, collections, mediatype }, 1930);
-  assert.deepEqual(gate(1889), { ok: true });
-  assert.deepEqual(gate(1930), { ok: true });
-  assert.deepEqual(gate(1931), { ok: false, reason: "published after 1930" });
-  assert.deepEqual(gate(null), { ok: false, reason: "no publication year" });
-  assert.deepEqual(gate(1889, ["americana", "inlibrary"]), { ok: false, reason: "lending library" });
-  assert.deepEqual(gate(1889, [], "movies"), { ok: false, reason: "not a text" });
+test("accessGate: open books and lending-library books, not print-disabled-only ones", () => {
+  const gate = (collections: string[], mediatype = "texts") => accessGate({ collections, mediatype });
+  assert.deepEqual(gate(["americana"]), { ok: true, access: "open" });
+  assert.deepEqual(gate([]), { ok: true, access: "open" });
+  assert.deepEqual(gate(["internetarchivebooks", "inlibrary"]), { ok: true, access: "borrow" });
+  // Lending-library books are usually in printdisabled as well.
+  assert.deepEqual(gate(["printdisabled", "inlibrary"]), { ok: true, access: "borrow" });
+  assert.deepEqual(gate(["printdisabled", "internetarchivebooks"]), {
+    ok: false,
+    reason: "print-disabled readers only",
+  });
+  assert.deepEqual(gate(["americana"], "movies"), { ok: false, reason: "not a text" });
+});
+
+test("detailsGate: every lending book is flagged restricted; only other restricted ones are unreadable", () => {
+  const details = (restricted: boolean, dark = false) =>
+    ({ publisher: null, isbn: null, restricted, dark });
+  assert.deepEqual(detailsGate(details(true), "borrow"), { ok: true });
+  assert.deepEqual(detailsGate(details(true), "open"), { ok: false, reason: "access restricted" });
+  assert.deepEqual(detailsGate(details(false, true), "open"), { ok: false, reason: "withdrawn" });
+  assert.deepEqual(detailsGate(details(false), "open"), { ok: true });
 });
 
 const PASSAGE =
@@ -134,17 +137,33 @@ test("editionKey collapses scans of the same work, subtitle or not", () => {
   assert.notEqual(editionKey("The Eiffel Tower"), editionKey("Guide to Paris"));
 });
 
+test("sameWork: same title and a shared creator name — a different author is a different work", () => {
+  const tiss1889 = { title: "The Eiffel tower : a description", creator: "Tissandier, Gaston, 1843-1899" };
+  assert.ok(sameWork(tiss1889, { title: "The Eiffel Tower.", creator: "Tissandier, Gaston" }));
+  assert.ok(sameWork(tiss1889, { title: "The Eiffel Tower.", creator: null }));
+  assert.ok(!sameWork(tiss1889, { title: "Eiffel Tower", creator: "Pezzi, Bryan" }));
+  assert.ok(!sameWork(tiss1889, { title: "Guide to Paris", creator: "Tissandier, Gaston" }));
+});
+
 test("rankArchiveHits: gate, per-passage scoring, one book per work", () => {
-  const r = rankArchiveHits(parseSearchHits(SEARCH, "q"), CLAIM_TEXT, TITLE, 1930, 0.3);
-  assert.deepEqual(r.rejected, { "lending library": 2, "no publication year": 1 });
-  assert.equal(r.publicDomain, 6);
+  const r = rankArchiveHits(parseSearchHits(SEARCH, "q"), CLAIM_TEXT, TITLE, 0.3);
+  assert.deepEqual(r.rejected, { "print-disabled readers only": 1 });
+  assert.equal(r.available, 9);
+  assert.equal(r.borrowable, 2);
+  assert.equal(r.matched, 5);
   // The statistical annual mentions 1889 but neither the tower nor, in its
   // title, anything about it.
   assert.ok(!r.ranked.some((s) => s.hit.identifier === "annuaire1912"));
-  // Two scans of Tissandier collapse into the better one.
+  // Best first; the 1890 Tissandier scan collapses into the 1889 one, but
+  // Pezzi's book of the same title is a different work.
   assert.deepEqual(
-    r.ranked.map((s) => s.hit.identifier).sort(),
-    ["eiffeltowerdescr00tiss", "guidetoparis1925"],
+    r.ranked.map((s) => [s.hit.identifier, s.access]),
+    [
+      ["eiffeltowerdescr00tiss", "open"],
+      ["guidetoparis1925", "open"],
+      ["undatedpamphlet", "open"],
+      ["eiffeltower0000pezz", "borrow"],
+    ],
   );
   const guide = r.ranked.find((s) => s.hit.identifier === "guidetoparis1925")!;
   assert.equal(guide.passages.length, 1, "the 15-character fragment is not a passage");
@@ -156,7 +175,7 @@ test("a periodical's own year is its masthead, not evidence", () => {
   assert.equal(periodicals.length, 2);
   // "JULY 19, 1889 ... Electricity on the Eiffel Tower, 702, 703" — an index
   // line under a dateline — scored 0.85 for this claim before the rule.
-  const r = rankArchiveHits(hits, "The tower opened to visitors in 1889.", TITLE, 1930, 0.3);
+  const r = rankArchiveHits(hits, "The tower opened to visitors in 1889.", TITLE, 0.3);
   assert.ok(!r.ranked.some((s) => s.hit.collections.includes("periodicals")));
 
   const ctx = scoringContext("The tower opened to visitors in 1889.", TITLE);
@@ -172,10 +191,24 @@ test("formatArchiveCitation: cite book, life dates stripped, pipes escaped", () 
   assert.equal(
     formatArchiveCitation(
       { identifier: "towerbook", title: "The Tower | A History", creator: "Smith, John, 1850-1920", year: 1889 },
-      "Hachette",
+      "open",
+      { publisher: "Hachette", isbn: null },
     ).template,
     "{{cite book |title=The Tower {{!}} A History |author=Smith, John |publisher=Hachette " +
       "|year=1889 |url=https://archive.org/details/towerbook |via=Internet Archive}}",
+  );
+});
+
+test("formatArchiveCitation: a borrowable book gets its ISBN and url-access=registration", () => {
+  assert.equal(
+    formatArchiveCitation(
+      { identifier: "eiffeltower0000pezz", title: "Eiffel Tower", creator: "Pezzi, Bryan", year: 2008 },
+      "borrow",
+      { publisher: "Weigl", isbn: "9781590367254" },
+    ).template,
+    "{{cite book |title=Eiffel Tower |author=Pezzi, Bryan |publisher=Weigl |year=2008 " +
+      "|isbn=9781590367254 |url=https://archive.org/details/eiffeltower0000pezz " +
+      "|url-access=registration |via=Internet Archive}}",
   );
 });
 
@@ -214,25 +247,45 @@ function fakeClient(
 test("findArchiveCandidates: the whole funnel, with counts", async () => {
   const { client, searches, lookups } = fakeClient([SEARCH], {
     eiffeltowerdescr00tiss: { metadata: { publisher: "Paris : Masson" } },
+    // Restricted, and not a lending-library book: nobody can read it.
     guidetoparis1925: { metadata: { "access-restricted-item": "true" } },
+    // Restricted like every lending-library book, and borrowable.
+    eiffeltower0000pezz: {
+      metadata: { publisher: "Weigl", isbn: ["9781590367254"], "access-restricted-item": "true" },
+    },
   });
-  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, {
-    client,
-    cutoffYear: 1930,
-    enoughHits: 5,
-  });
+  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, enoughHits: 5 });
 
-  assert.equal(r.funnel.queries.length, 1, "nine books was enough");
-  assert.ok(searches[0].query.endsWith(" AND year:[1450 TO 1930]"));
-  assert.equal(r.funnel.queries[0], '"Eiffel Tower" AND "1889" AND "300" AND "gustave eiffel"');
-  assert.equal(r.funnel.filter, "search");
-  assert.equal(r.funnel.hits, 9);
-  assert.equal(r.funnel.publicDomain, 6);
+  assert.equal(r.funnel.queries.length, 1, "ten books was enough");
+  assert.equal(searches[0].query, '"Eiffel Tower" AND "1889" AND "300" AND "gustave eiffel"');
+  assert.equal(r.funnel.hits, 10);
+  assert.equal(r.funnel.available, 9);
+  assert.equal(r.funnel.borrowable, 2);
+  assert.equal(r.funnel.matched, 5);
   // Metadata only for the shortlist, not for every hit.
-  assert.deepEqual(lookups.sort(), ["eiffeltowerdescr00tiss", "guidetoparis1925"]);
+  assert.deepEqual(lookups, [
+    "eiffeltowerdescr00tiss",
+    "guidetoparis1925",
+    "undatedpamphlet",
+    "eiffeltower0000pezz",
+  ]);
   assert.equal(r.funnel.rejected["access restricted"], 1);
+  assert.equal(r.funnel.errors.length, 1, "the pamphlet's metadata is missing");
 
-  assert.equal(r.candidates.length, 1);
+  assert.deepEqual(
+    r.candidates.map((c) => [c.evidence.identifier, c.evidence.access]),
+    [
+      ["eiffeltowerdescr00tiss", "open"],
+      ["undatedpamphlet", "open"],
+      ["eiffeltower0000pezz", "borrow"],
+    ],
+  );
+  const pezzi = r.candidates[2];
+  assert.ok(pezzi.relevance.startsWith("Internet Archive (borrow), 2008, Pezzi, Bryan — matched"));
+  assert.ok(pezzi.citation.ref.includes("|isbn=9781590367254 |"));
+  assert.ok(pezzi.citation.ref.includes("|url-access=registration |"));
+  assert.equal(r.candidates[1].evidence.year, null, "an undated book is still a lead");
+
   const [c] = r.candidates;
   assert.equal(c.evidence.identifier, "eiffeltowerdescr00tiss");
   assert.equal(c.url, "https://archive.org/details/eiffeltowerdescr00tiss");
@@ -247,24 +300,20 @@ test("findArchiveCandidates: the whole funnel, with counts", async () => {
   assert.ok(c.citation.ref.includes("|author=Tissandier, Gaston |"));
 });
 
-test("findArchiveCandidates drops the filter if the search rejects it, and loosens the query", async () => {
-  const { client, searches } = fakeClient([new Error("400 Bad Request")]);
-  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, cutoffYear: 1930 });
-  assert.equal(r.funnel.filter, "gate only");
-  assert.deepEqual(
-    searches.map((s) => s.query.includes("year:[")),
-    [true, false, false, false],
-    "retried unfiltered, then kept loosening while short of books",
-  );
-  assert.equal(r.funnel.queries.length, 3);
+test("findArchiveCandidates reports a failed search and keeps loosening the query", async () => {
+  const { client, searches } = fakeClient([new Error("HTTP 503")]);
+  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client });
+  assert.equal(searches.length, 3, "kept loosening while short of books");
+  assert.deepEqual(r.funnel.errors, ["search failed: HTTP 503"]);
+  assert.equal(r.candidates.length, 0);
 });
 
 test("findArchiveCandidates keeps a lead whose metadata lookup fails, without a publisher", async () => {
   const { client } = fakeClient([SEARCH]);
-  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, cutoffYear: 1930, enoughHits: 5 });
-  assert.equal(r.candidates.length, 2);
+  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, enoughHits: 5 });
+  assert.equal(r.candidates.length, 3);
   assert.ok(r.candidates.every((c) => !c.citation.ref.includes("publisher=")));
-  assert.equal(r.funnel.errors.length, 2);
+  assert.equal(r.funnel.errors.length, 3);
 });
 
 test("findArchiveCandidates makes no request for a claim with nothing to search for", async () => {

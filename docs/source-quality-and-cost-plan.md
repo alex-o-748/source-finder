@@ -122,30 +122,34 @@ property of where you searched rather than something to prompt for.
 | Claim type | Corpus | Needs a key? |
 |---|---|---|
 | Scientific / medical | OpenAlex, Crossref (metadata + DOI), Europe PMC (full-text) | no |
-| Historical / biographical | Internet Archive full-text search, HathiTrust | no / partial |
+| Historical / biographical | Internet Archive full-text search (open and lending library), HathiTrust | no / partial |
 | Historical news | Chronicling America, Trove, national libraries | varies |
 | Contemporary news | GDELT document API, domain-restricted to a WP:RSP-derived allowlist | no |
 | Statistics | The issuing body directly (national stats offices, Eurostat, World Bank) | no |
 | Dead links | Wayback CDX API | no |
 
-**Internet Archive, public domain first: built, being measured.**
-`src/core/archiveSources.ts`, `cnfirmed archive`, and a per-claim button in the
-user script implement the funnel (search → public-domain gate on the hit's own
-fields → per-passage deterministic score → edition dedupe → metadata for the
-few kept), described in the README. The endpoint and response shape were
-settled from a Wikipedia page's console: archive.org's own full-text search is
-the one reachable under the CSP, and its hits carry year, collections and
-matching passages, so the gate and the scoring need no per-book request. The
-first real response already showed the two things to watch: the top hits for
-a plain query were modern lending-library books (so the server-side filter
-matters — `AND year:[1800 TO 1930]` in the query works, and returns mostly
-digitised periodicals, whose mastheads print the year on every page: the
-issue's own year is now ignored as evidence), and a passage matching only
-"1889" and "Eiffel" scores 0.38 whether
+**Internet Archive: built, being measured.** Started as public domain only,
+then widened: what matters is that an editor can read the passage, and a
+lending-library book anyone can borrow with a free account meets that — it
+also brings in modern secondary sources, where pre-1930 books are often
+dated. `src/core/archiveSources.ts`, `cnfirmed archive`, and a per-claim
+button in the user script implement the funnel (search → access gate on the
+hit's own fields → per-passage deterministic score → one book per work →
+metadata for the few kept), described in the README. The endpoint and response
+shape were settled from a Wikipedia page's console: archive.org's own
+full-text search is the one reachable under the CSP, and its hits carry year,
+collections and matching passages, so the gate and the scoring need no
+per-book request. The first real responses showed two things to watch: a
+year-filtered search returns mostly digitised periodicals, whose mastheads
+print the year on every page (the issue's own year is now ignored as
+evidence), and a passage matching only "1889" and "Eiffel" scores 0.38 whether
 it says the tower was completed that year or that a cannon was fired from it —
 the matched anchors, shown with each lead, are what tell them apart. Next: the
 funnel counts over ~20 real articles, then decide whether it joins "Verify
-all" and `find` (verifying passages via `verifySource`'s `sourceText`).
+all" and `find` (verifying passages via `verifySource`'s `sourceText`). Page
+numbers and longer passages would need search-inside, on `*.archive.org`
+servers the CSP refuses: an allowlist request or a Toolforge proxy, if the
+counts say it is worth it.
 
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and

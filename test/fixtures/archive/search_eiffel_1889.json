@@ -1,5 +1,5 @@
 {
-  "_note": "Shape recorded from archive.org/services/search/beta/page_production/?service_backend=fts (2026-09). Real hits: the first two (unfiltered '\"Eiffel Tower\" 1889'; the second's highlight was cut off in the recording and is omitted) and the last two (the 1889 periodicals, from '\"Eiffel Tower\" AND 1889 AND year:[1800 TO 1930]'). The rest are synthetic public-domain books in the same shape.",
+  "_note": "Shape recorded from archive.org/services/search/beta/page_production/?service_backend=fts (2026-09). Real hits: the first two (unfiltered '\"Eiffel Tower\" 1889'; the second's highlight was cut off in the recording and is omitted) and the last two (the 1889 periodicals, from '\"Eiffel Tower\" AND 1889 AND year:[1800 TO 1930]'). The rest are synthetic, in the same shape: open public-domain books, one undated pamphlet, and one book only print-disabled readers can open.",
   "response": {
     "body": {
       "hits": {
@@ -155,6 +155,28 @@
               ]
             },
             "_score": 8.1
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "historyofeiffelt0000smit",
+              "mediatype": "texts",
+              "title": "A history of the Eiffel Tower",
+              "creator": [
+                "Smith, Alan"
+              ],
+              "year": 1995,
+              "collection": [
+                "printdisabled",
+                "internetarchivebooks"
+              ]
+            },
+            "highlight": {
+              "text": [
+                "The {{{Eiffel Tower}}}, completed in {{{1889}}}, stood {{{300}}} metres tall; Gustave Eiffel's firm built it."
+              ]
+            },
+            "_score": 8.0
           },
           {
             "index": "fts_main",

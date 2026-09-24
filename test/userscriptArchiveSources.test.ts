@@ -14,7 +14,6 @@ import {
   parseSearchHits,
   rankArchiveHits,
   toArchiveCandidate,
-  withPublicDomainFilter,
 } from "../src/core/archiveSources.js";
 import { SEARCH_URL, searchParams } from "../src/core/internetArchive.js";
 import { loadUserScript } from "./userscriptLoader.js";
@@ -25,6 +24,7 @@ const SEARCH = JSON.parse(
 );
 
 const script = loadUserScript();
+const DETAILS = { publisher: "Paris : Masson", isbn: "9781590367254" };
 const TITLE = "Eiffel_Tower";
 
 const CLAIMS = [
@@ -44,7 +44,7 @@ test("the user script builds the same queries as the core", () => {
 });
 
 test("the user script asks archive.org for the same search", () => {
-  const query = withPublicDomainFilter('"Eiffel Tower" AND "1889"', 1930);
+  const query = '"Eiffel Tower" AND "1889"';
   assert.equal(
     script.iaSearchUrl(query),
     `${SEARCH_URL}?${searchParams({ query, size: 50 })}`
@@ -59,23 +59,23 @@ test("the user script parses the recorded response the same way", () => {
 
 test("both implementations keep, score and cite the same books", () => {
   for (const claim of CLAIMS) {
-    const fromScript = script.rankArchiveHits(script.parseArchiveHits(SEARCH, "q"), claim, TITLE, 1930, 0.3);
-    const fromCore = rankArchiveHits(parseSearchHits(SEARCH, "q"), claim, TITLE, 1930, 0.3);
+    const fromScript = script.rankArchiveHits(script.parseArchiveHits(SEARCH, "q"), claim, TITLE, 0.3);
+    const fromCore = rankArchiveHits(parseSearchHits(SEARCH, "q"), claim, TITLE, 0.3);
     assert.deepEqual(fromScript, fromCore, claim);
 
     const scriptTerms = script.iaClaimTerms(claim, TITLE);
     const coreTerms = claimTerms(claim, TITLE);
     fromCore.ranked.forEach((s, i) => {
       assert.deepEqual(
-        script.toArchiveCandidate(fromScript.ranked[i], "Paris : Masson", scriptTerms),
-        toArchiveCandidate(s, "Paris : Masson", coreTerms),
+        script.toArchiveCandidate(fromScript.ranked[i], DETAILS, scriptTerms),
+        toArchiveCandidate(s, DETAILS, coreTerms),
         `${claim} → ${s.hit.identifier}`,
       );
     });
   }
 });
 
-test("the user script's live flow matches the core's, filter fallback included", async () => {
+test("the user script's live flow matches the core's", async () => {
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
   const eiffel = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
   const claim = CLAIMS[1];
@@ -84,38 +84,35 @@ test("the user script's live flow matches the core's, filter fallback included",
   const metadata: Record<string, unknown> = {
     eiffeltowerdescr00tiss: { metadata: { publisher: "Paris : Masson" } },
     guidetoparis1925: { metadata: { "access-restricted-item": "true" } },
+    eiffeltower0000pezz: { metadata: { isbn: "9781590367254", "access-restricted-item": "true" } },
   };
   const requested: string[] = [];
   const realFetch = globalThis.fetch;
-  let first = true;
+  let searches = 0;
   globalThis.fetch = (async (url: string) => {
     requested.push(String(url));
-    // The first search rejects the filter, as an undocumented parameter might.
-    if (first) {
-      first = false;
-      return new Response("", { status: 400 });
-    }
     const id = decodeURIComponent(String(url).split("/metadata/")[1] ?? "");
-    const body = id ? metadata[id] : SEARCH;
-    return body ? Response.json(body) : new Response("", { status: 404 });
+    if (id) return metadata[id] ? Response.json(metadata[id]) : new Response("", { status: 404 });
+    // The first search fails outright; the looser ones succeed.
+    return searches++ === 0 ? new Response("", { status: 503 }) : Response.json(SEARCH);
   }) as typeof fetch;
 
   try {
     const fromScript = await eiffel.findArchiveCandidates(0);
-    const cutoff = new Date().getUTCFullYear() - 96;
-    first = true;
+    searches = 0;
     const fromCore = await findArchiveCandidates(
       { claim, context: claim, section: null, offset: 0, tag: "{{cn}}" },
       "Eiffel Tower",
-      { cutoffYear: cutoff },
     );
     assert.deepEqual(fromScript.candidates, fromCore.candidates);
     assert.deepEqual(fromScript.funnel, fromCore.funnel);
-    assert.equal(fromScript.funnel.filter, "gate only");
-    assert.equal(fromScript.candidates.length, 1);
+    assert.equal(fromScript.funnel.errors[0], "search failed: Internet Archive: HTTP 503");
+    assert.deepEqual(
+      fromScript.candidates.map((c: { evidence: { identifier: string } }) => c.evidence.identifier),
+      ["eiffeltowerdescr00tiss", "undatedpamphlet", "eiffeltower0000pezz"],
+    );
     const userQuery = (url: string) => new URL(url).searchParams.get("user_query") ?? "";
-    assert.ok(userQuery(requested[0]).endsWith(" AND year:[1450 TO " + cutoff + "]"));
-    assert.ok(!userQuery(requested[1]).includes("year:["));
+    assert.equal(userQuery(requested[0]), '"Eiffel Tower" AND "1889" AND "300" AND "gustave eiffel"');
   } finally {
     globalThis.fetch = realFetch;
   }

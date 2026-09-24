@@ -2225,10 +2225,10 @@
     } catch (e) { /* ignore */ }
   }
 
-  // ---- Internet Archive: public-domain books ------------------------------
+  // ---- Internet Archive: books -------------------------------------------
   // Free, no key, no model: full-text search over the Archive's OCRed books,
-  // keeping only public-domain ones whose matching passage carries the claim's
-  // numbers and names. Mirrors src/core/archiveSources.ts; the parity test
+  // keeping those an editor can read — open, or borrowable with a free account
+  // — whose matching passage carries the claim's numbers and names. Mirrors src/core/archiveSources.ts; the parity test
   // runs both on the same recorded search response.
   //
   // Only https://archive.org is on Wikipedia's CSP allowlist, so this uses the
@@ -2244,12 +2244,9 @@
   var IA_MAX_CANDIDATES = 3;
   var IA_MIN_SCORE = 0.3;
   var IA_MIN_PASSAGE_CHARS = 40;
-  var IA_LENDING = { inlibrary: true, printdisabled: true, lendinglibrary: true };
-
-  // A work published in year Y enters the US public domain on 1 January of Y + 96.
-  function iaCutoffYear() {
-    return new Date().getUTCFullYear() - 96;
-  }
+  // Anyone with a free account can borrow these; 'printdisabled' alone is for
+  // certified print-disabled readers only.
+  var IA_LENDING = { inlibrary: true, lendinglibrary: true };
 
   function iaSubjectOf(title) {
     return String(title).replace(/_/g, ' ').replace(/\s*\([^)]*\)\s*$/, '').trim();
@@ -2307,12 +2304,6 @@
     return out;
   }
 
-  // `… AND year:[1800 TO 1930]` was checked live to return only books in
-  // range. Lending status is left to the gate: only the year clause is tested.
-  function iaWithPublicDomainFilter(query, cutoff) {
-    return query + ' AND year:[1450 TO ' + cutoff + ']';
-  }
-
   function iaFirst(value) {
     if (Array.isArray(value)) return iaFirst(value[0]);
     if (typeof value === 'string') return value;
@@ -2364,32 +2355,33 @@
     return out;
   }
 
-  function archiveGate(hit, cutoff) {
+  // Whether an editor can read the book, and how: 'open' or 'borrow'.
+  function archiveGate(hit) {
     if (hit.mediatype && hit.mediatype !== 'texts') return { ok: false, reason: 'not a text' };
     if (hit.collections.some(function (c) { return IA_LENDING[c]; })) {
-      return { ok: false, reason: 'lending library' };
+      return { ok: true, access: 'borrow' };
     }
-    if (hit.year === null) return { ok: false, reason: 'no publication year' };
-    if (hit.year > cutoff) return { ok: false, reason: 'published after ' + cutoff };
-    return { ok: true };
+    if (hit.collections.indexOf('printdisabled') !== -1) {
+      return { ok: false, reason: 'print-disabled readers only' };
+    }
+    return { ok: true, access: 'open' };
   }
 
   function archiveDetailsOf(response) {
     var md = (response && response.metadata) || {};
     return {
       publisher: iaFirst(md.publisher),
-      restricted: response.is_dark === true ||
-        String(iaFirst(md['access-restricted-item']) || '').toLowerCase() === 'true',
-      copyrightStatus: iaFirst(md['possible-copyright-status'])
+      isbn: iaFirst(md.isbn),
+      dark: response.is_dark === true,
+      restricted: String(iaFirst(md['access-restricted-item']) || '').toLowerCase() === 'true'
     };
   }
 
-  function archiveDetailsGate(details) {
-    if (details.restricted) return { ok: false, reason: 'access restricted' };
-    var status = details.copyrightStatus || '';
-    if (/copyright/i.test(status) && !/not[_ ]in[_ ]copyright/i.test(status)) {
-      return { ok: false, reason: 'marked in copyright' };
-    }
+  // Every lending-library book is flagged restricted; any other one cannot be
+  // borrowed, so nobody without special access can read it.
+  function archiveDetailsGate(details, access) {
+    if (details.dark) return { ok: false, reason: 'withdrawn' };
+    if (details.restricted && access === 'open') return { ok: false, reason: 'access restricted' };
     return { ok: true };
   }
 
@@ -2441,19 +2433,32 @@
       .join(' ');
   }
 
+  // Same main title, and creators sharing a name — or no creator on one of
+  // them. A different author under the same title is a different work.
+  function iaSameWork(a, b) {
+    if (archiveEditionKey(a.title) !== archiveEditionKey(b.title)) return false;
+    if (!a.creator || !b.creator) return true;
+    var theirs = tokenSetOf(iaCleanCreator(b.creator));
+    return Object.keys(tokenSetOf(iaCleanCreator(a.creator))).some(function (t) {
+      return theirs[t];
+    });
+  }
+
   // Gate, per-passage scoring, one book per work. No I/O.
-  function rankArchiveHits(hits, claim, title, cutoff, minScore) {
+  function rankArchiveHits(hits, claim, title, minScore) {
     var ctx = iaScoringContext(claim, iaSubjectOf(title));
     var rejected = {};
-    var publicDomain = 0;
+    var available = 0;
+    var borrowable = 0;
     var scored = [];
     hits.forEach(function (hit) {
-      var gate = archiveGate(hit, cutoff);
+      var gate = archiveGate(hit);
       if (!gate.ok) {
         rejected[gate.reason] = (rejected[gate.reason] || 0) + 1;
         return;
       }
-      publicDomain++;
+      available++;
+      if (gate.access === 'borrow') borrowable++;
       var about = iaTitleIsAbout(hit.title, ctx.subjectTokens);
       var dateline = hit.year !== null && hit.collections.indexOf('periodicals') !== -1
         ? String(hit.year) : null;
@@ -2463,23 +2468,25 @@
         if (s && s.score >= minScore) passages.push({ text: text, score: s.score, matched: s.matched });
       });
       passages.sort(function (a, b) { return b.score - a.score; });
-      if (passages.length) scored.push({ hit: hit, passages: passages, score: passages[0].score });
-    });
-
-    var byWork = {};
-    var order = [];
-    scored.forEach(function (s) {
-      var key = archiveEditionKey(s.hit.title);
-      var kept = byWork[key];
-      if (!kept) order.push(key);
-      if (!kept || s.score > kept.score || (s.score === kept.score && s.hit.rank < kept.hit.rank)) {
-        byWork[key] = s;
+      if (passages.length) {
+        scored.push({ hit: hit, access: gate.access, passages: passages, score: passages[0].score });
       }
     });
-    var ranked = order.map(function (k) { return byWork[k]; }).sort(function (a, b) {
-      return b.score - a.score || a.hit.rank - b.hit.rank;
+
+    // Best first — on a tie, a book anyone can open before one to borrow — and
+    // then one per work: each later scan of a work already kept is dropped.
+    var openFirst = function (x) { return x.access === 'open' ? 0 : 1; };
+    scored.sort(function (a, b) {
+      return b.score - a.score || openFirst(a) - openFirst(b) || a.hit.rank - b.hit.rank;
     });
-    return { ranked: ranked, publicDomain: publicDomain, rejected: rejected, matched: scored.length };
+    var ranked = [];
+    scored.forEach(function (s) {
+      if (!ranked.some(function (kept) { return iaSameWork(kept.hit, s.hit); })) ranked.push(s);
+    });
+    return {
+      ranked: ranked, available: available, borrowable: borrowable,
+      rejected: rejected, matched: scored.length
+    };
   }
 
   function iaCleanCreator(creator) {
@@ -2495,12 +2502,16 @@
     return iaDetailsUrl(identifier) + '?q=' + encodeURIComponent(q);
   }
 
-  function formatArchiveCitation(hit, publisher) {
+  // url-access=registration for a lending-library book, as InternetArchiveBot
+  // writes it: the link works, after signing in with a free account.
+  function formatArchiveCitation(hit, access, details) {
     var parts = ['title=' + escapePipes(hit.title)];
     if (hit.creator) parts.push('author=' + escapePipes(iaCleanCreator(hit.creator)));
-    if (publisher) parts.push('publisher=' + escapePipes(publisher));
+    if (details && details.publisher) parts.push('publisher=' + escapePipes(details.publisher));
     if (hit.year !== null) parts.push('year=' + hit.year);
+    if (details && details.isbn) parts.push('isbn=' + escapePipes(details.isbn));
     parts.push('url=' + iaDetailsUrl(hit.identifier));
+    if (access === 'borrow') parts.push('url-access=registration');
     parts.push('via=Internet Archive');
     var template = '{{cite book |' + parts.join(' |') + '}}';
     return { template: template, ref: '<ref>' + template + '</ref>', kind: 'cite book' };
@@ -2515,29 +2526,32 @@
     });
   }
 
-  function toArchiveCandidate(s, publisher, terms) {
+  function toArchiveCandidate(s, details, terms) {
     var hit = s.hit;
     var best = s.passages[0];
     var matched = iaCompactAnchors(best.matched);
-    var byline = [hit.year, hit.creator && iaCleanCreator(hit.creator)]
-      .filter(Boolean).join(', ');
+    var byline = [
+      s.access === 'borrow' ? 'Internet Archive (borrow)' : 'Internet Archive',
+      hit.year,
+      hit.creator && iaCleanCreator(hit.creator)
+    ].filter(Boolean).join(', ');
     return {
       url: iaDetailsUrl(hit.identifier),
       title: hit.title,
-      relevance: 'Internet Archive, ' + byline + ' — matched ' +
-        (matched.join(', ') || 'claim wording'),
+      relevance: byline + ' — matched ' + (matched.join(', ') || 'claim wording'),
       snippet: best.text,
       evidence: {
         origin: 'internet-archive',
         identifier: hit.identifier,
         year: hit.year,
+        access: s.access,
         passages: s.passages.map(function (p) { return p.text; }),
         score: s.score,
         matchedAnchors: matched,
         query: hit.query,
         viewerUrl: iaViewerUrl(hit.identifier, terms)
       },
-      citation: formatArchiveCitation(hit, publisher)
+      citation: formatArchiveCitation(hit, s.access, details)
     };
   }
 
@@ -2557,29 +2571,20 @@
   function findArchiveCandidates(index) {
     var ctx = claimContexts[index];
     var title = mw.config.get('wgTitle') || pageTitle;
-    var cutoff = iaCutoffYear();
     var terms = iaClaimTerms(ctx.claim, title);
     var queries = buildArchiveQueries(terms).slice(0, IA_MAX_QUERIES);
     var funnel = {
-      queries: [], filter: 'search', hits: 0, publicDomain: 0, rejected: {},
+      queries: [], hits: 0, available: 0, borrowable: 0, rejected: {},
       matched: 0, lookedUp: 0, candidates: 0, errors: []
     };
     var hits = [];
     var seen = {};
 
     function search(query) {
-      var filtered = funnel.filter === 'search' ? iaWithPublicDomainFilter(query, cutoff) : query;
-      return iaFetchJson(iaSearchUrl(filtered))
+      return iaFetchJson(iaSearchUrl(query))
         .catch(function (err) {
           funnel.errors.push('search failed: ' + err.message);
-          // The query syntax is undocumented; if the search rejects the year
-          // clause, carry on without it — the gate still checks every hit.
-          if (funnel.filter !== 'search') return null;
-          funnel.filter = 'gate only';
-          return iaFetchJson(iaSearchUrl(query)).catch(function (err2) {
-            funnel.errors.push('search failed without filter too: ' + err2.message);
-            return null;
-          });
+          return null;
         })
         .then(function (response) {
           (response ? parseArchiveHits(response, query) : []).forEach(function (hit) {
@@ -2602,8 +2607,9 @@
 
     return chain.then(function () {
       funnel.hits = hits.length;
-      var ranked = rankArchiveHits(hits, ctx.claim, title, cutoff, IA_MIN_SCORE);
-      funnel.publicDomain = ranked.publicDomain;
+      var ranked = rankArchiveHits(hits, ctx.claim, title, IA_MIN_SCORE);
+      funnel.available = ranked.available;
+      funnel.borrowable = ranked.borrowable;
       funnel.rejected = ranked.rejected;
       funnel.matched = ranked.matched;
 
@@ -2616,12 +2622,12 @@
           return iaFetchJson(IA_METADATA_URL + encodeURIComponent(s.hit.identifier))
             .then(function (md) {
               var details = archiveDetailsOf(md);
-              var gate = archiveDetailsGate(details);
+              var gate = archiveDetailsGate(details, s.access);
               if (!gate.ok) {
                 funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
                 return;
               }
-              candidates.push(toArchiveCandidate(s, details.publisher, terms));
+              candidates.push(toArchiveCandidate(s, details, terms));
             }, function (err) {
               funnel.errors.push('metadata ' + s.hit.identifier + ': ' + err.message);
               candidates.push(toArchiveCandidate(s, null, terms));
@@ -2637,10 +2643,9 @@
   function archiveFunnelLine(f) {
     var rejected = Object.keys(f.rejected).map(function (r) { return f.rejected[r] + ' ' + r; });
     return f.queries.length + ' quer' + (f.queries.length === 1 ? 'y' : 'ies') + ' → ' +
-      f.hits + ' books → ' + f.publicDomain + ' public domain' +
+      f.hits + ' books → ' + f.available + ' readable (' + f.borrowable + ' to borrow)' +
       (rejected.length ? ' (dropped: ' + rejected.join(', ') + ')' : '') +
-      ' → ' + f.matched + ' with a matching passage → ' + f.candidates + ' lead(s)' +
-      (f.filter === 'gate only' ? ' [search unfiltered]' : '');
+      ' → ' + f.matched + ' with a matching passage → ' + f.candidates + ' lead(s)';
   }
 
   function runArchiveStage(index) {
@@ -3126,12 +3131,12 @@
     });
   }
 
-  // The second free stage: public-domain books on the Internet Archive. Run on
+  // The second free stage: books on the Internet Archive. Run on
   // request for now — experimental, and every click is a request to a donated
   // service — rather than on every badge click like the wiki stage.
   function renderArchiveInto($el, i, a) {
     var $section = $('<div class="cnfirmed-wiki cnfirmed-archive">');
-    $section.append($('<div class="cnfirmed-wiki-head">').text('Public-domain books (Internet Archive)'));
+    $section.append($('<div class="cnfirmed-wiki-head">').text('Books (Internet Archive)'));
 
     if (a.status === 'running') {
       $section.append($('<div>').text('Searching the Internet Archive…'));
@@ -3144,12 +3149,12 @@
           .text('Internet Archive search failed: ' + a.error));
       }
       $section.append($('<div class="cnfirmed-toolbar">').append(
-        $('<button>').text(a.status === 'error' ? 'Try again' : 'Search public-domain books (free)')
+        $('<button>').text(a.status === 'error' ? 'Try again' : 'Search Internet Archive books (free)')
           .on('click', function () { runArchiveStage(i); })
       ));
       $section.append($('<div class="cnfirmed-note">').text(
-        'Full-text search of books published up to ' + iaCutoffYear() +
-        '. Free, no API key. Experimental.'));
+        'Full-text search of digitised books. Free, no API key. Experimental. ' +
+        'Some need a free archive.org account to borrow.'));
       $el.append($section);
       return;
     }
@@ -3161,7 +3166,7 @@
         .text('Nothing specific to search for: the claim has no number or name.'));
     } else if (candidates.length === 0) {
       $section.append($('<div class="cnfirmed-note">')
-        .text('No public-domain book matches this claim.'));
+        .text('No book on the Internet Archive matches this claim.'));
     }
     candidates.forEach(function (c) {
       $section.append(renderArchiveCandidate(i, c));
@@ -3178,13 +3183,17 @@
     var $row = $('<div class="cnfirmed-wiki-row">');
     $row.append(
       $('<span class="cnfirmed-origin">').attr('data-origin', 'internet-archive')
-        .text('archive.org · ' + c.evidence.year),
+        .text('archive.org' + (c.evidence.year ? ' · ' + c.evidence.year : '')),
       ' ',
       $('<a>').attr({
         href: c.evidence.viewerUrl, target: '_blank', rel: 'noopener',
         title: 'Open the book with the match highlighted'
       }).text(c.title)
     );
+    if (c.evidence.access === 'borrow') {
+      $row.append($('<span class="cnfirmed-note">')
+        .text(' — borrow with a free archive.org account'));
+    }
     $row.append($('<div class="cnfirmed-quote">').text('…' + c.snippet + '…'));
     if (c.evidence.matchedAnchors.length) {
       $row.append($('<div class="cnfirmed-note">')
@@ -3192,7 +3201,7 @@
     }
     $row.append($('<div class="cnfirmed-note">').text(
       'Check the passage in the book, and add |page= to the citation. ' +
-      (new Date().getUTCFullYear() - c.evidence.year > 100
+      (c.evidence.year && new Date().getUTCFullYear() - c.evidence.year > 100
         ? 'Old sources can be outdated (WP:AGEMATTERS).' : '')));
 
     var $tools = $('<div class="cnfirmed-toolbar">');

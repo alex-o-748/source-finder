@@ -7,8 +7,6 @@ interface ArchiveArgs {
   maxClaims?: number;
   /** Save every raw Archive response here, as fixtures. */
   record?: string;
-  /** Ask the search to filter to public domain (else only the gate does). */
-  searchFilter: boolean;
   json: boolean;
 }
 
@@ -18,18 +16,17 @@ function funnelLine(f: ArchiveFunnel): string {
     .join(", ");
   return (
     `${f.queries.length} quer${f.queries.length === 1 ? "y" : "ies"} → ` +
-    `${f.hits} books → ${f.publicDomain} public domain` +
+    `${f.hits} books → ${f.available} readable (${f.borrowable} to borrow)` +
     (rejected ? ` (dropped: ${rejected})` : "") +
-    ` → ${f.matched} with a matching passage → ${f.candidates} lead(s)` +
-    (f.filter === "gate only" ? "  [search unfiltered]" : "")
+    ` → ${f.matched} with a matching passage → ${f.candidates} lead(s)`
   );
 }
 
 /**
- * The Internet Archive stage on its own: public-domain books whose text
- * carries each {{cn}} claim. No model, no API key. Prints how many books
- * survive each step of the funnel, which is what says whether the stage is
- * worth wiring into `find`.
+ * The Internet Archive stage on its own: books — open, or borrowable with a
+ * free account — whose text carries each {{cn}} claim. No model, no API key.
+ * Prints how many books survive each step of the funnel, which is what says
+ * whether the stage is worth wiring into `find`.
  */
 export async function archiveCommand(args: ArchiveArgs): Promise<void> {
   const client = args.record
@@ -37,7 +34,6 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     : httpArchiveClient;
   const run = await findArticleArchiveSources(args.urlOrTitle, {
     maxClaims: args.maxClaims,
-    filterInSearch: args.searchFilter,
     client,
     onProgress: args.json
       ? undefined
@@ -71,7 +67,8 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     for (const q of r.funnel.queries) console.log(`    query:  ${q}`);
     for (const e of r.funnel.errors) console.log(`    ! ${e}`);
     r.candidates.forEach((c, j) => {
-      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score})`);
+      const access = c.evidence.access === "borrow" ? ", borrow" : "";
+      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}${access})`);
       console.log(`       ${c.evidence.viewerUrl}`);
       console.log(`       ${c.relevance}`);
       for (const p of c.evidence.passages.slice(0, 2)) console.log(`       "${p}"`);
@@ -82,5 +79,6 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
 
   console.log("Leads, not verdicts: the passage carries the claim's numbers and names, which");
   console.log("is not the same as stating it. Read it — and add |page= — before pasting.");
-  console.log("Old sources may be outdated: see WP:AGEMATTERS.");
+  console.log("Borrowable books need a free archive.org account to read. Old sources may be");
+  console.log("outdated: see WP:AGEMATTERS.");
 }
