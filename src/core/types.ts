@@ -34,7 +34,11 @@ export interface Claim {
  * Where a candidate source came from. Wiki-local origins cost nothing to
  * discover and are tried before the web search.
  */
-export type SourceOrigin = "web" | "same-article" | "sister-wiki";
+export type SourceOrigin =
+  | "web"
+  | "same-article"
+  | "sister-wiki"
+  | "internet-archive";
 
 /**
  * Why a wiki-local candidate is believed to fit the claim: the citation was
@@ -93,6 +97,48 @@ export interface WikiCandidate {
   evidence: WikiEvidence;
   /** Ready-to-paste `<ref>` re-using the existing citation. */
   ref: string;
+}
+
+/**
+ * Why an Internet Archive book is believed to fit the claim: a passage in its
+ * OCR text carries the claim's anchors. Like `WikiEvidence`, a lead to be read
+ * or verified, not a verdict.
+ */
+export interface ArchiveEvidence {
+  origin: "internet-archive";
+  /** Archive item identifier. */
+  identifier: string;
+  /** Publication year, when the Archive records one. */
+  year: number | null;
+  /** Readable by anyone, or borrowable with a free archive.org account. */
+  access: "open" | "borrow";
+  /**
+   * The matching passages from the OCR text, best first, as the search
+   * returned them (OCR errors included). Each is scored on its own: two
+   * passages from one book may be pages apart.
+   */
+  passages: string[];
+  /** Matching signal of the best passage, 0-1. Not a verdict — only a lead. */
+  score: number;
+  /** The claim's numbers and names that the best passage contains. */
+  matchedAnchors: string[];
+  /** The full-text query that surfaced the book. */
+  query: string;
+  /** The book in the Archive's viewer with the claim's strongest anchor searched. */
+  viewerUrl: string;
+}
+
+/** A book on the Internet Archive, open or borrowable, with a passage matching the claim. */
+export interface ArchiveCandidate {
+  /** The book's page on archive.org: what the citation links to. */
+  url: string;
+  title: string;
+  /** One-line provenance, e.g. "Internet Archive, 1889 — matched 1889, 300". */
+  relevance: string;
+  /** The best passage. */
+  snippet: string;
+  evidence: ArchiveEvidence;
+  citation: Citation;
 }
 
 /** Substantiation verdict values emitted by the verifier. */

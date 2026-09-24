@@ -4,6 +4,7 @@ import { findCommand } from "./commands/find.js";
 import { verifyCommand } from "./commands/verify.js";
 import { extractCommand } from "./commands/extract.js";
 import { wikiCommand } from "./commands/wiki.js";
+import { archiveCommand } from "./commands/archive.js";
 
 const program = new Command();
 
@@ -82,6 +83,24 @@ program
         sisterWikis: opts.sisterWikis,
         json: opts.json,
       });
+    },
+  );
+
+program
+  .command("archive")
+  .argument("<url-or-title>", "Wikipedia URL or bare article title")
+  .option("--max-claims <n>", "cap the number of claims processed", parseIntArg)
+  .option("--record <dir>", "save every raw Internet Archive response to <dir>, as fixtures")
+  .option("--json", "emit machine-readable JSON", false)
+  .description(
+    "Free stage only: look for books on the Internet Archive — open or borrowable — whose text carries each claim. No model, no API key.",
+  )
+  .action(
+    async (
+      urlOrTitle: string,
+      opts: { maxClaims?: number; record?: string; json: boolean },
+    ) => {
+      await archiveCommand({ urlOrTitle, ...opts });
     },
   );
 

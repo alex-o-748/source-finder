@@ -1,0 +1,241 @@
+{
+  "_note": "Shape recorded from archive.org/services/search/beta/page_production/?service_backend=fts (2026-09). Real hits: the first two (unfiltered '\"Eiffel Tower\" 1889'; the second's highlight was cut off in the recording and is omitted) and the last two (the 1889 periodicals, from '\"Eiffel Tower\" AND 1889 AND year:[1800 TO 1930]'). The rest are synthetic, in the same shape: open public-domain books, one undated pamphlet, and one book only print-disabled readers can open.",
+  "response": {
+    "body": {
+      "hits": {
+        "total": 1540,
+        "hits": [
+          {
+            "index": "fts_main",
+            "service_backend": "fts",
+            "hit_type": "text",
+            "fields": {
+              "identifier": "eiffeltower0000pezz",
+              "filename": "eiffeltower0000pezz_hocr_searchtext.txt.gz",
+              "page_num": 1,
+              "mediatype": "texts",
+              "title": "Eiffel Tower",
+              "creator": [
+                "Pezzi, Bryan"
+              ],
+              "date": "2008-01-01T00:00:00Z",
+              "collection": [
+                "internetarchivebooks",
+                "inlibrary"
+              ],
+              "year": 2008,
+              "__href__": "/details/eiffeltower0000pezz?q=%22Eiffel+Tower%22+1889"
+            },
+            "highlight": {
+              "text": [
+                "steel  shop.\n{{{Eiffel  Tower}}}\n17\nMEASURING  THE  {{{EIFFEL  TOWER}}}\nLocation\nThe  {{{Eiffel  Tower}}}  is  located",
+                "visit  the  {{{Eiffel  Tower}}} every  year.\n•  The  first  floor  to  the  top  of  the  {{{Eiffel  Tower}}} receives",
+                "889:  The  {{{Eiffel  Tower}}}  is  completed,  almost two  months  ahead  of  schedule. _\nMay  6, {{{1889}}}:  The ",
+                "for  six  months.\n{{{Eiffel  Tower}}}\n7\nwUUfflUU1\n'fftictural  Wonders\nThe  {{{Eiffel  Tower}}}  was  the  focal ",
+                "Exposition  of  {{{1889}}}  was  marked  by  the blast  of  a  cannon  placed  on  one  of  the  {{{Eiffel  Tower}}}  girders"
+              ]
+            },
+            "_score": 16.828743
+          },
+          {
+            "index": "fts_main",
+            "service_backend": "fts",
+            "hit_type": "text",
+            "fields": {
+              "identifier": "wheneiffeltowerw0000levi",
+              "page_num": 1,
+              "mediatype": "texts",
+              "title": "When the Eiffel Tower was new : French visions of progress at the Centennial of the Revolution",
+              "creator": [
+                "Levin, Miriam R"
+              ],
+              "date": "1989-01-01T00:00:00Z",
+              "collection": [
+                "internetarchivebooks",
+                "inlibrary"
+              ],
+              "year": 1989
+            },
+            "_score": 15.2
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "eiffeltowerdescr00tiss",
+              "mediatype": "texts",
+              "title": "The Eiffel tower : a description of the monument",
+              "creator": [
+                "Tissandier, Gaston, 1843-1899"
+              ],
+              "date": "1889-01-01T00:00:00Z",
+              "collection": [
+                "americana"
+              ],
+              "year": 1889
+            },
+            "highlight": {
+              "text": [
+                "The  {{{Eiffel  Tower}}},  finished  in  {{{1889}}}  for  the  Exposition,  rises  300  metres  above  the\nChamp  de  Mars;  Gustave  Eiffel  directed  its  construction.",
+                "a  view  from  the  {{{Eiffel  Tower}}}\n17"
+              ]
+            },
+            "_score": 12.1
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "eiffeltower00tiss",
+              "mediatype": "texts",
+              "title": "The Eiffel Tower.",
+              "creator": [
+                "Tissandier, Gaston"
+              ],
+              "year": 1890,
+              "collection": [
+                "cdl"
+              ]
+            },
+            "highlight": {
+              "text": [
+                "the  {{{Eiffel  Tower}}}  opened  to  visitors  in  {{{1889}}},  and  was  much  admired  by  the  public"
+              ]
+            },
+            "_score": 11.4
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "guidetoparis1925",
+              "mediatype": "texts",
+              "title": "Guide to Paris",
+              "date": "1925",
+              "collection": [
+                "americana"
+              ]
+            },
+            "highlight": {
+              "text": [
+                "Of  the  monuments  the  {{{Eiffel  Tower}}},  erected  in  {{{1889}}},  is  the  highest  at  300  metres,  the  work  of  Gustave  Eiffel.",
+                "{{{1889}}}  was  a  year"
+              ]
+            },
+            "_score": 9.7
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "annuaire1912",
+              "mediatype": "texts",
+              "title": "Annuaire statistique",
+              "year": 1912,
+              "collection": [
+                "americana"
+              ]
+            },
+            "highlight": {
+              "text": [
+                "In  {{{1889}}}  the  exhibition  at  Paris  drew  thirty-two  million  visitors  to  the  grounds"
+              ]
+            },
+            "_score": 8.8
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "undatedpamphlet",
+              "mediatype": "texts",
+              "title": "The Eiffel Tower, pamphlet",
+              "collection": [
+                "americana"
+              ]
+            },
+            "highlight": {
+              "text": [
+                "The  {{{Eiffel  Tower}}}  of  {{{1889}}}  is  300  metres  high  and  was  built  by  Gustave  Eiffel."
+              ]
+            },
+            "_score": 8.1
+          },
+          {
+            "hit_type": "text",
+            "fields": {
+              "identifier": "historyofeiffelt0000smit",
+              "mediatype": "texts",
+              "title": "A history of the Eiffel Tower",
+              "creator": [
+                "Smith, Alan"
+              ],
+              "year": 1995,
+              "collection": [
+                "printdisabled",
+                "internetarchivebooks"
+              ]
+            },
+            "highlight": {
+              "text": [
+                "The {{{Eiffel Tower}}}, completed in {{{1889}}}, stood {{{300}}} metres tall; Gustave Eiffel's firm built it."
+              ]
+            },
+            "_score": 8.0
+          },
+          {
+            "index": "fts_main",
+            "service_backend": "fts",
+            "hit_type": "text",
+            "fields": {
+              "identifier": "sim_engineering_1889_47_index",
+              "mediatype": "texts",
+              "title": "Engineering 1889: Vol 47 Index",
+              "date": "1889-01-01T00:00:00Z",
+              "collection": [
+                "pub_engineering",
+                "sim_microfilm",
+                "periodicals"
+              ],
+              "year": 1889,
+              "issue": "Index"
+            },
+            "highlight": {
+              "text": [
+                "TO ‘‘ ENGINEERING,” JULY 19, {{{1889}}}.)\n \n \nElectricity on the {{{Eiffel Tower}}}, 702, 703 Elevator with Safety",
+                "pWinedeee, 21\n \n(SUPPLEMENT TO ‘‘ ENGINEERING,” JULY 19, {{{1889}}}.]\n \n \n \n \nBoring, naaene, and Surfacing Machine",
+                "Engines, 698 Ceaue for the Foundations of the {{{Eiffel Tower}}},\n“* Calais-Douvres,” The London, Chatham, and",
+                "Five-Ton Portable, 632\nCranes used to Erect the {{{Eiffel Tower}}}, 425, 430\n        \nDredger, en gy Suction, “‘",
+                "Carriage of the President of the R lic, The, 481\n{{{Eiffel Tower}}} Station, The, 479\n——- Mallet’s Compound Double"
+              ]
+            },
+            "_score": 17.396114
+          },
+          {
+            "index": "fts_main",
+            "service_backend": "fts",
+            "hit_type": "text",
+            "fields": {
+              "identifier": "sim_scientific-american_1889-05-18_60_20",
+              "mediatype": "texts",
+              "title": "Scientific American 1889-05-18: Vol 60 Iss 20",
+              "date": "1889-05-18T00:00:00Z",
+              "collection": [
+                "pub_scientific-american",
+                "sim_microfilm",
+                "periodicals"
+              ],
+              "year": 1889,
+              "issue": "20"
+            },
+            "highlight": {
+              "text": [
+                "by the {{{Eiffel tower}}}.\nTo give the reader an idea of the comparative heights of the {{{Eiffel tower}}} and the",
+                "PRACTICAL INFORMATION, ART, SCIENCE,\nJS\nr) Copyrighted, {{{1889}}}, by Mann & Co.]\n \nMECHANICS, CHEMISTRY, AND MANUFACTURES",
+                "—No, od\n$3.00 A VEAR, WEEKLY.\nNEW YORK, MAY\n18, {{{1889}}}.\n \n \nTHE WASHINGTON BRIDGE, NEW YORK CITY.\nIn 1885",
+                "NEW YORK CITY,\n \n \nScientific American.\n[May 18, {{{1889}}},\n304 A REMARKABLE OCEAN VOYAGE.\ndaring the progress",
+                "Street, New York.\n \n \nNEW YORK, SATURDAY, MAY 18, {{{1889}}}.\n \n \nContents,\n(Ilustrated articles are marked with"
+              ]
+            },
+            "_score": 17.32529
+          }
+        ]
+      }
+    }
+  }
+}

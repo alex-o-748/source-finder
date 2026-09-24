@@ -122,11 +122,34 @@ property of where you searched rather than something to prompt for.
 | Claim type | Corpus | Needs a key? |
 |---|---|---|
 | Scientific / medical | OpenAlex, Crossref (metadata + DOI), Europe PMC (full-text) | no |
-| Historical / biographical | Internet Archive full-text search, HathiTrust | no / partial |
+| Historical / biographical | Internet Archive full-text search (open and lending library), HathiTrust | no / partial |
 | Historical news | Chronicling America, Trove, national libraries | varies |
 | Contemporary news | GDELT document API, domain-restricted to a WP:RSP-derived allowlist | no |
 | Statistics | The issuing body directly (national stats offices, Eurostat, World Bank) | no |
 | Dead links | Wayback CDX API | no |
+
+**Internet Archive: built, being measured.** Started as public domain only,
+then widened: what matters is that an editor can read the passage, and a
+lending-library book anyone can borrow with a free account meets that — it
+also brings in modern secondary sources, where pre-1930 books are often
+dated. `src/core/archiveSources.ts`, `cnfirmed archive`, and a per-claim
+button in the user script implement the funnel (search → access gate on the
+hit's own fields → per-passage deterministic score → one book per work →
+metadata for the few kept), described in the README. The endpoint and response
+shape were settled from a Wikipedia page's console: archive.org's own
+full-text search is the one reachable under the CSP, and its hits carry year,
+collections and matching passages, so the gate and the scoring need no
+per-book request. The first real responses showed two things to watch: a
+year-filtered search returns mostly digitised periodicals, whose mastheads
+print the year on every page (the issue's own year is now ignored as
+evidence), and a passage matching only "1889" and "Eiffel" scores 0.38 whether
+it says the tower was completed that year or that a cannon was fired from it —
+the matched anchors, shown with each lead, are what tell them apart. Next: the
+funnel counts over ~20 real articles, then decide whether it joins "Verify
+all" and `find` (verifying passages via `verifySource`'s `sourceText`). Page
+numbers and longer passages would need search-inside, on `*.archive.org`
+servers the CSP refuses: an allowlist request or a Toolforge proxy, if the
+counts say it is worth it.
 
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and
@@ -210,14 +233,25 @@ fluent wrong answer), and lowers the bar the model has to clear.
   are the first thing to check on a networked machine — along with whether
   Wikipedia's CSP lets the user script reach other language editions at all,
   which is the next question below.
-- ~~**Wikipedia's CSP.**~~ **Answered, permissively.** A user script on
-  en.wikipedia.org reached another language edition, `www.wikidata.org`, and
-  `api.anthropic.com` — cross-wiki, cross-project and third-party alike. The
-  script is loaded with `importScript` and uses plain `fetch`, with no
-  `GM_xmlhttpRequest` escape hatch, so the page's CSP genuinely applies and
-  genuinely permits this. **Phase 3 retrieval can stay in the user script**;
-  no browser extension or backend is needed just to reach an API. Model
-  *weights* are a different kind of request and remain untested.
+- ~~**Wikipedia's CSP.**~~ **Answered: an allowlist, not an open door.** A
+  user script on en.wikipedia.org reached another language edition,
+  `www.wikidata.org`, and `api.anthropic.com`, which was first read as "any
+  third-party host works". It does not. The page's `default-src` names a fixed
+  set of hosts: every Wikimedia project, `*.toolforge.org`, `*.wmcloud.org`,
+  `api.anthropic.com`, `api.openai.com`, `doi.org`, `https://archive.org`
+  (that exact host) and `iiif.archive.org`, among others. Anything else is
+  refused before the request leaves the browser — including
+  `be-api.us.archive.org` (the `ia` package's full-text endpoint) and the
+  numbered `*.archive.org` servers that downloads redirect to. Checked from the
+  console, 2026-09: archive.org's own full-text search
+  (`archive.org/services/search/beta/page_production/?service_backend=fts`),
+  `advancedsearch.php` and `/metadata/{id}` all work from page context; OCR
+  text downloads do not. **Consequence for phase 3:** each corpus must be
+  checked against this list first. Of Direction 2, only the Internet Archive
+  (via archive.org) and `doi.org` are reachable today; OpenAlex, Crossref,
+  Europe PMC and GDELT would need a Toolforge proxy (allowed) or an addition
+  to the list. Model *weights* are a different kind of request and remain
+  untested.
 - **Toolforge terms and LiftWing access** are both free but both have a
   process; worth starting that conversation early.
 - **Does the small model actually hold up?** The whole plan rests on

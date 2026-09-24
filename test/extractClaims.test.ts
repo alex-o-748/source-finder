@@ -85,3 +85,15 @@ test("a genuine sentence boundary before a figure still splits", () => {
   );
   assert.equal(claim.claim, "297 ships called that year.");
 });
+
+test("the previous sentence's {{cn}} tag is not part of the next claim", () => {
+  // Every search for the second claim was built on "May 2024", the tag's date.
+  const claims = extractClaims(
+    "The tower opened in 1889.{{citation needed|date=May 2024}} It was popular.{{cn}}\n",
+  );
+  assert.deepEqual(
+    claims.map((c) => c.claim),
+    ["The tower opened in 1889.", "It was popular."],
+  );
+  assert.equal(claims[1].context, "The tower opened in 1889. It was popular.");
+});

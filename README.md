@@ -106,6 +106,12 @@ node dist/cli/index.js find "https://en.wikipedia.org/wiki/Eiffel_Tower" --max-c
 # Just the free stage: what can be sourced from wiki alone. No API key needed.
 node dist/cli/index.js wiki "Eiffel Tower"
 
+# Books on the Internet Archive — open, or borrowable with a free account — whose
+# text carries each claim.
+# No API key. Prints how many books survive each step of the funnel.
+node dist/cli/index.js archive "Eiffel Tower" --max-claims 5
+node dist/cli/index.js archive "Eiffel Tower" --record fixtures-out/  # save raw responses
+
 # Just the verifier — useful as its own service.
 node dist/cli/index.js verify \
   --claim "The Eiffel Tower was 300 metres tall when first built." \
@@ -141,6 +147,8 @@ src/
     wikitextRefs.ts    # <ref> parsing → url, title, work, quote, reusable name
     relevance.ts       # deterministic scoring: token overlap + translation anchors
     wikiSources.ts     # stage 1 — citations already on wiki (no model)
+    internetArchive.ts # Internet Archive client: full-text search, metadata, book text
+    archiveSources.ts  # Internet Archive books whose text carries the claim (no model)
     findSources.ts     # stage 2 — Claude + web_search → candidate sources
     verifySource.ts    # (claim, source) → verdict — separable
     formatCitation.ts  # source → {{cite web|...}} / {{cite news|...}}
@@ -183,6 +191,23 @@ What comes out is **evidence, not a verdict**: a human editor cited that source 
 
 Deliberately out of scope: **Wikidata statements and their references.** This was built, shipped and then removed — it found nothing on real articles. See the plan doc for why, before building it again.
 
+## Books on the Internet Archive (experimental)
+
+A second free stage, in both the user script (a **Search Internet Archive books** button in each claim's popover) and the CLI (`cnfirmed archive`). It looks for the claim in the OCR text of digitised books, with no model. A book counts if an editor can read the passage: an open one, or one in the lending library, which anyone with a free archive.org account can borrow.
+
+1. **Search** — one to three full-text queries, strictest first: the article's subject with every number and name in the claim, then with the numbers only, then with the strongest anchor. A claim with no number or name is skipped: the subject alone matches every book about it.
+2. **Access gate** — on each hit's own fields: lending-library books (`inlibrary`) are kept as *borrowable*; books only certified print-disabled readers can open (`printdisabled` without `inlibrary`) are dropped; everything else is *open*.
+3. **Score** — each hit arrives with its matching passages, and each is scored on its own (two passages from one book may be pages apart) with the sister-wiki scoring: it must contain one of the claim's numbers and mention the subject, then anchors and weighted token coverage decide.
+4. **Dedupe and look up** — one book per work: the same main title and a creator sharing a name (scans spell creators differently; a different author under the same title is a different work). On a tie, an open book ranks above a borrowable one. Then item metadata for the two or three kept: publisher and ISBN for the citation, and whether the book has been withdrawn.
+
+That is one to three searches and at most five metadata requests per claim. Each lead comes with its passages, the anchors they matched, a link that opens the book with the match searched, and a `{{cite book … |via=Internet Archive}}` — with `|url-access=registration` for a borrowable book, as InternetArchiveBot writes it. The page number is not known: the editor adds `|page=` after checking the passage. Old sources can be outdated or primary (WP:AGEMATTERS).
+
+**Endpoints.** Only `https://archive.org` is on Wikipedia's CSP allowlist, so both front ends use the full-text search archive.org's own search page uses (`/services/search/beta/page_production/?service_backend=fts`) and `/metadata/{id}`; both were checked from a Wikipedia page. The `ia` package's `be-api.us.archive.org`, search-inside-the-book and OCR downloads are refused there, and are not used anywhere, so the CLI and the user script see the same data. The response shape is recorded in `test/fixtures/archive/`. The search accepts Lucene syntax (`AND`, and field ranges such as `year:[1800 TO 1930]`, both checked live).
+
+**Periodicals.** The search surfaces many digitised magazines and journal volumes (*Scientific American*, *Engineering*), which are good sources, but every page of an 1889 issue prints "1889" in its masthead. For an item in the `periodicals` collection, its own year is therefore not counted as a matched number: a claim whose only number is that year gets nothing from that issue. Without this rule, an *Engineering* index line — "JULY 19, 1889 … Electricity on the Eiffel Tower, 702, 703" — scored 0.85 for "The tower opened to visitors in 1889", higher than any genuine passage.
+
+**Measuring it.** The funnel line — `1 query → 41 books → 38 readable (29 to borrow) (dropped: 3 print-disabled readers only) → 4 with a matching passage → 3 lead(s)` — is shown under the results, logged to the browser console, and printed by the CLI, which can also save the raw responses with `--record <dir>`. It is not part of `find` or "Verify all" until those numbers say it earns its place.
+
 ## Policy handling (three layers)
 
 1. **Hard domain blocklist** — `src/policy/unreliable_sources.ts` for the CLI, mirrored inline in `userscript/cnfirmed.js`. Catches WP:RSP-deprecated outlets deterministically, and is applied to wiki-local candidates too (so a `wikipedia.org` URL cited on another wiki never comes back — WP:CIRCULAR).
@@ -215,8 +240,8 @@ quality and making the tool free to run without an API key. The wiki-local
 stage is phase 2 of that plan.
 
 Both passes have been exercised against the live API from a user script on
-en.wikipedia.org, which also settles the question that constrained the
-architecture: the page's CSP permits cross-wiki, cross-project and
-third-party `fetch` alike from page context. Retrieval in phase 3 can
-therefore stay in the user script — no browser extension or backend needed
-just to reach an API.
+en.wikipedia.org. The page's CSP is an allowlist: every Wikimedia project,
+Toolforge, the three model providers, `archive.org` and `doi.org` are on it,
+but most third-party APIs are not, and a request to one is refused before it
+leaves the browser. A new retrieval source has to be checked against that list
+first (see the plan doc); what is not on it needs a Toolforge proxy.
