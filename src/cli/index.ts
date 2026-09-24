@@ -92,8 +92,8 @@ program
   .option("--max-claims <n>", "cap the number of claims processed", parseIntArg)
   .option("--record <dir>", "save every raw Internet Archive response to <dir>, as fixtures")
   .option(
-    "--no-query-filter",
-    "apply the public-domain filter only after the search, not inside the query",
+    "--no-search-filter",
+    "don't ask the search to filter to public domain; only check each hit afterwards",
   )
   .option("--json", "emit machine-readable JSON", false)
   .description(
@@ -102,7 +102,7 @@ program
   .action(
     async (
       urlOrTitle: string,
-      opts: { maxClaims?: number; record?: string; queryFilter: boolean; json: boolean },
+      opts: { maxClaims?: number; record?: string; searchFilter: boolean; json: boolean },
     ) => {
       await archiveCommand({ urlOrTitle, ...opts });
     },

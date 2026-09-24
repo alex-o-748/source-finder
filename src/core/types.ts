@@ -110,27 +110,30 @@ export interface ArchiveEvidence {
   identifier: string;
   /** Publication year, which is also what makes the book public domain. */
   year: number;
-  /** The matching passage from the OCR text, as found (OCR errors included). */
-  passage: string;
-  /** Page index in the Archive's viewer (`/page/n{leaf}`), when known. */
-  leaf: number | null;
-  /** How the passage was found: search hit, search inside the book, or the full OCR text. */
-  passageFrom: "search-hit" | "search-inside" | "plain-text";
-  /** Matching signal, 0-1. Not a substantiation verdict — only a lead. */
+  /**
+   * The matching passages from the OCR text, best first, as the search
+   * returned them (OCR errors included). Each is scored on its own: two
+   * passages from one book may be pages apart.
+   */
+  passages: string[];
+  /** Matching signal of the best passage, 0-1. Not a verdict — only a lead. */
   score: number;
-  /** The claim's numbers and names that the passage contains. */
+  /** The claim's numbers and names that the best passage contains. */
   matchedAnchors: string[];
   /** The full-text query that surfaced the book. */
   query: string;
+  /** The book in the Archive's viewer with the claim's strongest anchor searched. */
+  viewerUrl: string;
 }
 
 /** A public-domain book on the Internet Archive with a passage matching the claim. */
 export interface ArchiveCandidate {
+  /** The book's page on archive.org: what the citation links to. */
   url: string;
   title: string;
   /** One-line provenance, e.g. "Internet Archive, 1889 — matched 1889, 300". */
   relevance: string;
-  /** The passage, trimmed for display. */
+  /** The best passage. */
   snippet: string;
   evidence: ArchiveEvidence;
   citation: Citation;

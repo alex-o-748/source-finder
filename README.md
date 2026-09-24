@@ -147,7 +147,7 @@ src/
     relevance.ts       # deterministic scoring: token overlap + translation anchors
     wikiSources.ts     # stage 1 — citations already on wiki (no model)
     internetArchive.ts # Internet Archive client: full-text search, metadata, book text
-    archiveSources.ts  # public-domain books whose text carries the claim (no model; CLI only)
+    archiveSources.ts  # public-domain books whose text carries the claim (no model)
     findSources.ts     # stage 2 — Claude + web_search → candidate sources
     verifySource.ts    # (claim, source) → verdict — separable
     formatCitation.ts  # source → {{cite web|...}} / {{cite news|...}}
@@ -190,18 +190,22 @@ What comes out is **evidence, not a verdict**: a human editor cited that source 
 
 Deliberately out of scope: **Wikidata statements and their references.** This was built, shipped and then removed — it found nothing on real articles. See the plan doc for why, before building it again.
 
-## Public-domain books on the Internet Archive (experimental, CLI only)
+## Public-domain books on the Internet Archive (experimental)
 
-`cnfirmed archive` looks for the claim in the OCR text of public-domain books, with no model. It is a funnel, so a handful of passages at most would ever reach the paid verifier:
+A second free stage, in both the user script (a **Search public-domain books** button in each claim's popover) and the CLI (`cnfirmed archive`). It looks for the claim in the OCR text of public-domain books, with no model:
 
 1. **Search** — one to three full-text queries, strictest first: the article's subject with every number and name in the claim, then with the numbers only, then with the strongest anchor. A claim with no number or name is skipped: the subject alone matches every book about it.
-2. **Public-domain gate** — each book's metadata is read; anything published after the US cutoff (this year − 96, so 1930 in 2026), access-restricted, or in a lending collection is dropped. "Public domain" stands in for what matters: the full text is openly readable, so the passage can be checked.
-3. **Passage** — the matching paragraph: from the search hit if it carries one, else by searching inside the book (which also gives the page), else from the book's OCR text.
-4. **Score and dedupe** — the sister-wiki scoring: the passage must contain one of the claim's numbers and mention the subject, then anchors and weighted token coverage decide. One passage per work, however many scans of it the Archive holds.
+2. **Public-domain gate** — the search is asked for books up to the US cutoff (this year − 96, so 1930 in 2026), and each hit's own fields are checked again: anything later, or in a lending collection (`inlibrary`, `printdisabled`), is dropped. "Public domain" stands in for what matters: the full text is openly readable, so the passage can be checked.
+3. **Score** — each hit arrives with its matching passages, and each is scored on its own (two passages from one book may be pages apart) with the sister-wiki scoring: it must contain one of the claim's numbers and mention the subject, then anchors and weighted token coverage decide.
+4. **Dedupe and look up** — one book per work, however many scans the Archive holds; then item metadata for the two or three kept, for the publisher and a last access-restriction check.
 
-Each lead comes with the passage, the anchors it matched, the funnel counts, and a `{{cite book … |via=Internet Archive}}` linking to the page. Old sources can be outdated or primary — see WP:AGEMATTERS.
+That is one to three searches and at most five metadata requests per claim. Each lead comes with its passages, the anchors they matched, a link that opens the book with the match searched, and a `{{cite book … |via=Internet Archive}}`. The page number is not known — the editor adds `|page=` after checking the passage — and old sources can be outdated or primary (WP:AGEMATTERS).
 
-**Not yet verified live.** The full-text endpoint is the one the official `internetarchive` package uses (`be-api.us.archive.org/ia-pub-fts-api`), but its response shape, whether it returns matching text and page numbers, and whether it honours the public-domain filter inside the query are undocumented, and the environment this was built in could not reach archive.org. The parsers accept every shape the reference clients read, and the gate re-checks every book's metadata regardless. Run with `--record <dir>` to capture the real responses, and `--no-query-filter` if the search rejects the filter. It is not wired into `find` or the user script until those numbers are in.
+**Endpoints.** Only `https://archive.org` is on Wikipedia's CSP allowlist, so both front ends use the full-text search archive.org's own search page uses (`/services/search/beta/page_production/?service_backend=fts`) and `/metadata/{id}`; both were checked from a Wikipedia page. The `ia` package's `be-api.us.archive.org`, search-inside-the-book and OCR downloads are refused there, and are not used anywhere, so the CLI and the user script see the same data. The response shape is recorded in `test/fixtures/archive/`. The public-domain filter is a year range added to the query (`… AND year:[1450 TO 1930]`), which the search was checked to honour; lending status is left to the gate. If the search ever rejects the range, the stage carries on unfiltered and the gate alone decides (the funnel line says `[search unfiltered]`).
+
+**Periodicals.** A filtered search surfaces many digitised magazines and journal volumes (*Scientific American*, *Engineering*), which are good public-domain sources, but every page of an 1889 issue prints "1889" in its masthead. For an item in the `periodicals` collection, its own year is therefore not counted as a matched number: a claim whose only number is that year gets nothing from that issue. Without this rule, an *Engineering* index line — "JULY 19, 1889 … Electricity on the Eiffel Tower, 702, 703" — scored 0.85 for "The tower opened to visitors in 1889", higher than any genuine passage.
+
+**Measuring it.** The funnel line — `3 queries → 41 books → 12 public domain (dropped: 29 lending library) → 2 with a matching passage → 1 lead(s)` — is shown under the results, logged to the browser console, and printed by the CLI, which can also save the raw responses with `--record <dir>`. It is not part of `find` or "Verify all" until those numbers say it earns its place.
 
 ## Policy handling (three layers)
 

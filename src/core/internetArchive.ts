@@ -1,79 +1,76 @@
 /**
  * Thin Internet Archive client.
  *
- * Four read-only endpoints, none of which needs a key:
+ * Two read-only endpoints on `archive.org` itself, neither needing a key:
  *
- *   - Full-text search over OCRed books (`be-api.us.archive.org/ia-pub-fts-api`),
- *     the endpoint the official `internetarchive` Python package uses for
- *     `ia search --fts`. A query is Lucene when prefixed with `!L`.
- *   - Item metadata (`archive.org/metadata/{id}`): citation fields, rights
- *     flags, and the server/dir the search-inside endpoint needs.
- *   - Search inside one book (`{server}/fulltext/inside.php`), the BookReader
- *     endpoint: matching passages with their page.
- *   - The book's plain OCR text (`archive.org/download/{id}/{file}_djvu.txt`),
- *     the fallback when neither of the above yields a passage.
+ *   - Full-text search over OCRed books, the endpoint archive.org's own search
+ *     page uses (`/services/search/beta/page_production/?service_backend=fts`).
+ *     Each hit carries the book's year, collections and matching passages, so
+ *     the public-domain check and the scoring need no further request.
+ *   - Item metadata (`/metadata/{id}`), for what a hit lacks: the publisher,
+ *     and the access-restriction flag, checked once more for the few books
+ *     kept.
  *
- * Everything behind the `ArchiveClient` interface so tests run on fixtures and
- * a live run can be recorded into new ones. Response shapes of the full-text
- * and search-inside endpoints are not documented; the parsers in
- * `archiveSources.ts` accept every shape seen in the reference clients and
- * `cnfirmed archive --record` exists to pin them down.
+ * Only `archive.org` is on Wikipedia's CSP allowlist, so these are the
+ * endpoints the user script can reach too — checked from the console on a
+ * Wikipedia page. The `ia` package's `be-api.us.archive.org` full-text host,
+ * search-inside-the-book and OCR downloads (which redirect to numbered
+ * `*.archive.org` servers) are all refused there, so neither front end uses
+ * them: the CLI and the user script see the same data.
  */
 
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { USER_AGENT } from "./mediawiki.js";
 
-export const FTS_URL = "https://be-api.us.archive.org/ia-pub-fts-api";
+export const SEARCH_URL = "https://archive.org/services/search/beta/page_production/";
 export const METADATA_URL = "https://archive.org/metadata/";
-export const DOWNLOAD_URL = "https://archive.org/download/";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 /** Longest `Retry-After` honoured on a 429 before giving up. */
 const MAX_RETRY_AFTER_S = 30;
-/** OCR text of a long book runs to megabytes; nothing past this is needed. */
-const MAX_TEXT_BYTES = 8_000_000;
 
-/** The raw response shapes, as loosely as they are known. */
-export type FtsResponse = { hits?: { total?: unknown; hits?: unknown[] } };
+/** The search response, as far as it is read. */
+export type SearchResponse = {
+  response?: { body?: { hits?: { total?: unknown; hits?: unknown[] } } | null };
+};
 export type MetadataResponse = {
   metadata?: Record<string, unknown>;
-  files?: { name?: string; format?: string }[];
-  server?: string;
-  dir?: string;
   is_dark?: boolean;
 };
-export type InsideResponse = { matches?: unknown[]; error?: string };
 
-export interface ArchiveClient {
-  /** Full-text search. `query` is plain Lucene; the `!L` prefix is added here. */
-  fullTextSearch(query: string, size: number): Promise<FtsResponse>;
-  metadata(identifier: string): Promise<MetadataResponse>;
-  /** Search inside one book. Needs `server` and `dir` from its metadata. */
-  searchInside(
-    identifier: string,
-    server: string,
-    dir: string,
-    query: string,
-  ): Promise<InsideResponse>;
-  /** The book's plain OCR text, from the named `_djvu.txt` file. */
-  plainText(identifier: string, file: string): Promise<string>;
+export interface SearchRequest {
+  /**
+   * Lucene syntax: `AND` and field ranges such as `year:[1450 TO 1930]` both
+   * work in this endpoint's `user_query` (checked live).
+   */
+  query: string;
+  size: number;
 }
 
-async function request(
-  url: string,
-  init: RequestInit = {},
-  retried = false,
-): Promise<Response> {
+export interface ArchiveClient {
+  fullTextSearch(request: SearchRequest): Promise<SearchResponse>;
+  metadata(identifier: string): Promise<MetadataResponse>;
+}
+
+/** Query-string parameters for a full-text search. The user script builds the same. */
+export function searchParams(request: SearchRequest): URLSearchParams {
+  return new URLSearchParams({
+    service_backend: "fts",
+    user_query: request.query,
+    hits_per_page: String(request.size),
+  });
+}
+
+async function getJson<T>(url: string, retried = false): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(url, {
-      ...init,
       signal: controller.signal,
       // The Archive asks every automated client to identify itself.
-      headers: { "user-agent": USER_AGENT, ...(init.headers ?? {}) },
+      headers: { "user-agent": USER_AGENT, accept: "application/json" },
     });
   } finally {
     clearTimeout(timer);
@@ -82,64 +79,23 @@ async function request(
     const wait = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
     if (Number.isFinite(wait) && wait <= MAX_RETRY_AFTER_S) {
       await new Promise((r) => setTimeout(r, Math.max(wait, 1) * 1000));
-      return request(url, init, true);
+      return getJson<T>(url, true);
     }
   }
   if (!res.ok) {
-    throw new Error(`Internet Archive: ${res.status} ${res.statusText} for ${url}`);
+    // Status text is empty over HTTP/2, so the code alone.
+    throw new Error(`Internet Archive: HTTP ${res.status}`);
   }
-  return res;
-}
-
-async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await request(url, {
-    ...init,
-    headers: { accept: "application/json", ...(init?.headers ?? {}) },
-  });
   return (await res.json()) as T;
 }
 
 /** The live client. */
 export const httpArchiveClient: ArchiveClient = {
-  fullTextSearch(query, size) {
-    return getJson<FtsResponse>(FTS_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      // Mirrors `internetarchive.search.Search._full_text_search` with an
-      // explicit size, which turns scrolling off.
-      body: JSON.stringify({
-        q: `!L ${query}`,
-        size: String(size),
-        from: "0",
-        scroll: false,
-      }),
-    });
+  fullTextSearch(request) {
+    return getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(request).toString()}`);
   },
-
   metadata(identifier) {
-    return getJson<MetadataResponse>(
-      METADATA_URL + encodeURIComponent(identifier),
-    );
-  },
-
-  searchInside(identifier, server, dir, query) {
-    const params = new URLSearchParams({
-      item_id: identifier,
-      doc: identifier,
-      path: dir,
-      q: query,
-    });
-    return getJson<InsideResponse>(
-      `https://${server}/fulltext/inside.php?${params.toString()}`,
-    );
-  },
-
-  async plainText(identifier, file) {
-    const res = await request(
-      `${DOWNLOAD_URL}${encodeURIComponent(identifier)}/${encodeURIComponent(file)}`,
-    );
-    const text = await res.text();
-    return text.length > MAX_TEXT_BYTES ? text.slice(0, MAX_TEXT_BYTES) : text;
+    return getJson<MetadataResponse>(METADATA_URL + encodeURIComponent(identifier));
   },
 };
 
@@ -153,29 +109,18 @@ export function recordingClient(inner: ArchiveClient, dir: string): ArchiveClien
   let n = 0;
   const save = (name: string, body: unknown): void => {
     const safe = name.replace(/[^\w.-]+/g, "_").slice(0, 80);
-    const file = join(dir, `${String(++n).padStart(3, "0")}-${safe}`);
-    if (typeof body === "string") writeFileSync(`${file}.txt`, body);
-    else writeFileSync(`${file}.json`, JSON.stringify(body, null, 2));
+    const file = join(dir, `${String(++n).padStart(3, "0")}-${safe}.json`);
+    writeFileSync(file, JSON.stringify(body, null, 2));
   };
   return {
-    async fullTextSearch(query, size) {
-      const r = await inner.fullTextSearch(query, size);
-      save(`fts-${query}`, { request: { query, size }, response: r });
+    async fullTextSearch(request) {
+      const r = await inner.fullTextSearch(request);
+      save(`search-${request.query}`, { request, response: r });
       return r;
     },
     async metadata(identifier) {
       const r = await inner.metadata(identifier);
       save(`metadata-${identifier}`, r);
-      return r;
-    },
-    async searchInside(identifier, server, dir2, query) {
-      const r = await inner.searchInside(identifier, server, dir2, query);
-      save(`inside-${identifier}-${query}`, { request: { query }, response: r });
-      return r;
-    },
-    async plainText(identifier, file) {
-      const r = await inner.plainText(identifier, file);
-      save(`text-${identifier}`, r);
       return r;
     },
   };

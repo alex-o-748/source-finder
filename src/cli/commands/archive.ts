@@ -7,8 +7,8 @@ interface ArchiveArgs {
   maxClaims?: number;
   /** Save every raw Archive response here, as fixtures. */
   record?: string;
-  /** Put the public-domain filter in the search query (else only in the gate). */
-  queryFilter: boolean;
+  /** Ask the search to filter to public domain (else only the gate does). */
+  searchFilter: boolean;
   json: boolean;
 }
 
@@ -18,9 +18,10 @@ function funnelLine(f: ArchiveFunnel): string {
     .join(", ");
   return (
     `${f.queries.length} quer${f.queries.length === 1 ? "y" : "ies"} → ` +
-    `${f.hits} books → ${f.publicDomain}/${f.lookedUp} public domain` +
-    (rejected ? ` (${rejected})` : "") +
-    ` → ${f.matched}/${f.searched} with a passage → ${f.candidates} lead(s)`
+    `${f.hits} books → ${f.publicDomain} public domain` +
+    (rejected ? ` (dropped: ${rejected})` : "") +
+    ` → ${f.matched} with a matching passage → ${f.candidates} lead(s)` +
+    (f.filter === "gate only" ? "  [search unfiltered]" : "")
   );
 }
 
@@ -36,7 +37,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     : httpArchiveClient;
   const run = await findArticleArchiveSources(args.urlOrTitle, {
     maxClaims: args.maxClaims,
-    filterInQuery: args.queryFilter,
+    filterInSearch: args.searchFilter,
     client,
     onProgress: args.json
       ? undefined
@@ -61,23 +62,25 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
   run.results.forEach((r, i) => {
     console.log(`## [${i + 1}] ${r.claim.section ?? "(no section)"}`);
     console.log(`    claim:  ${r.claim.claim}`);
-    console.log(`    funnel: ${funnelLine(r.funnel)}`);
     if (r.funnel.queries.length === 0) {
       console.log("    (no number or name to search for)");
+      console.log();
+      return;
     }
+    console.log(`    funnel: ${funnelLine(r.funnel)}`);
     for (const q of r.funnel.queries) console.log(`    query:  ${q}`);
     for (const e of r.funnel.errors) console.log(`    ! ${e}`);
     r.candidates.forEach((c, j) => {
-      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}, via ${c.evidence.passageFrom})`);
-      console.log(`       ${c.url}`);
+      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score})`);
+      console.log(`       ${c.evidence.viewerUrl}`);
       console.log(`       ${c.relevance}`);
-      console.log(`       "${c.snippet}"`);
+      for (const p of c.evidence.passages.slice(0, 2)) console.log(`       "${p}"`);
       console.log(`       ref:  ${c.citation.ref}`);
     });
     console.log();
   });
 
   console.log("Leads, not verdicts: the passage carries the claim's numbers and names, which");
-  console.log("is not the same as stating it. Read it before pasting. Old sources may be");
-  console.log("outdated — see WP:AGEMATTERS.");
+  console.log("is not the same as stating it. Read it — and add |page= — before pasting.");
+  console.log("Old sources may be outdated: see WP:AGEMATTERS.");
 }

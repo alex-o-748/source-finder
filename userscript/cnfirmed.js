@@ -327,6 +327,8 @@
     '}',
     '.cnfirmed-origin[data-origin="sister-wiki"] { background: #3056a9; color: #fff; }',
     '.cnfirmed-origin[data-origin="same-article"] { background: #14866d; color: #fff; }',
+    '.cnfirmed-origin[data-origin="internet-archive"] { background: #6b4ba1; color: #fff; }',
+    '.cnfirmed-archive { border-left-color: #6b4ba1; }',
     '.cnfirmed-toast {',
     '  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);',
     '  background: #202122; color: #fff; padding: 6px 12px; border-radius: 3px;',
@@ -343,12 +345,14 @@
   var revid = mw.config.get('wgCurRevisionId');
   var cacheKey = 'cnfirmed:' + lang + ':' + pageTitle + ':' + revid;
   var wikiCacheKey = 'cnfirmed:wiki:' + lang + ':' + pageTitle + ':' + revid;
+  var archiveCacheKey = 'cnfirmed:ia:' + lang + ':' + pageTitle + ':' + revid;
 
   var cnSups = [];        // rendered <sup> nodes, in document order
   var badges = [];        // matching <span class="cnfirmed-badge"> nodes
   var claimContexts = []; // { claim, context, section, links } per CN
   var state = {};         // { [index]: { status, result?, error?, provider? } }
   var wikiState = {};     // { [index]: { status, candidates?, warnings?, error? } }
+  var archiveState = {};  // { [index]: { status, candidates?, funnel?, error? } }
   var helper = null;      // SidebarHelper instance
   var popup = null;       // self-managed floating panel { $element, $body, $title }
 
@@ -486,6 +490,7 @@
   function bootstrap() {
     hydrateFromCache();
     hydrateWikiCache();
+    hydrateArchiveCache();
     extractAllClaims();
     buildSidebar();
     for (var i = 0; i < cnSups.length; i++) renderBadge(i);
@@ -2220,6 +2225,476 @@
     } catch (e) { /* ignore */ }
   }
 
+  // ---- Internet Archive: public-domain books ------------------------------
+  // Free, no key, no model: full-text search over the Archive's OCRed books,
+  // keeping only public-domain ones whose matching passage carries the claim's
+  // numbers and names. Mirrors src/core/archiveSources.ts; the parity test
+  // runs both on the same recorded search response.
+  //
+  // Only https://archive.org is on Wikipedia's CSP allowlist, so this uses the
+  // endpoint archive.org's own search page uses. Each hit carries its year,
+  // collections and matching passages, so the only other request is item
+  // metadata for the two or three books kept.
+
+  var IA_SEARCH_URL = 'https://archive.org/services/search/beta/page_production/';
+  var IA_METADATA_URL = 'https://archive.org/metadata/';
+  var IA_MAX_HITS = 50;
+  var IA_MAX_QUERIES = 3;
+  var IA_ENOUGH_HITS = 10;
+  var IA_MAX_CANDIDATES = 3;
+  var IA_MIN_SCORE = 0.3;
+  var IA_MIN_PASSAGE_CHARS = 40;
+  var IA_LENDING = { inlibrary: true, printdisabled: true, lendinglibrary: true };
+
+  // A work published in year Y enters the US public domain on 1 January of Y + 96.
+  function iaCutoffYear() {
+    return new Date().getUTCFullYear() - 96;
+  }
+
+  function iaSubjectOf(title) {
+    return String(title).replace(/_/g, ' ').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  }
+
+  function iaRawNumbers(text) {
+    var out = [];
+    var re = /\d(?:[\d,.]*\d)?/g;
+    var m;
+    var src = normaliseDigits(text);
+    while ((m = re.exec(src))) {
+      if (m[0].replace(/[,.]/g, '').length >= 2 && out.indexOf(m[0]) === -1) out.push(m[0]);
+    }
+    var isYear = function (n) { return /^(1[0-9]|20)\d\d$/.test(n); };
+    return out.filter(isYear).concat(out.filter(function (n) { return !isYear(n); }));
+  }
+
+  function iaClaimTerms(claim, title) {
+    var subject = iaSubjectOf(title);
+    var subjectTokens = tokenSetOf(subject);
+    var names = anchorsOf(claim).names
+      .filter(function (name) {
+        return !name.split(' ').every(function (w) { return subjectTokens[w]; });
+      })
+      .sort(function (a, b) { return b.length - a.length || (a < b ? -1 : 1); });
+    var kept = [];
+    names.forEach(function (name) {
+      if (kept.some(function (k) { return k.split(' ').indexOf(name) !== -1; })) return;
+      kept.push(name);
+    });
+    return {
+      subject: subject,
+      numbers: iaRawNumbers(claim).slice(0, 3),
+      names: kept.slice(0, 2)
+    };
+  }
+
+  function iaPhrase(term) {
+    return '"' + String(term).replace(/["\\]/g, ' ').trim() + '"';
+  }
+
+  function buildArchiveQueries(terms) {
+    var subject = iaPhrase(terms.subject);
+    var numbers = terms.numbers.map(iaPhrase);
+    var names = terms.names.map(iaPhrase);
+    var strongest = numbers[0] || names[0];
+    if (!strongest || !terms.subject) return [];
+    var out = [];
+    [[subject].concat(numbers, names), [subject].concat(numbers), [subject, strongest]]
+      .forEach(function (t) {
+        if (t.length < 2) return;
+        var q = t.join(' AND ');
+        if (out.indexOf(q) === -1) out.push(q);
+      });
+    return out;
+  }
+
+  // `… AND year:[1800 TO 1930]` was checked live to return only books in
+  // range. Lending status is left to the gate: only the year clause is tested.
+  function iaWithPublicDomainFilter(query, cutoff) {
+    return query + ' AND year:[1450 TO ' + cutoff + ']';
+  }
+
+  function iaFirst(value) {
+    if (Array.isArray(value)) return iaFirst(value[0]);
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    return null;
+  }
+
+  function iaAll(value) {
+    if (Array.isArray(value)) {
+      return value.reduce(function (acc, v) { return acc.concat(iaAll(v)); }, []);
+    }
+    var one = iaFirst(value);
+    return one === null ? [] : [one];
+  }
+
+  function iaYearOf(value) {
+    var m = /\b(1[0-9]{3}|20[0-9]{2})\b/.exec(iaFirst(value) || '');
+    return m ? Number(m[1]) : null;
+  }
+
+  function iaStripHighlight(text) {
+    return String(text).replace(/\{\{\{|\}\}\}/g, '').replace(/<\/?em>/gi, '')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  function parseArchiveHits(response, query) {
+    var raw = (response && response.response && response.response.body &&
+      response.response.body.hits && response.response.body.hits.hits) || [];
+    var out = [];
+    raw.forEach(function (h, rank) {
+      if (!h || typeof h !== 'object') return;
+      var f = h.fields || {};
+      var identifier = iaFirst(f.identifier);
+      if (!identifier) return;
+      var year = iaYearOf(f.year);
+      out.push({
+        identifier: identifier,
+        title: iaFirst(f.title) || identifier,
+        creator: iaFirst(f.creator),
+        year: year !== null ? year : iaYearOf(f.date),
+        mediatype: iaFirst(f.mediatype),
+        collections: iaAll(f.collection),
+        highlights: iaAll(h.highlight && h.highlight.text).map(iaStripHighlight)
+          .filter(function (t) { return t.length > 0; }),
+        rank: rank,
+        query: query
+      });
+    });
+    return out;
+  }
+
+  function archiveGate(hit, cutoff) {
+    if (hit.mediatype && hit.mediatype !== 'texts') return { ok: false, reason: 'not a text' };
+    if (hit.collections.some(function (c) { return IA_LENDING[c]; })) {
+      return { ok: false, reason: 'lending library' };
+    }
+    if (hit.year === null) return { ok: false, reason: 'no publication year' };
+    if (hit.year > cutoff) return { ok: false, reason: 'published after ' + cutoff };
+    return { ok: true };
+  }
+
+  function archiveDetailsOf(response) {
+    var md = (response && response.metadata) || {};
+    return {
+      publisher: iaFirst(md.publisher),
+      restricted: response.is_dark === true ||
+        String(iaFirst(md['access-restricted-item']) || '').toLowerCase() === 'true',
+      copyrightStatus: iaFirst(md['possible-copyright-status'])
+    };
+  }
+
+  function archiveDetailsGate(details) {
+    if (details.restricted) return { ok: false, reason: 'access restricted' };
+    var status = details.copyrightStatus || '';
+    if (/copyright/i.test(status) && !/not[_ ]in[_ ]copyright/i.test(status)) {
+      return { ok: false, reason: 'marked in copyright' };
+    }
+    return { ok: true };
+  }
+
+  function iaScoringContext(claim, subject) {
+    var subjectTokens = tokenSetOf(subject);
+    return {
+      anchors: anchorsOf(claim),
+      bag: weightedTokensOf(claim, subjectTokens),
+      subjectTokens: Object.keys(subjectTokens)
+    };
+  }
+
+  // datelineYear: a periodical issue's own year, which every page of it prints
+  // in the masthead — not evidence, so not counted as a matched number.
+  function scoreArchivePassage(text, ctx, bookIsAboutSubject, datelineYear) {
+    if (text.length < IA_MIN_PASSAGE_CHARS) return null;
+    var have = tokenSetOf(text);
+    if (!bookIsAboutSubject && ctx.subjectTokens.length > 0 &&
+        !ctx.subjectTokens.some(function (t) { return have[t]; })) {
+      return null;
+    }
+    var query = datelineYear
+      ? { names: ctx.anchors.names,
+          numbers: ctx.anchors.numbers.filter(function (n) { return n !== datelineYear; }) }
+      : ctx.anchors;
+    var anchors = anchorScoreOf(query, text);
+    var numbersMatched = query.numbers.some(function (n) {
+      return anchors.matched.indexOf(n) !== -1;
+    });
+    if (ctx.anchors.numbers.length > 0 && !numbersMatched) return null;
+    var cov = coverageOf(ctx.bag, text);
+    var score = anchorCount(query) > 0 ? 0.6 * anchors.score + 0.4 * cov : cov;
+    return { score: Math.round(score * 100) / 100, matched: anchors.matched };
+  }
+
+  function iaTitleIsAbout(title, subjectTokens) {
+    if (subjectTokens.length === 0) return false;
+    var have = tokenSetOf(title);
+    return subjectTokens.every(function (t) { return have[t]; });
+  }
+
+  // The main title only: subtitles are catalogued on some scans and not others.
+  function archiveEditionKey(title) {
+    return foldText(String(title).split(/\s*[:;]\s*/)[0])
+      .replace(/[^\p{L}\p{N} ]+/gu, ' ')
+      .split(/\s+/)
+      .filter(function (w) { return w && w !== 'the' && w !== 'a' && w !== 'an'; })
+      .slice(0, 8)
+      .join(' ');
+  }
+
+  // Gate, per-passage scoring, one book per work. No I/O.
+  function rankArchiveHits(hits, claim, title, cutoff, minScore) {
+    var ctx = iaScoringContext(claim, iaSubjectOf(title));
+    var rejected = {};
+    var publicDomain = 0;
+    var scored = [];
+    hits.forEach(function (hit) {
+      var gate = archiveGate(hit, cutoff);
+      if (!gate.ok) {
+        rejected[gate.reason] = (rejected[gate.reason] || 0) + 1;
+        return;
+      }
+      publicDomain++;
+      var about = iaTitleIsAbout(hit.title, ctx.subjectTokens);
+      var dateline = hit.year !== null && hit.collections.indexOf('periodicals') !== -1
+        ? String(hit.year) : null;
+      var passages = [];
+      hit.highlights.forEach(function (text) {
+        var s = scoreArchivePassage(text, ctx, about, dateline);
+        if (s && s.score >= minScore) passages.push({ text: text, score: s.score, matched: s.matched });
+      });
+      passages.sort(function (a, b) { return b.score - a.score; });
+      if (passages.length) scored.push({ hit: hit, passages: passages, score: passages[0].score });
+    });
+
+    var byWork = {};
+    var order = [];
+    scored.forEach(function (s) {
+      var key = archiveEditionKey(s.hit.title);
+      var kept = byWork[key];
+      if (!kept) order.push(key);
+      if (!kept || s.score > kept.score || (s.score === kept.score && s.hit.rank < kept.hit.rank)) {
+        byWork[key] = s;
+      }
+    });
+    var ranked = order.map(function (k) { return byWork[k]; }).sort(function (a, b) {
+      return b.score - a.score || a.hit.rank - b.hit.rank;
+    });
+    return { ranked: ranked, publicDomain: publicDomain, rejected: rejected, matched: scored.length };
+  }
+
+  function iaCleanCreator(creator) {
+    return String(creator).replace(/,?\s*\(?\d{4}\s*-\s*(\d{4})?\)?\.?\s*$/, '').trim();
+  }
+
+  function iaDetailsUrl(identifier) {
+    return 'https://archive.org/details/' + encodeURIComponent(identifier);
+  }
+
+  function iaViewerUrl(identifier, terms) {
+    var q = terms.numbers[0] || terms.names[0] || terms.subject;
+    return iaDetailsUrl(identifier) + '?q=' + encodeURIComponent(q);
+  }
+
+  function formatArchiveCitation(hit, publisher) {
+    var parts = ['title=' + escapePipes(hit.title)];
+    if (hit.creator) parts.push('author=' + escapePipes(iaCleanCreator(hit.creator)));
+    if (publisher) parts.push('publisher=' + escapePipes(publisher));
+    if (hit.year !== null) parts.push('year=' + hit.year);
+    parts.push('url=' + iaDetailsUrl(hit.identifier));
+    parts.push('via=Internet Archive');
+    var template = '{{cite book |' + parts.join(' |') + '}}';
+    return { template: template, ref: '<ref>' + template + '</ref>', kind: 'cite book' };
+  }
+
+  // "gustave eiffel, gustave, eiffel" → "gustave eiffel".
+  function iaCompactAnchors(matched) {
+    var phrases = matched.filter(function (m) { return m.indexOf(' ') !== -1; });
+    return matched.filter(function (m) {
+      return m.indexOf(' ') !== -1 ||
+        !phrases.some(function (p) { return p.split(' ').indexOf(m) !== -1; });
+    });
+  }
+
+  function toArchiveCandidate(s, publisher, terms) {
+    var hit = s.hit;
+    var best = s.passages[0];
+    var matched = iaCompactAnchors(best.matched);
+    var byline = [hit.year, hit.creator && iaCleanCreator(hit.creator)]
+      .filter(Boolean).join(', ');
+    return {
+      url: iaDetailsUrl(hit.identifier),
+      title: hit.title,
+      relevance: 'Internet Archive, ' + byline + ' — matched ' +
+        (matched.join(', ') || 'claim wording'),
+      snippet: best.text,
+      evidence: {
+        origin: 'internet-archive',
+        identifier: hit.identifier,
+        year: hit.year,
+        passages: s.passages.map(function (p) { return p.text; }),
+        score: s.score,
+        matchedAnchors: matched,
+        query: hit.query,
+        viewerUrl: iaViewerUrl(hit.identifier, terms)
+      },
+      citation: formatArchiveCitation(hit, publisher)
+    };
+  }
+
+  function iaSearchUrl(query) {
+    return IA_SEARCH_URL + '?service_backend=fts' +
+      '&user_query=' + encodeURIComponent(query) +
+      '&hits_per_page=' + IA_MAX_HITS;
+  }
+
+  function iaFetchJson(url) {
+    return fetch(url, { headers: { Accept: 'application/json' } }).then(function (res) {
+      if (!res.ok) throw new Error('Internet Archive: HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function findArchiveCandidates(index) {
+    var ctx = claimContexts[index];
+    var title = mw.config.get('wgTitle') || pageTitle;
+    var cutoff = iaCutoffYear();
+    var terms = iaClaimTerms(ctx.claim, title);
+    var queries = buildArchiveQueries(terms).slice(0, IA_MAX_QUERIES);
+    var funnel = {
+      queries: [], filter: 'search', hits: 0, publicDomain: 0, rejected: {},
+      matched: 0, lookedUp: 0, candidates: 0, errors: []
+    };
+    var hits = [];
+    var seen = {};
+
+    function search(query) {
+      var filtered = funnel.filter === 'search' ? iaWithPublicDomainFilter(query, cutoff) : query;
+      return iaFetchJson(iaSearchUrl(filtered))
+        .catch(function (err) {
+          funnel.errors.push('search failed: ' + err.message);
+          // The query syntax is undocumented; if the search rejects the year
+          // clause, carry on without it — the gate still checks every hit.
+          if (funnel.filter !== 'search') return null;
+          funnel.filter = 'gate only';
+          return iaFetchJson(iaSearchUrl(query)).catch(function (err2) {
+            funnel.errors.push('search failed without filter too: ' + err2.message);
+            return null;
+          });
+        })
+        .then(function (response) {
+          (response ? parseArchiveHits(response, query) : []).forEach(function (hit) {
+            if (seen[hit.identifier]) return;
+            seen[hit.identifier] = true;
+            hit.rank = hits.length;
+            hits.push(hit);
+          });
+        });
+    }
+
+    var chain = Promise.resolve();
+    queries.forEach(function (query) {
+      chain = chain.then(function () {
+        if (hits.length >= IA_ENOUGH_HITS) return;
+        funnel.queries.push(query);
+        return search(query);
+      });
+    });
+
+    return chain.then(function () {
+      funnel.hits = hits.length;
+      var ranked = rankArchiveHits(hits, ctx.claim, title, cutoff, IA_MIN_SCORE);
+      funnel.publicDomain = ranked.publicDomain;
+      funnel.rejected = ranked.rejected;
+      funnel.matched = ranked.matched;
+
+      var shortlist = ranked.ranked.slice(0, IA_MAX_CANDIDATES + 2);
+      funnel.lookedUp = shortlist.length;
+      var candidates = [];
+      return shortlist.reduce(function (p, s) {
+        return p.then(function () {
+          if (candidates.length >= IA_MAX_CANDIDATES) return;
+          return iaFetchJson(IA_METADATA_URL + encodeURIComponent(s.hit.identifier))
+            .then(function (md) {
+              var details = archiveDetailsOf(md);
+              var gate = archiveDetailsGate(details);
+              if (!gate.ok) {
+                funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
+                return;
+              }
+              candidates.push(toArchiveCandidate(s, details.publisher, terms));
+            }, function (err) {
+              funnel.errors.push('metadata ' + s.hit.identifier + ': ' + err.message);
+              candidates.push(toArchiveCandidate(s, null, terms));
+            });
+        });
+      }, Promise.resolve()).then(function () {
+        funnel.candidates = candidates.length;
+        return { candidates: candidates, funnel: funnel };
+      });
+    });
+  }
+
+  function archiveFunnelLine(f) {
+    var rejected = Object.keys(f.rejected).map(function (r) { return f.rejected[r] + ' ' + r; });
+    return f.queries.length + ' quer' + (f.queries.length === 1 ? 'y' : 'ies') + ' → ' +
+      f.hits + ' books → ' + f.publicDomain + ' public domain' +
+      (rejected.length ? ' (dropped: ' + rejected.join(', ') + ')' : '') +
+      ' → ' + f.matched + ' with a matching passage → ' + f.candidates + ' lead(s)' +
+      (f.filter === 'gate only' ? ' [search unfiltered]' : '');
+  }
+
+  function runArchiveStage(index) {
+    var current = archiveState[index];
+    if (current && current.status === 'done') return Promise.resolve(current);
+    if (current && current.promise) return current.promise;
+    var ctx = claimContexts[index];
+    if (!ctx || !ctx.claim) {
+      archiveState[index] = { status: 'error', error: 'Could not extract a claim from the surrounding text.' };
+      renderPanel(index);
+      return Promise.resolve(archiveState[index]);
+    }
+
+    var entry = { status: 'running' };
+    archiveState[index] = entry;
+    renderPanel(index);
+    entry.promise = findArchiveCandidates(index).then(function (r) {
+      console.log('[CNfirmed] Internet Archive claim', index, ':', archiveFunnelLine(r.funnel),
+        r.funnel, r.candidates);
+      archiveState[index] = { status: 'done', candidates: r.candidates, funnel: r.funnel };
+      persistArchive();
+      renderPanel(index);
+      return archiveState[index];
+    }).catch(function (err) {
+      console.error('[CNfirmed] Internet Archive search failed for claim', index, ':', err);
+      archiveState[index] = { status: 'error', error: (err && err.message) || String(err) };
+      renderPanel(index);
+      return archiveState[index];
+    });
+    return entry.promise;
+  }
+
+  function hydrateArchiveCache() {
+    try {
+      var raw = localStorage.getItem(archiveCacheKey);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') archiveState = parsed;
+    } catch (e) { /* ignore */ }
+  }
+
+  function persistArchive() {
+    try {
+      var serialisable = {};
+      Object.keys(archiveState).forEach(function (k) {
+        var s = archiveState[k];
+        if (s && s.status === 'done') {
+          serialisable[k] = { status: 'done', candidates: s.candidates, funnel: s.funnel };
+        }
+      });
+      localStorage.setItem(archiveCacheKey, JSON.stringify(serialisable));
+    } catch (e) { /* ignore */ }
+  }
+
   // ---- Provider implementations -----------------------------------------
 
   function buildUserMessage(ctx) {
@@ -2539,6 +3014,7 @@
     var $el = popup.$body;
     $el.empty();
     renderWikiInto($el, i, wikiState[i] || { status: 'idle' });
+    renderArchiveInto($el, i, archiveState[i] || { status: 'idle' });
 
     var s = state[i] || { status: 'idle' };
     if (s.status === 'running') {
@@ -2648,6 +3124,90 @@
       title: 'Sources already on Wikipedia: ' + truncate(claimContexts[i].claim, 60),
       size: 'large'
     });
+  }
+
+  // The second free stage: public-domain books on the Internet Archive. Run on
+  // request for now — experimental, and every click is a request to a donated
+  // service — rather than on every badge click like the wiki stage.
+  function renderArchiveInto($el, i, a) {
+    var $section = $('<div class="cnfirmed-wiki cnfirmed-archive">');
+    $section.append($('<div class="cnfirmed-wiki-head">').text('Public-domain books (Internet Archive)'));
+
+    if (a.status === 'running') {
+      $section.append($('<div>').text('Searching the Internet Archive…'));
+      $el.append($section);
+      return;
+    }
+    if (a.status === 'idle' || a.status === 'error') {
+      if (a.status === 'error') {
+        $section.append($('<div class="cnfirmed-note">').css('color', '#b32424')
+          .text('Internet Archive search failed: ' + a.error));
+      }
+      $section.append($('<div class="cnfirmed-toolbar">').append(
+        $('<button>').text(a.status === 'error' ? 'Try again' : 'Search public-domain books (free)')
+          .on('click', function () { runArchiveStage(i); })
+      ));
+      $section.append($('<div class="cnfirmed-note">').text(
+        'Full-text search of books published up to ' + iaCutoffYear() +
+        '. Free, no API key. Experimental.'));
+      $el.append($section);
+      return;
+    }
+
+    var candidates = a.candidates || [];
+    var funnel = a.funnel || null;
+    if (funnel && funnel.queries.length === 0) {
+      $section.append($('<div class="cnfirmed-note">')
+        .text('Nothing specific to search for: the claim has no number or name.'));
+    } else if (candidates.length === 0) {
+      $section.append($('<div class="cnfirmed-note">')
+        .text('No public-domain book matches this claim.'));
+    }
+    candidates.forEach(function (c) {
+      $section.append(renderArchiveCandidate(i, c));
+    });
+    if (funnel && funnel.queries.length) {
+      $section.append($('<div class="cnfirmed-note">').css('font-size', '0.75em')
+        .attr('title', funnel.queries.join('\n'))
+        .text(archiveFunnelLine(funnel)));
+    }
+    $el.append($section);
+  }
+
+  function renderArchiveCandidate(i, c) {
+    var $row = $('<div class="cnfirmed-wiki-row">');
+    $row.append(
+      $('<span class="cnfirmed-origin">').attr('data-origin', 'internet-archive')
+        .text('archive.org · ' + c.evidence.year),
+      ' ',
+      $('<a>').attr({
+        href: c.evidence.viewerUrl, target: '_blank', rel: 'noopener',
+        title: 'Open the book with the match highlighted'
+      }).text(c.title)
+    );
+    $row.append($('<div class="cnfirmed-quote">').text('…' + c.snippet + '…'));
+    if (c.evidence.matchedAnchors.length) {
+      $row.append($('<div class="cnfirmed-note">')
+        .text('matched: ' + c.evidence.matchedAnchors.join(', ')));
+    }
+    $row.append($('<div class="cnfirmed-note">').text(
+      'Check the passage in the book, and add |page= to the citation. ' +
+      (new Date().getUTCFullYear() - c.evidence.year > 100
+        ? 'Old sources can be outdated (WP:AGEMATTERS).' : '')));
+
+    var $tools = $('<div class="cnfirmed-toolbar">');
+    $tools.append($('<button>').text('Copy <ref>').on('click', function () {
+      navigator.clipboard.writeText(c.citation.ref).then(function () {
+        toast('Copied <ref> to clipboard');
+      }, function () { toast('Copy failed'); });
+    }));
+    $tools.append(
+      $('<button>').text('Insert <ref> in editor')
+        .attr('title', 'Open the source editor with this <ref> substituted in for the {{citation needed}} tag')
+        .on('click', function () { openEditorWithRef(i, c); })
+    );
+    $row.append($tools);
+    return $row;
   }
 
   function renderWebSearchCta($el, i, label) {

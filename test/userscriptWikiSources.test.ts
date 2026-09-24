@@ -1,14 +1,6 @@
 /**
- * Parity test for the user script's inlined copy of the wiki-local stage.
- *
- * The user script is standalone by design — it re-implements the pipeline in
- * the browser rather than importing `src/` — so the only thing keeping the two
- * in step is a test that runs the shipped file against the same fixtures the
- * TypeScript core is tested on.
- *
- * The script is an IIFE guarded for a live MediaWiki page, so it is loaded here
- * with just enough of `mw`, `window` and `document` stubbed to get past the
- * boot guards, and the pure functions are handed back for testing.
+ * Parity test for the user script's inlined copy of the wiki-local stage. See
+ * `userscriptLoader.ts` for why this exists and how the script is loaded.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -19,9 +11,9 @@ import { extractClaims } from "../src/core/extractClaims.js";
 import { extractWikilinks, paragraphRangeAt } from "../src/core/wikitext.js";
 import { buildWikiCorpus, findWikiCandidates } from "../src/core/wikiSources.js";
 import type { Article } from "../src/core/types.js";
+import { loadUserScript } from "./userscriptLoader.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = join(__dirname, "..");
 
 function fixture(name: string): string {
   return readFileSync(join(__dirname, "fixtures/wiki", name), "utf8");
@@ -29,84 +21,6 @@ function fixture(name: string): string {
 
 const EN = fixture("en_lighthouse.wikitext");
 const DE = fixture("de_lighthouse.wikitext");
-
-interface UserScriptModule {
-  indexWikiArticle(lang: string, title: string, wikitext: string): unknown;
-  findWikiCandidates(corpus: unknown, index: number): {
-    url: string | null;
-    title: string;
-    ref: string;
-    relevance: string;
-    evidence: { origin: string; score: number; matchedAnchors?: string[]; lang: string };
-  }[];
-  citationNeededOffsets(text: string): { start: number; end: number }[];
-  stripWikitext(text: string): string;
-  refToSource(content: string): { url: string | null; title: string | null } | null;
-  setClaimContexts(value: unknown[]): void;
-  setCnSups(value: unknown[]): void;
-}
-
-/** Loads the user script with browser globals stubbed, exposing its internals. */
-function loadUserScript(): UserScriptModule {
-  const src = readFileSync(join(root, "userscript/cnfirmed.js"), "utf8");
-  const open = "(function () {";
-  const body = src.slice(
-    src.indexOf(open) + open.length,
-    src.lastIndexOf("})();"),
-  );
-  const exposed = `
-    return {
-      indexWikiArticle: indexWikiArticle,
-      findWikiCandidates: findWikiCandidates,
-      citationNeededOffsets: citationNeededOffsets,
-      stripWikitext: stripWikitext,
-      refToSource: refToSource,
-      setClaimContexts: function (v) { claimContexts = v; },
-      setCnSups: function (v) { cnSups = v; }
-    };`;
-
-  const config: Record<string, unknown> = {
-    wgNamespaceNumber: 0,
-    wgAction: "view",
-    wgServer: "//en.wikipedia.org",
-    wgContentLanguage: "en",
-    wgPageName: "Karsten_Point_Lighthouse",
-    wgCurRevisionId: 1,
-    wgArticlePath: "/wiki/$1",
-  };
-  const mw = {
-    config: { get: (key: string) => config[key] },
-    util: { addCSS() {}, addPortletLink() {}, addPortlet() {}, getUrl: (t: string) => `/wiki/${t}` },
-    loader: { using: () => ({ then: () => ({ catch() {} }) }), getScript: () => Promise.resolve() },
-  };
-  const store = new Map<string, string>();
-  const localStorage = {
-    getItem: (k: string) => store.get(k) ?? null,
-    setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k),
-  };
-  // The boot sequence is a jQuery ready callback; swallowing it leaves the
-  // module's pure functions defined and nothing else running.
-  const jquery = () => ({ appendTo() {}, on() {}, text() {}, css() {}, append() {} });
-  const factory = new Function(
-    "mw",
-    "window",
-    "document",
-    "localStorage",
-    "$",
-    "OO",
-    body + exposed,
-  ) as (...args: unknown[]) => UserScriptModule;
-
-  return factory(
-    mw,
-    {},
-    { addEventListener() {}, querySelectorAll: () => [] },
-    localStorage,
-    jquery,
-    {},
-  );
-}
 
 const script = loadUserScript();
 

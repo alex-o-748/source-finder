@@ -128,18 +128,24 @@ property of where you searched rather than something to prompt for.
 | Statistics | The issuing body directly (national stats offices, Eurostat, World Bank) | no |
 | Dead links | Wayback CDX API | no |
 
-**Internet Archive, public domain first: built, not yet measured.**
-`src/core/archiveSources.ts` and `cnfirmed archive` implement the funnel
-(search → public-domain gate on metadata → passage → deterministic score and
-edition dedupe → at most three leads), described in the README. Endpoints were
-taken from the official `internetarchive` Python package and the IA skill
-(`github.com/internetarchive/internet-archive-skills`); archive.org was
-unreachable from the build environment, so the full-text response shape is
-still assumed. Next: run `cnfirmed archive --record` over ~20 real articles,
-replace the synthetic test fixtures with the recorded ones, and read the funnel
-counts — how many claims get a lead, and where books drop out — before wiring
-it into `find` (verifying passages via `verifySource`'s `sourceText`) and the
-user script (which needs a CORS check on both hosts).
+**Internet Archive, public domain first: built, being measured.**
+`src/core/archiveSources.ts`, `cnfirmed archive`, and a per-claim button in the
+user script implement the funnel (search → public-domain gate on the hit's own
+fields → per-passage deterministic score → edition dedupe → metadata for the
+few kept), described in the README. The endpoint and response shape were
+settled from a Wikipedia page's console: archive.org's own full-text search is
+the one reachable under the CSP, and its hits carry year, collections and
+matching passages, so the gate and the scoring need no per-book request. The
+first real response already showed the two things to watch: the top hits for
+a plain query were modern lending-library books (so the server-side filter
+matters — `AND year:[1800 TO 1930]` in the query works, and returns mostly
+digitised periodicals, whose mastheads print the year on every page: the
+issue's own year is now ignored as evidence), and a passage matching only
+"1889" and "Eiffel" scores 0.38 whether
+it says the tower was completed that year or that a cannon was fired from it —
+the matched anchors, shown with each lead, are what tell them apart. Next: the
+funnel counts over ~20 real articles, then decide whether it joins "Verify
+all" and `find` (verifying passages via `verifySource`'s `sourceText`).
 
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and

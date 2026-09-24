@@ -2,21 +2,22 @@
  * Internet Archive source discovery: find a public-domain book whose text
  * carries a {{citation needed}} claim, without a model.
  *
- * A funnel, so that at most a handful of passages ever reach the paid verifier:
+ * A funnel, so that at most a handful of books are ever looked at closely:
  *
  *   1. **Search.** One to three full-text queries built from the claim's
  *      numbers and names plus the article's subject, strictest first.
- *   2. **Public-domain gate.** Each book's metadata is read; anything
- *      published after the US public-domain cutoff, restricted, or lent rather
- *      than open is dropped. Public domain is the proxy for what actually
- *      matters: the full text is openly readable, so the passage can be
- *      checked by the verifier and by the editor.
- *   3. **Passages.** The matching paragraph in each surviving book — from the
- *      search hit if it carries one, else by searching inside the book, else
- *      from the book's OCR text.
- *   4. **Score and dedupe.** The same deterministic scoring as the sister-wiki
- *      pass (anchors that must match, weighted token coverage), one passage
- *      per work, however many scans of it the Archive holds.
+ *   2. **Public-domain gate**, on the hit's own fields: anything published
+ *      after the US public-domain cutoff, or lent rather than open, is
+ *      dropped. Public domain is the proxy for what actually matters: the full
+ *      text is openly readable, so the passage can be checked by the verifier
+ *      and by the editor.
+ *   3. **Score.** Each hit comes with its matching passages. Each passage is
+ *      scored on its own — two passages from one book may be pages apart — with
+ *      the sister-wiki scoring: anchors that must match, then anchors and
+ *      weighted token coverage. A book counts as its best passage.
+ *   4. **Dedupe and look up.** One book per work, however many scans of it the
+ *      Archive holds; then, for the few kept, the item metadata: the publisher
+ *      for the citation, and the access-restriction flag once more.
  *
  * What comes out is evidence — a book, a passage, the anchors it matched — not
  * a verdict.
@@ -27,9 +28,8 @@ import { extractClaims } from "./extractClaims.js";
 import { httpArchiveClient } from "./internetArchive.js";
 import type {
   ArchiveClient,
-  FtsResponse,
-  InsideResponse,
   MetadataResponse,
+  SearchResponse,
 } from "./internetArchive.js";
 import {
   anchorScore,
@@ -41,14 +41,7 @@ import {
   weightedTokens,
 } from "./relevance.js";
 import type { Anchors, TokenBag } from "./relevance.js";
-import { pool } from "./wikiSources.js";
-import type {
-  ArchiveCandidate,
-  ArchiveEvidence,
-  Article,
-  Citation,
-  Claim,
-} from "./types.js";
+import type { ArchiveCandidate, Article, Citation, Claim } from "./types.js";
 
 export interface ArchiveSourceOptions {
   /** Hits requested per full-text query (default 50). */
@@ -57,20 +50,14 @@ export interface ArchiveSourceOptions {
   maxQueries?: number;
   /** Stop issuing looser queries once this many distinct books are found (default 10). */
   enoughHits?: number;
-  /** Books whose metadata is read for the public-domain gate (default 15). */
-  metadataLookups?: number;
-  /** Public-domain books searched for a passage (default 10). */
-  passageLookups?: number;
   /** Candidates returned per claim (default 3). */
   maxCandidates?: number;
-  /** Minimum passage score to return a candidate (default 0.35). */
+  /** Minimum passage score to return a candidate (default 0.3). */
   minScore?: number;
   /** Latest publication year treated as public domain (default: this year − 96). */
   cutoffYear?: number;
-  /** Put the public-domain filter in the search query too (default true). */
-  filterInQuery?: boolean;
-  /** Concurrent Archive requests (default 3). */
-  concurrency?: number;
+  /** Add the public-domain year range to the search query too (default true). */
+  filterInSearch?: boolean;
   /** Swap in a fixture-backed or recording client. */
   client?: ArchiveClient;
 }
@@ -104,7 +91,7 @@ const MAX_QUERY_NUMBERS = 3;
 const MAX_QUERY_NAMES = 2;
 
 export function subjectOf(title: string): string {
-  return title.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  return title.replace(/_/g, " ").replace(/\s*\([^)]*\)\s*$/, "").trim();
 }
 
 /** Numbers as written — grouping kept, since OCR text keeps it too. */
@@ -126,7 +113,7 @@ export function claimTerms(claim: string, articleTitle: string): ClaimTerms {
     .names
     // A name made only of the subject's own words says nothing new.
     .filter((name) => !name.split(" ").every((w) => subjectTokens.has(w)))
-    .sort((a, b) => b.length - a.length);
+    .sort((a, b) => b.length - a.length || (a < b ? -1 : 1));
   const kept: string[] = [];
   for (const name of names) {
     // "berg" adds nothing once "anna berg" is in.
@@ -144,24 +131,13 @@ function phrase(term: string): string {
   return `"${term.replace(/["\\]/g, " ").trim()}"`;
 }
 
-/** The query clause that keeps results to openly readable public-domain books. */
-export function publicDomainFilter(cutoffYear: number): string {
-  return (
-    `mediatype:texts AND year:[* TO ${cutoffYear}] ` +
-    `AND NOT collection:(${[...LENDING_COLLECTIONS].join(" OR ")})`
-  );
-}
-
 /**
  * Full-text queries for a claim, strictest first: the subject with every
  * number and name, then with the numbers only, then with the single strongest
  * anchor. Empty when the claim has no number or name — the subject alone
  * would match every book about it.
  */
-export function buildArchiveQueries(
-  terms: ClaimTerms,
-  filter: string | null,
-): string[] {
+export function buildArchiveQueries(terms: ClaimTerms): string[] {
   const subject = phrase(terms.subject);
   const numbers = terms.numbers.map(phrase);
   const names = terms.names.map(phrase);
@@ -175,22 +151,36 @@ export function buildArchiveQueries(
   ]
     .filter((t) => t.length > 1)
     .map((t) => t.join(" AND "));
-  return [...new Set(tiers)].map((q) => (filter ? `(${q}) AND ${filter}` : q));
+  return [...new Set(tiers)];
+}
+
+/** Earliest year searched: nothing is printed before, and the range needs a bound. */
+const EARLIEST_YEAR = 1450;
+
+/**
+ * The query with the public-domain range added, as the search understands it:
+ * `… AND year:[1800 TO 1930]` was checked live to return only books in range.
+ * Lending status is left to the gate — only the year clause has been tested.
+ */
+export function withPublicDomainFilter(query: string, cutoffYear: number): string {
+  return `${query} AND year:[${EARLIEST_YEAR} TO ${cutoffYear}]`;
 }
 
 // ---------------------------------------------------------------------------
-// Response parsing. The full-text and search-inside shapes are undocumented;
-// these accept every variant the reference clients read.
+// Response parsing
 // ---------------------------------------------------------------------------
 
 /** A book returned by the full-text search. */
 export interface ArchiveHit {
   identifier: string;
-  title: string | null;
+  title: string;
+  creator: string | null;
   year: number | null;
-  /** Matching text the search returned with the hit, markup stripped. */
+  mediatype: string | null;
+  collections: string[];
+  /** Matching passages the search returned, markup stripped. */
   highlights: string[];
-  /** Position in the search results, for tie-breaking. */
+  /** Position across all searches for this claim, for tie-breaking. */
   rank: number;
   /** The query that found it. */
   query: string;
@@ -214,36 +204,33 @@ export function yearOf(value: unknown): number | null {
   return m ? Number(m[1]) : null;
 }
 
-/** Strips search-engine highlight markup: `<em>…</em>`, `{{{…}}}`. */
+/** Strips the search's highlight markers (`{{{…}}}`) and OCR line breaks. */
 export function stripHighlight(text: string): string {
   return text
-    .replace(/<\/?[a-z][^>]*>/gi, "")
     .replace(/\{\{\{|\}\}\}/g, "")
+    .replace(/<\/?em>/gi, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-export function parseFtsHits(response: FtsResponse, query: string): ArchiveHit[] {
-  const raw = response.hits?.hits ?? [];
+/** Reads `response.body.hits.hits[]`: `fields` for the book, `highlight.text` for passages. */
+export function parseSearchHits(response: SearchResponse, query: string): ArchiveHit[] {
+  const raw = response.response?.body?.hits?.hits ?? [];
   const out: ArchiveHit[] = [];
   raw.forEach((h, rank) => {
     if (!h || typeof h !== "object") return;
-    const hit = h as Record<string, unknown>;
-    const fields = (hit.fields ?? {}) as Record<string, unknown>;
-    const source = (hit._source ?? {}) as Record<string, unknown>;
-    const field = (name: string): unknown =>
-      fields[name] ?? source[name] ?? hit[name];
-    const identifier = first(field("identifier")) ?? first(hit._id);
+    const hit = h as { fields?: Record<string, unknown>; highlight?: Record<string, unknown> };
+    const f = hit.fields ?? {};
+    const identifier = first(f.identifier);
     if (!identifier) return;
-    const highlight = (hit.highlight ?? {}) as Record<string, unknown>;
     out.push({
       identifier,
-      title: first(field("title")),
-      year: yearOf(field("year") ?? field("date")),
-      highlights: Object.values(highlight)
-        .flatMap(all)
-        .map(stripHighlight)
-        .filter((t) => t.length > 0),
+      title: first(f.title) ?? identifier,
+      creator: first(f.creator),
+      year: yearOf(f.year) ?? yearOf(f.date),
+      mediatype: first(f.mediatype),
+      collections: all(f.collection),
+      highlights: all(hit.highlight?.text).map(stripHighlight).filter((t) => t.length > 0),
       rank,
       query,
     });
@@ -251,68 +238,22 @@ export function parseFtsHits(response: FtsResponse, query: string): ArchiveHit[]
   return out;
 }
 
-/** The parts of an item's metadata the gate and the citation need. */
-export interface ArchiveItem {
-  identifier: string;
-  title: string;
-  creator: string | null;
+/** What the item metadata adds to a hit. */
+export interface ItemDetails {
   publisher: string | null;
-  year: number | null;
-  mediatype: string | null;
-  collections: string[];
   restricted: boolean;
   copyrightStatus: string | null;
-  server: string | null;
-  dir: string | null;
-  /** Name of the plain OCR text file, when the item has one. */
-  textFile: string | null;
 }
 
-export function parseMetadata(identifier: string, response: MetadataResponse): ArchiveItem {
+export function parseItemDetails(response: MetadataResponse): ItemDetails {
   const md = response.metadata ?? {};
-  const files = (response.files ?? [])
-    .map((f) => f.name ?? "")
-    .filter((name) => name.endsWith("_djvu.txt"));
   return {
-    identifier,
-    title: first(md.title) ?? identifier,
-    creator: first(md.creator),
     publisher: first(md.publisher),
-    year: yearOf(md.year) ?? yearOf(md.date),
-    mediatype: first(md.mediatype),
-    collections: all(md.collection),
     restricted:
       response.is_dark === true ||
       String(first(md["access-restricted-item"]) ?? "").toLowerCase() === "true",
     copyrightStatus: first(md["possible-copyright-status"]),
-    server: response.server ?? null,
-    dir: response.dir ?? null,
-    textFile: files.find((f) => f === `${identifier}_djvu.txt`) ?? files[0] ?? null,
   };
-}
-
-/** A candidate passage in a book. */
-export interface Passage {
-  text: string;
-  leaf: number | null;
-  from: ArchiveEvidence["passageFrom"];
-}
-
-export function parseInsideMatches(response: InsideResponse): Passage[] {
-  return (response.matches ?? []).flatMap((m): Passage[] => {
-    if (!m || typeof m !== "object") return [];
-    const match = m as { text?: unknown; par?: { page?: unknown }[] };
-    const text = typeof match.text === "string" ? stripHighlight(match.text) : "";
-    if (!text) return [];
-    const page = match.par?.[0]?.page;
-    return [
-      {
-        text,
-        leaf: typeof page === "number" ? page : null,
-        from: "search-inside",
-      },
-    ];
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -320,29 +261,34 @@ export function parseInsideMatches(response: InsideResponse): Passage[] {
 // ---------------------------------------------------------------------------
 
 export function publicDomainGate(
-  item: ArchiveItem,
+  hit: Pick<ArchiveHit, "year" | "mediatype" | "collections">,
   cutoffYear: number,
 ): { ok: true } | { ok: false; reason: string } {
-  if (item.mediatype && item.mediatype !== "texts") {
+  if (hit.mediatype && hit.mediatype !== "texts") {
     return { ok: false, reason: "not a text" };
   }
-  if (item.restricted) return { ok: false, reason: "access restricted" };
-  if (item.collections.some((c) => LENDING_COLLECTIONS.has(c))) {
+  if (hit.collections.some((c) => LENDING_COLLECTIONS.has(c))) {
     return { ok: false, reason: "lending library" };
   }
-  const status = item.copyrightStatus ?? "";
-  if (/copyright/i.test(status) && !/not[_ ]in[_ ]copyright/i.test(status)) {
-    return { ok: false, reason: "marked in copyright" };
-  }
-  if (item.year === null) return { ok: false, reason: "no publication year" };
-  if (item.year > cutoffYear) {
+  if (hit.year === null) return { ok: false, reason: "no publication year" };
+  if (hit.year > cutoffYear) {
     return { ok: false, reason: `published after ${cutoffYear}` };
   }
   return { ok: true };
 }
 
+/** The metadata-only checks, for the few books kept. */
+export function detailsGate(details: ItemDetails): { ok: true } | { ok: false; reason: string } {
+  if (details.restricted) return { ok: false, reason: "access restricted" };
+  const status = details.copyrightStatus ?? "";
+  if (/copyright/i.test(status) && !/not[_ ]in[_ ]copyright/i.test(status)) {
+    return { ok: false, reason: "marked in copyright" };
+  }
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------------
-// 3–4. Passages and scoring
+// 3. Scoring
 // ---------------------------------------------------------------------------
 
 /** Everything about the claim that scoring a passage needs, computed once. */
@@ -362,17 +308,24 @@ export function scoringContext(claim: string, subject: string): ScoringContext {
   };
 }
 
-const MIN_PASSAGE_CHARS = 80;
+/** Shorter than this, a passage is an OCR fragment rather than a sentence. */
+const MIN_PASSAGE_CHARS = 40;
 
 /**
  * How well a passage carries the claim, 0-1, or null when it fails a gate: too
- * short to be more than an OCR fragment, none of the claim's numbers when the
- * claim has some, or no mention of the subject in a book not about it.
+ * short, none of the claim's numbers when the claim has some, or no mention of
+ * the subject in a book not about it.
+ *
+ * `datelineYear` is a periodical issue's own year. Every page of an 1889 issue
+ * says "1889" in its masthead, so there it is not evidence of anything: it is
+ * dropped from the claim's numbers, and a claim whose only number it was gets
+ * nothing from that issue.
  */
 export function scorePassage(
   text: string,
   ctx: ScoringContext,
   bookIsAboutSubject: boolean,
+  datelineYear: string | null = null,
 ): { score: number; matched: string[] } | null {
   if (text.length < MIN_PASSAGE_CHARS) return null;
   const have = tokenSet(text);
@@ -383,80 +336,105 @@ export function scorePassage(
   ) {
     return null;
   }
-  const anchors = anchorScore(ctx.anchors, text);
-  const numbersMatched = ctx.anchors.numbers.some((n) => anchors.matched.includes(n));
+  const query: Anchors = datelineYear
+    ? { names: ctx.anchors.names, numbers: ctx.anchors.numbers.filter((n) => n !== datelineYear) }
+    : ctx.anchors;
+  const anchors = anchorScore(query, text);
+  const numbersMatched = query.numbers.some((n) => anchors.matched.includes(n));
   if (ctx.anchors.numbers.length > 0 && !numbersMatched) return null;
 
   const cov = coverage(ctx.bag, have);
-  const hasAnchors = ctx.anchors.numbers.length + ctx.anchors.names.length > 0;
+  const hasAnchors = query.numbers.length + query.names.length > 0;
   const score = hasAnchors ? 0.6 * anchors.score + 0.4 * cov : cov;
   return { score: Math.round(score * 100) / 100, matched: anchors.matched };
 }
 
-const WINDOW_BEFORE = 700;
-const WINDOW_AFTER = 800;
-/** Anchor occurrences considered in one book's OCR text. */
-const MAX_OCCURRENCES = 2000;
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** The title carries every word of the subject: the whole book is about it. */
+export function titleIsAbout(title: string, subjectTokens: string[]): boolean {
+  if (subjectTokens.length === 0) return false;
+  const have = tokenSet(title);
+  return subjectTokens.every((t) => have.has(t));
 }
 
 /**
- * Windows of a book's OCR text centred on occurrences of the claim's anchors,
- * best first and non-overlapping. Only positions near an anchor are scored, so
- * a long book costs no more than its matches.
- */
-export function bestWindows(
-  text: string,
-  terms: ClaimTerms,
-  ctx: ScoringContext,
-  bookIsAboutSubject: boolean,
-  limit = 3,
-): Passage[] {
-  const needles = [
-    ...terms.numbers,
-    ...terms.numbers.map((n) => n.replace(/[,.]/g, "")),
-    ...terms.names,
-  ].filter((n, i, a) => n.length > 1 && a.indexOf(n) === i);
-  if (needles.length === 0) return [];
-  const re = new RegExp(needles.map(escapeRegExp).join("|"), "giu");
-
-  const scored: { start: number; end: number; score: number }[] = [];
-  let seen = 0;
-  for (const m of text.matchAll(re)) {
-    if (++seen > MAX_OCCURRENCES) break;
-    const start = Math.max(0, (m.index ?? 0) - WINDOW_BEFORE);
-    const end = Math.min(text.length, (m.index ?? 0) + WINDOW_AFTER);
-    const s = scorePassage(text.slice(start, end), ctx, bookIsAboutSubject);
-    if (s) scored.push({ start, end, score: s.score });
-  }
-  scored.sort((a, b) => b.score - a.score || a.start - b.start);
-
-  const picked: typeof scored = [];
-  for (const w of scored) {
-    if (picked.some((p) => w.start < p.end && p.start < w.end)) continue;
-    picked.push(w);
-    if (picked.length >= limit) break;
-  }
-  return picked.map((w) => ({
-    text: text.slice(w.start, w.end).replace(/\s+/g, " ").trim(),
-    leaf: null,
-    from: "plain-text",
-  }));
-}
-
-/**
- * One key per work, so five scans of the same book count once. Title only: the
- * creator is spelled differently from scan to scan, the title rarely is.
+ * One key per work, so five scans of the same book count once. The main title
+ * only: the creator is spelled differently from scan to scan, and the subtitle
+ * after the colon is catalogued on some scans and not others.
  */
 export function editionKey(title: string): string {
-  return fold(title)
+  return fold(title.split(/\s*[:;]\s*/)[0])
     .replace(/[^\p{L}\p{N} ]+/gu, " ")
     .split(/\s+/)
     .filter((w) => w && !["the", "a", "an"].includes(w))
     .slice(0, 8)
     .join(" ");
+}
+
+/** A hit that passed the gate, with its passages scored. */
+export interface ScoredHit {
+  hit: ArchiveHit;
+  /** Passages that passed the gates and threshold, best first. */
+  passages: { text: string; score: number; matched: string[] }[];
+  /** The best passage's score. */
+  score: number;
+}
+
+export interface RankedHits {
+  /** Best first, one per work. */
+  ranked: ScoredHit[];
+  publicDomain: number;
+  rejected: Record<string, number>;
+  /** Public-domain books with at least one passage above the threshold. */
+  matched: number;
+}
+
+/**
+ * Steps 2–3 and the dedupe, with no I/O: from search hits to the books worth
+ * showing. Kept pure so the user script's copy can be checked against it.
+ */
+export function rankArchiveHits(
+  hits: ArchiveHit[],
+  claim: string,
+  articleTitle: string,
+  cutoffYear: number,
+  minScore: number,
+): RankedHits {
+  const subject = subjectOf(articleTitle);
+  const ctx = scoringContext(claim, subject);
+  const rejected: Record<string, number> = {};
+  let publicDomain = 0;
+  const scored: ScoredHit[] = [];
+
+  for (const hit of hits) {
+    const gate = publicDomainGate(hit, cutoffYear);
+    if (!gate.ok) {
+      rejected[gate.reason] = (rejected[gate.reason] ?? 0) + 1;
+      continue;
+    }
+    publicDomain++;
+    const about = titleIsAbout(hit.title, ctx.subjectTokens);
+    const dateline =
+      hit.year !== null && hit.collections.includes("periodicals") ? String(hit.year) : null;
+    const passages = hit.highlights
+      .map((text) => ({ text, s: scorePassage(text, ctx, about, dateline) }))
+      .filter((p) => p.s !== null && p.s.score >= minScore)
+      .map((p) => ({ text: p.text, score: p.s!.score, matched: p.s!.matched }))
+      .sort((a, b) => b.score - a.score);
+    if (passages.length > 0) scored.push({ hit, passages, score: passages[0].score });
+  }
+
+  const byWork = new Map<string, ScoredHit>();
+  for (const s of scored) {
+    const key = editionKey(s.hit.title);
+    const kept = byWork.get(key);
+    if (!kept || s.score > kept.score || (s.score === kept.score && s.hit.rank < kept.hit.rank)) {
+      byWork.set(key, s);
+    }
+  }
+  const ranked = [...byWork.values()].sort(
+    (a, b) => b.score - a.score || a.hit.rank - b.hit.rank,
+  );
+  return { ranked, publicDomain, rejected, matched: scored.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -468,26 +446,70 @@ function escapePipes(s: string): string {
 }
 
 /** "Smith, John, 1850-1920" → "Smith, John": the Archive appends life dates. */
-function cleanCreator(creator: string): string {
+export function cleanCreator(creator: string): string {
   return creator.replace(/,?\s*\(?\d{4}\s*-\s*(\d{4})?\)?\.?\s*$/, "").trim();
 }
 
-export function archiveUrl(identifier: string, leaf: number | null): string {
-  const base = `https://archive.org/details/${encodeURIComponent(identifier)}`;
-  return leaf === null ? base : `${base}/page/n${leaf}`;
+export function detailsUrl(identifier: string): string {
+  return `https://archive.org/details/${encodeURIComponent(identifier)}`;
 }
 
-export function formatArchiveCitation(item: ArchiveItem, leaf: number | null): Citation {
+/** Opens the book with the claim's strongest anchor searched, so the editor lands on the passage. */
+export function viewerUrl(identifier: string, terms: ClaimTerms): string {
+  const q = terms.numbers[0] ?? terms.names[0] ?? terms.subject;
+  return `${detailsUrl(identifier)}?q=${encodeURIComponent(q)}`;
+}
+
+export function formatArchiveCitation(
+  hit: Pick<ArchiveHit, "identifier" | "title" | "creator" | "year">,
+  publisher: string | null,
+): Citation {
   const parts = [
-    `title=${escapePipes(item.title)}`,
-    item.creator ? `author=${escapePipes(cleanCreator(item.creator))}` : null,
-    item.publisher ? `publisher=${escapePipes(item.publisher)}` : null,
-    item.year !== null ? `year=${item.year}` : null,
-    `url=${archiveUrl(item.identifier, leaf)}`,
+    `title=${escapePipes(hit.title)}`,
+    hit.creator ? `author=${escapePipes(cleanCreator(hit.creator))}` : null,
+    publisher ? `publisher=${escapePipes(publisher)}` : null,
+    hit.year !== null ? `year=${hit.year}` : null,
+    `url=${detailsUrl(hit.identifier)}`,
     "via=Internet Archive",
   ].filter((p): p is string => p !== null);
   const template = `{{cite book |${parts.join(" |")}}}`;
   return { template, ref: `<ref>${template}</ref>`, kind: "cite book" };
+}
+
+/** "gustave eiffel, gustave, eiffel" → "gustave eiffel": the parts add nothing to read. */
+export function compactAnchors(matched: string[]): string[] {
+  const phrases = matched.filter((m) => m.includes(" "));
+  return matched.filter(
+    (m) => m.includes(" ") || !phrases.some((p) => p.split(" ").includes(m)),
+  );
+}
+
+export function toArchiveCandidate(
+  s: ScoredHit,
+  publisher: string | null,
+  terms: ClaimTerms,
+): ArchiveCandidate {
+  const { hit } = s;
+  const best = s.passages[0];
+  const matched = compactAnchors(best.matched);
+  const byline = [hit.year, hit.creator && cleanCreator(hit.creator)].filter(Boolean).join(", ");
+  return {
+    url: detailsUrl(hit.identifier),
+    title: hit.title,
+    relevance: `Internet Archive, ${byline} — matched ${matched.join(", ") || "claim wording"}`,
+    snippet: best.text,
+    evidence: {
+      origin: "internet-archive",
+      identifier: hit.identifier,
+      year: hit.year!,
+      passages: s.passages.map((p) => p.text),
+      score: s.score,
+      matchedAnchors: matched,
+      query: hit.query,
+      viewerUrl: viewerUrl(hit.identifier, terms),
+    },
+    citation: formatArchiveCitation(hit, publisher),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -497,19 +519,19 @@ export function formatArchiveCitation(item: ArchiveItem, leaf: number | null): C
 /** How many books survived each step — the numbers that say whether this works. */
 export interface ArchiveFunnel {
   queries: string[];
+  /** Whether the search itself filtered to public domain, or only the gate did. */
+  filter: "search" | "gate only";
   /** Distinct books the search returned. */
   hits: number;
-  /** Books whose metadata was read. */
-  lookedUp: number;
   /** Books that passed the public-domain gate. */
   publicDomain: number;
   /** Why the others did not, counted by reason. */
   rejected: Record<string, number>;
-  /** Books searched for a passage. */
-  searched: number;
   /** Books with a passage above the score threshold. */
   matched: number;
-  /** After collapsing editions and capping. */
+  /** Books whose metadata was read. */
+  lookedUp: number;
+  /** After collapsing editions, the metadata checks and the cap. */
   candidates: number;
   /** Non-fatal request failures. */
   errors: string[];
@@ -521,22 +543,6 @@ export interface ArchiveSourceResult {
   funnel: ArchiveFunnel;
 }
 
-function truncate(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
-}
-
-/** The title carries every word of the subject: the whole book is about it. */
-function titleIsAbout(title: string | null, subjectTokens: string[]): boolean {
-  if (!title || subjectTokens.length === 0) return false;
-  const have = tokenSet(title);
-  return subjectTokens.every((t) => have.has(t));
-}
-
-/** The one term to search inside a book for: its strongest anchor. */
-function insideQuery(terms: ClaimTerms): string {
-  return terms.numbers[0] ?? terms.names[0] ?? terms.subject;
-}
-
 export async function findArchiveCandidates(
   claim: Claim,
   articleTitle: string,
@@ -544,24 +550,18 @@ export async function findArchiveCandidates(
 ): Promise<ArchiveSourceResult> {
   const client = options.client ?? httpArchiveClient;
   const cutoff = options.cutoffYear ?? publicDomainCutoff();
-  const minScore = options.minScore ?? 0.35;
-  const concurrency = options.concurrency ?? 3;
-
+  const maxCandidates = options.maxCandidates ?? 3;
   const terms = claimTerms(claim.claim, articleTitle);
-  const ctx = scoringContext(claim.claim, terms.subject);
-  const queries = buildArchiveQueries(
-    terms,
-    options.filterInQuery === false ? null : publicDomainFilter(cutoff),
-  ).slice(0, options.maxQueries ?? 3);
+  const queries = buildArchiveQueries(terms).slice(0, options.maxQueries ?? 3);
 
   const funnel: ArchiveFunnel = {
     queries: [],
+    filter: options.filterInSearch === false ? "gate only" : "search",
     hits: 0,
-    lookedUp: 0,
     publicDomain: 0,
     rejected: {},
-    searched: 0,
     matched: 0,
+    lookedUp: 0,
     candidates: 0,
     errors: [],
   };
@@ -570,118 +570,68 @@ export async function findArchiveCandidates(
   const hits = new Map<string, ArchiveHit>();
   for (const query of queries) {
     funnel.queries.push(query);
+    const size = options.maxHits ?? 50;
+    let response: SearchResponse | null = null;
     try {
-      const response = await client.fullTextSearch(query, options.maxHits ?? 50);
-      for (const hit of parseFtsHits(response, query)) {
-        if (!hits.has(hit.identifier)) {
-          hits.set(hit.identifier, { ...hit, rank: hits.size });
-        }
-      }
+      response = await client.fullTextSearch({
+        query: funnel.filter === "search" ? withPublicDomainFilter(query, cutoff) : query,
+        size,
+      });
     } catch (err) {
       funnel.errors.push(`search failed: ${(err as Error).message}`);
+      // The search's query syntax is undocumented; if it rejects the year
+      // clause, carry on without it — the gate still checks every hit.
+      if (funnel.filter === "search") {
+        funnel.filter = "gate only";
+        try {
+          response = await client.fullTextSearch({ query, size });
+        } catch (retryErr) {
+          funnel.errors.push(`search failed without filter too: ${(retryErr as Error).message}`);
+        }
+      }
+    }
+    for (const hit of response ? parseSearchHits(response, query) : []) {
+      if (!hits.has(hit.identifier)) hits.set(hit.identifier, { ...hit, rank: hits.size });
     }
     if (hits.size >= (options.enoughHits ?? 10)) break;
   }
   funnel.hits = hits.size;
 
-  // Books named for the subject first, then the search engine's own order.
-  const ordered = [...hits.values()].sort((a, b) => {
-    const about = (h: ArchiveHit): number => (titleIsAbout(h.title, ctx.subjectTokens) ? 0 : 1);
-    return about(a) - about(b) || a.rank - b.rank;
-  });
+  // 2–3. Gate, score, one per work.
+  const ranked = rankArchiveHits(
+    [...hits.values()],
+    claim.claim,
+    articleTitle,
+    cutoff,
+    options.minScore ?? 0.3,
+  );
+  funnel.publicDomain = ranked.publicDomain;
+  funnel.rejected = ranked.rejected;
+  funnel.matched = ranked.matched;
 
-  // 2. Public-domain gate, on the metadata.
-  const toLookUp = ordered.slice(0, options.metadataLookups ?? 15);
-  funnel.lookedUp = toLookUp.length;
-  const items = await pool(toLookUp, concurrency, async (hit) => {
+  // 4. Metadata for the few kept: publisher, and the restriction flag. A
+  // couple of spares, in case one turns out restricted.
+  const shortlist = ranked.ranked.slice(0, maxCandidates + 2);
+  funnel.lookedUp = shortlist.length;
+  const candidates: ArchiveCandidate[] = [];
+  for (const s of shortlist) {
+    if (candidates.length >= maxCandidates) break;
+    let publisher: string | null = null;
     try {
-      return parseMetadata(hit.identifier, await client.metadata(hit.identifier));
+      const details = parseItemDetails(await client.metadata(s.hit.identifier));
+      const gate = detailsGate(details);
+      if (!gate.ok) {
+        funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] ?? 0) + 1;
+        continue;
+      }
+      publisher = details.publisher;
     } catch (err) {
-      funnel.errors.push(`metadata ${hit.identifier}: ${(err as Error).message}`);
-      return null;
+      // The hit already passed the gate; a lead without a publisher is still a lead.
+      funnel.errors.push(`metadata ${s.hit.identifier}: ${(err as Error).message}`);
     }
-  });
-  const open: { hit: ArchiveHit; item: ArchiveItem }[] = [];
-  items.forEach((item, i) => {
-    if (!item) return;
-    const gate = publicDomainGate(item, cutoff);
-    if (gate.ok) open.push({ hit: toLookUp[i], item });
-    else funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] ?? 0) + 1;
-  });
-  funnel.publicDomain = open.length;
-
-  // 3. A passage per book: the hit's own text, else search inside, else OCR text.
-  const toSearch = open.slice(0, options.passageLookups ?? 10);
-  funnel.searched = toSearch.length;
-  const found = await pool(toSearch, concurrency, async ({ hit, item }) => {
-    const about = titleIsAbout(item.title, ctx.subjectTokens);
-    let best: { passage: Passage; score: number; matched: string[] } | null = null;
-    const consider = (passages: Passage[]): void => {
-      for (const passage of passages) {
-        const s = scorePassage(passage.text, ctx, about);
-        if (s && (!best || s.score > best.score)) best = { passage, ...s };
-      }
-    };
-    const goodEnough = (): boolean => best !== null && best.score >= minScore;
-
-    consider(hit.highlights.map((text) => ({ text, leaf: null, from: "search-hit" as const })));
-    if (!goodEnough() && item.server && item.dir) {
-      try {
-        consider(
-          parseInsideMatches(
-            await client.searchInside(item.identifier, item.server, item.dir, insideQuery(terms)),
-          ),
-        );
-      } catch (err) {
-        funnel.errors.push(`search inside ${item.identifier}: ${(err as Error).message}`);
-      }
-    }
-    if (!goodEnough() && item.textFile) {
-      try {
-        consider(bestWindows(await client.plainText(item.identifier, item.textFile), terms, ctx, about));
-      } catch (err) {
-        funnel.errors.push(`text ${item.identifier}: ${(err as Error).message}`);
-      }
-    }
-    return goodEnough() ? { hit, item, ...best! } : null;
-  });
-  const matched = found.filter((f): f is NonNullable<typeof f> => f !== null);
-  funnel.matched = matched.length;
-
-  // 4. One per work, best first.
-  const byWork = new Map<string, (typeof matched)[number]>();
-  for (const m of matched) {
-    const key = editionKey(m.item.title);
-    const kept = byWork.get(key);
-    if (!kept || m.score > kept.score) byWork.set(key, m);
+    candidates.push(toArchiveCandidate(s, publisher, terms));
   }
-  const ranked = [...byWork.values()]
-    .sort((a, b) => b.score - a.score || a.hit.rank - b.hit.rank)
-    .slice(0, options.maxCandidates ?? 3);
-  funnel.candidates = ranked.length;
-
-  const candidates = ranked.map(({ hit, item, passage, score, matched: anchors }): ArchiveCandidate => {
-    const citation = formatArchiveCitation(item, passage.leaf);
-    const byline = [item.year, item.creator && cleanCreator(item.creator)].filter(Boolean).join(", ");
-    return {
-      url: archiveUrl(item.identifier, passage.leaf),
-      title: item.title,
-      relevance: `Internet Archive, ${byline} — matched ${anchors.join(", ") || "claim wording"}`,
-      snippet: truncate(passage.text, 500),
-      evidence: {
-        origin: "internet-archive",
-        identifier: item.identifier,
-        year: item.year!,
-        passage: passage.text,
-        leaf: passage.leaf,
-        passageFrom: passage.from,
-        score,
-        matchedAnchors: anchors,
-        query: hit.query,
-      },
-      citation,
-    };
-  });
+  funnel.candidates = candidates.length;
 
   return { claim, candidates, funnel };
 }
@@ -703,8 +653,8 @@ export async function findArticleArchiveSources(
   } = {},
 ): Promise<ArticleArchiveSources> {
   const article = await fetchArticle(urlOrTitle);
-  const all = extractClaims(article.wikitext);
-  const claims = options.maxClaims ? all.slice(0, options.maxClaims) : all;
+  const every = extractClaims(article.wikitext);
+  const claims = options.maxClaims ? every.slice(0, options.maxClaims) : every;
   const results: ArchiveSourceResult[] = [];
   for (const claim of claims) {
     results.push(await findArchiveCandidates(claim, article.title, options));
