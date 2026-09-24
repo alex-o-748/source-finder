@@ -18,9 +18,6 @@ import { dirname, join } from "node:path";
 import { extractClaims } from "../src/core/extractClaims.js";
 import { extractWikilinks, paragraphRangeAt } from "../src/core/wikitext.js";
 import { buildWikiCorpus, findWikiCandidates } from "../src/core/wikiSources.js";
-import type { WikidataCorpus } from "../src/core/wikiSources.js";
-import { claimFigures } from "../src/core/wikidata.js";
-import type { WdEntity } from "../src/core/wikidata.js";
 import type { Article } from "../src/core/types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -32,21 +29,6 @@ function fixture(name: string): string {
 
 const EN = fixture("en_lighthouse.wikitext");
 const DE = fixture("de_lighthouse.wikitext");
-const ENTITIES = JSON.parse(fixture("wikidata_lighthouse.json")) as Record<
-  string,
-  WdEntity
->;
-
-/** Labels the live stage would fetch; hard-coded so the test stays offline. */
-const WD_LABELS: Record<string, string> = {
-  Q100: "Karsten Point Lighthouse",
-  Q200: "Harbour Authority Registry",
-  P2048: "height",
-  P2929: "light range",
-  P2044: "elevation above sea level",
-  P580: "start time",
-  P571: "inception",
-};
 
 interface UserScriptModule {
   indexWikiArticle(lang: string, title: string, wikitext: string): unknown;
@@ -55,20 +37,13 @@ interface UserScriptModule {
     title: string;
     ref: string;
     relevance: string;
-    evidence: {
-      origin: string;
-      score: number;
-      matchedAnchors?: string[];
-      lang: string;
-      statement?: { property: string; propertyLabel: string; value: string };
-    };
+    evidence: { origin: string; score: number; matchedAnchors?: string[]; lang: string };
   }[];
   citationNeededOffsets(text: string): { start: number; end: number }[];
   stripWikitext(text: string): string;
   refToSource(content: string): { url: string | null; title: string | null } | null;
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
-  claimFiguresOf(text: string): string[];
 }
 
 /** Loads the user script with browser globals stubbed, exposing its internals. */
@@ -87,8 +62,7 @@ function loadUserScript(): UserScriptModule {
       stripWikitext: stripWikitext,
       refToSource: refToSource,
       setClaimContexts: function (v) { claimContexts = v; },
-      setCnSups: function (v) { cnSups = v; },
-      claimFiguresOf: claimFiguresOf
+      setCnSups: function (v) { cnSups = v; }
     };`;
 
   const config: Record<string, unknown> = {
@@ -163,22 +137,10 @@ function scriptCorpus(withSister: boolean) {
       Fyrland: { de: "Fyrland" },
       "Anna Berg": { de: "Anna Berg" },
     },
-    wikidata: {
-      entities: ENTITIES,
-      titleQids: { "Karsten Point Lighthouse": "Q100" },
-      labels: WD_LABELS,
-      subjectQid: "Q100",
-    },
     claimOffsets: script.citationNeededOffsets(EN),
     warnings: [],
   };
 }
-
-const coreWikidata: WikidataCorpus = {
-  entities: new Map(Object.entries(ENTITIES)),
-  titleQids: new Map([["Karsten Point Lighthouse", "Q100"]]),
-  labels: new Map(Object.entries(WD_LABELS)),
-};
 
 const article: Article = {
   title: "Karsten Point Lighthouse",
@@ -194,7 +156,6 @@ const coreCorpus = buildWikiCorpus(
     ["Fyrland", new Map([["de", "Fyrland"]])],
     ["Anna Berg", new Map([["de", "Anna Berg"]])],
   ]),
-  coreWikidata,
 );
 const coreClaims = extractClaims(EN);
 
@@ -259,45 +220,4 @@ test("the user script drops blocklisted domains too", () => {
     script.findWikiCandidates(scriptCorpus(true), i).map((c) => c.url ?? ""),
   );
   assert.ok(!urls.some((u) => u.includes("dailymail")));
-});
-
-test("the user script lifts the same Wikidata reference as the core", () => {
-  const fromScript = script
-    .findWikiCandidates(scriptCorpus(true), 0)
-    .filter((c) => c.evidence.origin === "wikidata");
-  const fromCore = findWikiCandidates(coreCorpus, coreClaims[0]).filter(
-    (c) => c.evidence.origin === "wikidata",
-  );
-  assert.ok(fromScript.length > 0, "expected the script to find a Wikidata lead");
-  assert.deepEqual(
-    fromScript.map((c) => [c.url, c.ref, c.evidence.score]),
-    fromCore.map((c) => [c.url, c.ref, c.evidence.score]),
-  );
-});
-
-test("the user script drops circular Wikidata references too", () => {
-  // The light-range statement matches "21 nautical miles" but is referenced
-  // only to an English Wikipedia import.
-  const leads = CONTEXTS.flatMap((_, i) =>
-    script.findWikiCandidates(scriptCorpus(true), i),
-  );
-  assert.ok(!leads.some((c) => c.evidence.statement?.property === "P2929"));
-});
-
-test("the user script extracts the same figures from a claim as the core", () => {
-  const samples = [
-    "The population was 616,093 at the 2021 census.",
-    "Die Einwohnerzahl betrug 616.093.",
-    "The borough covers 297.8 square kilometres.",
-    "in 2022 15 people",
-    "It opened in 1889.",
-    "It had 4 rooms.",
-  ];
-  for (const sample of samples) {
-    assert.deepEqual(
-      script.claimFiguresOf(sample).slice().sort(),
-      [...claimFigures(sample)].sort(),
-      `figures should match for ${JSON.stringify(sample)}`,
-    );
-  }
 });

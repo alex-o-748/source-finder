@@ -1137,7 +1137,6 @@
   var WIKI_MIN_SCORE = 0.3;
   var WIKI_MIN_ANCHOR_SCORE = 0.5;
   var WIKI_MAX_CANDIDATES = 5;
-  var WIKI_MAX_WD_ENTITIES = 20;
   var REF_MARK = String.fromCharCode(1);
 
   // -- MediaWiki API --
@@ -1231,321 +1230,6 @@
         });
       });
     }, Promise.resolve()).then(function () { return out; });
-  }
-
-  // -- Wikidata --
-
-  // Wikidata is not a Wikipedia: the same action API on a different host. This
-  // is the only cross-origin call the free stage makes outside
-  // *.wikipedia.org, so every use of it fails soft — if the page's CSP refuses
-  // the request, the stage loses this pass and keeps the other two.
-  function wdApiGet(params) {
-    var query = ['format=json', 'formatversion=2', 'origin=*'];
-    Object.keys(params).forEach(function (k) {
-      query.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
-    });
-    var url = 'https://www.wikidata.org/w/api.php?' + query.join('&');
-    return fetch(url, {
-      credentials: 'omit',
-      headers: { accept: 'application/json' }
-    }).then(function (res) {
-      if (!res.ok) throw new Error('wikidata.org: HTTP ' + res.status);
-      return res.json();
-    }).then(function (data) {
-      if (data && data.error) throw new Error('wikidata.org: ' + data.error.info);
-      return data;
-    });
-  }
-
-  // Returns { requestedTitle: qid }, batched 50 at a time. A wikilink is an
-  // already-disambiguated entity, so this is all the entity resolution the
-  // Wikidata pass needs.
-  function wikiFetchWikibaseItems(code, titles) {
-    var unique = [];
-    var seen = Object.create(null);
-    titles.forEach(function (t) {
-      var key = String(t || '').trim();
-      if (key && !seen[key]) { seen[key] = true; unique.push(key); }
-    });
-    var out = {};
-    var batches = [];
-    for (var i = 0; i < unique.length; i += 50) batches.push(unique.slice(i, i + 50));
-
-    return batches.reduce(function (chain, batch) {
-      return chain.then(function () {
-        return mwApiGet(code, {
-          action: 'query', prop: 'pageprops', ppprop: 'wikibase_item',
-          titles: batch.join('|'), redirects: '1'
-        }).then(function (data) {
-          var q = (data && data.query) || {};
-          var alias = {};
-          (q.normalized || []).concat(q.redirects || []).forEach(function (step) {
-            alias[step.from] = step.to;
-          });
-          var byTitle = {};
-          (q.pages || []).forEach(function (page) {
-            var qid = page.pageprops && page.pageprops.wikibase_item;
-            if (qid) byTitle[page.title] = qid;
-          });
-          batch.forEach(function (requested) {
-            var current = requested;
-            for (var hop = 0; hop < 4 && alias[current]; hop++) current = alias[current];
-            if (byTitle[current]) out[requested] = byTitle[current];
-          });
-        });
-      });
-    }, Promise.resolve()).then(function () { return out; });
-  }
-
-  // Returns { qid: entity }, batched 50 ids at a time.
-  function wdFetchEntities(ids, langs, props) {
-    var unique = [];
-    ids.forEach(function (id) {
-      if (/^[QP]\d+$/.test(id) && unique.indexOf(id) === -1) unique.push(id);
-    });
-    var out = {};
-    if (!unique.length) return Promise.resolve(out);
-    var languages = (langs || []).slice();
-    if (languages.indexOf('en') === -1) languages.push('en');
-
-    var batches = [];
-    for (var i = 0; i < unique.length; i += 50) batches.push(unique.slice(i, i + 50));
-    return batches.reduce(function (chain, batch) {
-      return chain.then(function () {
-        return wdApiGet({
-          action: 'wbgetentities',
-          ids: batch.join('|'),
-          props: (props || ['claims', 'labels']).join('|'),
-          languages: languages.join('|'),
-          languagefallback: '1'
-        }).then(function (data) {
-          var entities = (data && data.entities) || {};
-          Object.keys(entities).forEach(function (id) {
-            if (entities[id].missing === undefined) out[id] = entities[id];
-          });
-        });
-      });
-    }, Promise.resolve()).then(function () { return out; });
-  }
-
-  function wdLabelOf(entity, langs) {
-    if (!entity || !entity.labels) return null;
-    var wanted = (langs || []).concat(['en']);
-    for (var i = 0; i < wanted.length; i++) {
-      var hit = entity.labels[wanted[i]];
-      if (hit && hit.value) return hit.value;
-    }
-    var keys = Object.keys(entity.labels);
-    return keys.length ? entity.labels[keys[0]].value : null;
-  }
-
-  // Properties that mark a reference as a Wikimedia import rather than a
-  // source: a statement referenced only by these cites Wikipedia for Wikipedia.
-  var WD_CIRCULAR_PROPS = { P143: true, P4656: true, P3452: true };
-  var WD_CIRCULAR_HOSTS =
-    /(?:^|\.)(?:wikipedia|wikidata|wikimedia|wikisource|wikiquote|wikivoyage|wiktionary)\.org$/i;
-
-  function decodeSnak(snak) {
-    if (!snak || snak.snaktype !== 'value' || !snak.datavalue) return null;
-    var value = snak.datavalue.value;
-    var type = snak.datavalue.type;
-
-    if (type === 'time') {
-      var precision = value.precision || 0;
-      // Below year precision there is no figure in the prose to compare
-      // against, and BCE dates are not worth the sign handling.
-      if (!value.time || precision < 9 || value.time.charAt(0) !== '+') return null;
-      var m = /^\+(\d{4,})-(\d{2})-(\d{2})/.exec(value.time);
-      if (!m) return null;
-      var year = String(Number(m[1]));
-      var iso = precision >= 11 ? m[1] + '-' + m[2] + '-' + m[3]
-        : precision === 10 ? m[1] + '-' + m[2]
-        : year;
-      return { kind: 'time', year: year, iso: iso, precision: precision };
-    }
-    if (type === 'quantity') {
-      if (!value.amount) return null;
-      return { kind: 'quantity', amount: value.amount };
-    }
-    if (type === 'wikibase-entityid') {
-      if (!value.id) return null;
-      return { kind: 'item', id: value.id };
-    }
-    if (type === 'string') return { kind: 'text', text: String(value) };
-    if (type === 'monolingualtext') {
-      if (!value.text) return null;
-      return { kind: 'text', text: value.text };
-    }
-    return null;
-  }
-
-  // Separators that group or decimalise digits, across locales.
-  var FIGURE_SEPARATORS = /[.,   ']/g;
-
-  // Every figure in a claim, keyed the way quantityKeysOf keys a stored
-  // amount: separators stripped, so "616,093" and the German "616.093" both
-  // key as "616093".
-  //
-  // Deliberately not anchorsOf. That tokeniser splits on punctuation, so it
-  // reads "616,093" as the two anchors "616" and "093" — right for
-  // cross-language sentence matching, where grouping separators differ by
-  // locale and the groups are what survive translation, and wrong here, where
-  // the figure is compared exactly against a value. Using it was the reason
-  // this pass never matched a population, area or elevation.
-  //
-  // A plain space is not a separator — "in 2022 15 people" must not key as
-  // "202215".
-  function claimFiguresOf(text) {
-    var out = [];
-    var re = /\d(?:[\d.,   ']*\d)?/g;
-    var src = normaliseDigits(text);
-    for (;;) {
-      var m = re.exec(src);
-      if (!m) break;
-      var digits = m[0].replace(FIGURE_SEPARATORS, '');
-      // Single digits are everywhere in prose; they are not evidence.
-      if (digits.length >= 2 && out.indexOf(digits) === -1) out.push(digits);
-    }
-    return out;
-  }
-
-  // Digit strings a stored value should be looked for under, normalised to
-  // match claimFiguresOf. The integer part is offered too: prose rounds, and
-  // that is a real match, just a weaker one.
-  function quantityKeysOf(amount) {
-    var digits = String(amount).replace(/^[+-]/, '');
-    return {
-      exact: digits.replace(FIGURE_SEPARATORS, ''),
-      whole: digits.split('.')[0].replace(FIGURE_SEPARATORS, '')
-    };
-  }
-
-  function renderValueOf(value, labels) {
-    if (value.kind === 'time') return value.iso;
-    if (value.kind === 'quantity') return value.amount.replace(/^\+/, '');
-    if (value.kind === 'item') return (labels && labels[value.id]) || value.id;
-    return value.text;
-  }
-
-  function isCircularReference(ref) {
-    var props = Object.keys((ref && ref.snaks) || {});
-    if (!props.length) return true;
-    var allCircular = props.every(function (p) { return WD_CIRCULAR_PROPS[p]; });
-    if (allCircular) return true;
-    var urls = ref.snaks.P854 || [];
-    for (var i = 0; i < urls.length; i++) {
-      var decoded = decodeSnak(urls[i]);
-      if (!decoded || decoded.kind !== 'text') continue;
-      try {
-        if (WD_CIRCULAR_HOSTS.test(new URL(decoded.text).hostname)) return true;
-      } catch (e) { /* judged by the other fields */ }
-    }
-    return false;
-  }
-
-  function wdRefValue(ref, property) {
-    var snaks = (ref.snaks && ref.snaks[property]) || [];
-    for (var i = 0; i < snaks.length; i++) {
-      var decoded = decodeSnak(snaks[i]);
-      if (decoded) return decoded;
-    }
-    return null;
-  }
-
-  function wdRefText(ref, property) {
-    var value = wdRefValue(ref, property);
-    if (!value) return null;
-    if (value.kind === 'text') return value.text;
-    if (value.kind === 'time') return value.iso;
-    return null;
-  }
-
-  // Turns a Wikidata reference into the same shape refToSource produces, so
-  // nothing downstream needs a special case for it. Null when the reference is
-  // circular or names no identifiable work.
-  function wdReferenceToSource(ref, labels) {
-    if (isCircularReference(ref)) return null;
-    labels = labels || {};
-
-    var url = wdRefText(ref, 'P854');
-    var doi = wdRefText(ref, 'P356');
-    var pmid = wdRefText(ref, 'P698');
-    var pmc = wdRefText(ref, 'P932');
-    if (!url && doi) url = 'https://doi.org/' + doi;
-    if (!url && pmid) url = 'https://pubmed.ncbi.nlm.nih.gov/' + pmid + '/';
-    if (!url && pmc) url = 'https://www.ncbi.nlm.nih.gov/pmc/articles/' + pmc + '/';
-
-    var statedIn = wdRefValue(ref, 'P248');
-    var work = (statedIn && statedIn.kind === 'item') ? (labels[statedIn.id] || null) : null;
-    var title = wdRefText(ref, 'P1476') || work;
-    if (!title && !url) return null;
-
-    var authorItem = wdRefValue(ref, 'P50');
-    var author = wdRefText(ref, 'P2093') ||
-      ((authorItem && authorItem.kind === 'item') ? (labels[authorItem.id] || null) : null);
-    var publisherItem = wdRefValue(ref, 'P123');
-    var publisher = (publisherItem && publisherItem.kind === 'item')
-      ? (labels[publisherItem.id] || null) : null;
-    var date = wdRefText(ref, 'P577');
-    var retrieved = wdRefText(ref, 'P813');
-
-    var kind = (doi || pmid || pmc) ? 'cite journal' : url ? 'cite web' : 'cite book';
-    var parts = [kind];
-    if (url) parts.push('url=' + url);
-    parts.push('title=' + escapePipes(title || url || ''));
-    if (work && work !== title) parts.push('work=' + escapePipes(work));
-    if (author) parts.push('author=' + escapePipes(author));
-    if (publisher) parts.push('publisher=' + escapePipes(publisher));
-    if (date) parts.push('date=' + escapePipes(date));
-    if (doi) parts.push('doi=' + escapePipes(doi));
-    if (pmid) parts.push('pmid=' + escapePipes(pmid));
-    if (url && retrieved) parts.push('access-date=' + escapePipes(retrieved));
-
-    return {
-      url: url, title: title, work: work || publisher, author: author,
-      date: date, quote: null, template: kind, shortFootnote: false,
-      raw: '{{' + parts.join(' |') + '}}'
-    };
-  }
-
-  function wdReferencedItemIds(ref) {
-    var out = [];
-    ['P248', 'P123', 'P50'].forEach(function (property) {
-      var value = wdRefValue(ref, property);
-      if (value && value.kind === 'item') out.push(value.id);
-    });
-    return out;
-  }
-
-  // Whether a claim asserts this value. Exact comparison rather than
-  // similarity: the figure is either in the sentence or it is not.
-  function matchValueOf(value, claimNumbers, linkedQids) {
-    if (value.kind === 'time') {
-      if (claimNumbers.indexOf(value.year) === -1) return null;
-      // A day-precision date whose day is also in the sentence is a far
-      // tighter match than a bare year, which two unrelated facts about the
-      // same entity can easily share.
-      var day = parseInt(value.iso.slice(8, 10), 10);
-      var dayHit = value.precision >= 11 && day > 0 &&
-        claimNumbers.indexOf(String(day)) !== -1;
-      return { score: dayHit ? 0.95 : 0.8, anchor: value.year };
-    }
-    if (value.kind === 'quantity') {
-      var keys = quantityKeysOf(value.amount);
-      // Single digits are everywhere in prose; they are not evidence.
-      if (keys.exact.length >= 2 && claimNumbers.indexOf(keys.exact) !== -1) {
-        return { score: 0.9, anchor: keys.exact };
-      }
-      if (keys.whole.length >= 2 && claimNumbers.indexOf(keys.whole) !== -1) {
-        return { score: 0.75, anchor: keys.whole };
-      }
-      return null;
-    }
-    if (value.kind === 'item') {
-      return linkedQids.indexOf(value.id) !== -1
-        ? { score: 0.85, anchor: value.id } : null;
-    }
-    return null;
   }
 
   // -- Wikitext to plain prose --
@@ -2237,63 +1921,6 @@
     return out;
   }
 
-  // Three batched requests at most. Label lookups are bounded by the
-  // statements that actually matched a claim rather than by everything the
-  // entities happen to say, so a large entity does not drag in several hundred
-  // ids for one tagged sentence.
-  function loadWikidataCorpus(corpus, title) {
-    var targets = [title];
-    claimContexts.forEach(function (ctx) {
-      (ctx && ctx.links ? ctx.links : []).forEach(function (t) {
-        if (targets.indexOf(t) === -1) targets.push(t);
-      });
-    });
-
-    return wikiFetchWikibaseItems(WIKI_CODE, targets).then(function (titleQids) {
-      corpus.wikidata.titleQids = titleQids;
-      corpus.wikidata.subjectQid = titleQids[title] || null;
-
-      // The article's own subject takes the first slot when the budget has to
-      // cut the list short.
-      var ordered = corpus.wikidata.subjectQid ? [corpus.wikidata.subjectQid] : [];
-      Object.keys(titleQids).forEach(function (key) {
-        if (ordered.indexOf(titleQids[key]) === -1) ordered.push(titleQids[key]);
-      });
-      var qids = ordered.slice(0, WIKI_MAX_WD_ENTITIES);
-      if (!qids.length) return corpus;
-
-      return wdFetchEntities(qids, [WIKI_CODE], ['claims', 'labels']).then(function (entities) {
-        corpus.wikidata.entities = entities;
-
-        var needed = [];
-        var add = function (id) {
-          if (id && needed.indexOf(id) === -1) needed.push(id);
-        };
-        claimContexts.forEach(function (ctx) {
-          wikidataHits(corpus, ctx).forEach(function (hit) {
-            add(hit.property);
-            add(hit.entity);
-            if (hit.value.kind === 'item') add(hit.value.id);
-            hit.references.forEach(function (reference) {
-              wdReferencedItemIds(reference).forEach(add);
-            });
-          });
-        });
-        console.log('[CNfirmed] wiki-local stage: Wikidata',
-          Object.keys(entities).length, 'entity(ies),', needed.length, 'label(s) needed');
-        if (!needed.length) return corpus;
-
-        return wdFetchEntities(needed, [WIKI_CODE], ['labels']).then(function (labelled) {
-          Object.keys(labelled).forEach(function (id) {
-            var label = wdLabelOf(labelled[id], [WIKI_CODE]);
-            if (label) corpus.wikidata.labels[id] = label;
-          });
-          return corpus;
-        });
-      });
-    });
-  }
-
   function loadWikiCorpus() {
     if (wikiCorpusPromise) return wikiCorpusPromise;
     console.log('[CNfirmed] wiki-local stage: fetching', WIKI_CODE + ':' + pageTitle);
@@ -2306,7 +1933,6 @@
       var corpus = {
         local: local,
         sisters: [],
-        wikidata: { entities: {}, titleQids: {}, labels: {}, subjectQid: null },
         linkTranslations: {},
         // Only trust the DOM-to-wikitext mapping when the counts agree; when
         // they do not, scoring falls back to section matching alone.
@@ -2321,14 +1947,7 @@
       }
       wikiCorpus = corpus;
 
-      // The Wikidata pass and the sister-wiki pass are independent, so they
-      // run together: the free stage stays roughly one round trip deep.
-      var wikidataJob = loadWikidataCorpus(corpus, page.title).catch(function (err) {
-        corpus.warnings.push('Wikidata unavailable: ' + (err.message || err));
-        return corpus;
-      });
-
-      var sisterJob = wikiFetchLangLinks(WIKI_CODE, [page.title]).then(function (links) {
+      return wikiFetchLangLinks(WIKI_CODE, [page.title]).then(function (links) {
         var available = links[page.title] || {};
         var chosen = [];
         WIKI_SISTER_LANGS.forEach(function (code) {
@@ -2366,8 +1985,6 @@
         corpus.warnings.push('interlanguage links unavailable: ' + (err.message || err));
         return corpus;
       });
-
-      return Promise.all([wikidataJob, sisterJob]).then(function () { return corpus; });
     });
     wikiCorpusPromise.catch(function () { wikiCorpusPromise = null; });
     return wikiCorpusPromise;
@@ -2527,107 +2144,10 @@
     return out;
   }
 
-  function wikidataHits(corpus, ctx) {
-    var wd = corpus.wikidata;
-    if (!wd || !Object.keys(wd.entities).length) return [];
-    if (!ctx || !ctx.claim) return [];
-
-    // Only the tagged sentence, never the surrounding paragraph: a
-    // neighbouring sentence's figures would otherwise match a statement this
-    // claim says nothing about.
-    var claimNumbers = claimFiguresOf(ctx.claim);
-    var linkedQids = [];
-    (ctx.links || []).forEach(function (target) {
-      var qid = wd.titleQids[target];
-      if (qid && linkedQids.indexOf(qid) === -1) linkedQids.push(qid);
-    });
-    if (!claimNumbers.length && !linkedQids.length) return [];
-
-    // The article's own subject is what most of its sentences are about, so it
-    // is always a candidate entity even when the paragraph never links to it.
-    var subjects = linkedQids.slice();
-    if (wd.subjectQid && subjects.indexOf(wd.subjectQid) === -1) {
-      subjects.push(wd.subjectQid);
-    }
-
-    var hits = [];
-    subjects.forEach(function (qid) {
-      var entity = wd.entities[qid];
-      if (!entity || !entity.claims) return;
-      Object.keys(entity.claims).forEach(function (property) {
-        entity.claims[property].forEach(function (statement) {
-          // A deprecated statement is one Wikidata itself believes is wrong.
-          if (statement.rank === 'deprecated') return;
-          var references = statement.references || [];
-          if (!references.length) return;
-
-          var value = decodeSnak(statement.mainsnak);
-          if (!value) return;
-          if (value.kind === 'item' && value.id === qid) return;
-
-          var match = matchValueOf(value, claimNumbers, linkedQids);
-          if (!match) return;
-          hits.push({
-            entity: qid, property: property, value: value,
-            score: match.score, anchor: match.anchor, references: references
-          });
-        });
-      });
-    });
-    return hits;
-  }
-
-  // The reference, never the statement, is the lead: Wikidata is a wiki and
-  // cannot substantiate a Wikipedia claim itself (WP:CIRCULAR).
-  function wikidataCandidates(corpus, ctx) {
-    var wd = corpus.wikidata;
-    var out = [];
-
-    wikidataHits(corpus, ctx).forEach(function (hit) {
-      var entityLabel = wd.labels[hit.entity] || hit.entity;
-      var propertyLabel = wd.labels[hit.property] || hit.property;
-      var rendered = renderValueOf(hit.value, wd.labels);
-      var statementText = propertyLabel + ': ' + rendered;
-
-      hit.references.forEach(function (reference) {
-        var source = wdReferenceToSource(reference, wd.labels);
-        if (!source) return;
-        if (source.url && isUnreliableDomain(source.url)) return;
-
-        out.push({
-          url: source.url,
-          title: candidateTitleOf(source),
-          relevance: 'cited on Wikidata (' + entityLabel + ') for ' + statementText,
-          snippet: statementText,
-          ref: '<ref>' + source.raw + '</ref>',
-          evidence: {
-            origin: 'wikidata',
-            lang: WIKI_CODE,
-            article: entityLabel + ' (' + hit.entity + ')',
-            articleUrl: 'https://www.wikidata.org/wiki/' + hit.entity,
-            sentence: statementText,
-            section: null,
-            score: Math.round(hit.score * 1000) / 1000,
-            matchedAnchors: [hit.anchor],
-            refName: null,
-            statement: {
-              property: hit.property,
-              propertyLabel: propertyLabel,
-              value: rendered,
-              entity: hit.entity
-            }
-          }
-        });
-      });
-    });
-    return out;
-  }
-
   function findWikiCandidates(corpus, index) {
     var ctx = claimContexts[index];
     if (!ctx || !ctx.claim) return [];
     var all = sameArticleCandidates(corpus, ctx, index)
-      .concat(wikidataCandidates(corpus, ctx))
       .concat(sisterWikiCandidates(corpus, ctx));
 
     var best = {};
@@ -2641,10 +2161,9 @@
     });
     return order.map(function (key) { return best[key]; }).sort(function (a, b) {
       if (b.evidence.score !== a.evidence.score) return b.evidence.score - a.evidence.score;
-      // A citation attached to this very fact — by another wiki, or to the
-      // Wikidata statement asserting it — beats one this article merely
-      // happens to use nearby.
-      var rank = function (c) { return c.evidence.origin === 'same-article' ? 1 : 0; };
+      // A citation another wiki attached to this very fact beats one this
+      // article merely happens to use nearby.
+      var rank = function (c) { return c.evidence.origin === 'sister-wiki' ? 0 : 1; };
       return rank(a) - rank(b);
     }).slice(0, WIKI_MAX_CANDIDATES);
   }
