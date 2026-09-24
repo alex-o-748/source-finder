@@ -7,7 +7,6 @@ export { runArticle } from "./runArticle.js";
 export {
   DEFAULT_SISTER_LANGS,
   buildWikiCorpus,
-  emptyWikidataCorpus,
   findArticleWikiSources,
   findWikiCandidates,
   indexWikiArticle,
@@ -17,30 +16,10 @@ export {
 export type {
   ArticleWikiSources,
   WikiCorpus,
-  WikidataCorpus,
   WikiSourceOptions,
   WikiSourceResult,
 } from "./wikiSources.js";
-export {
-  fetchLangLinks,
-  fetchArticleLangLinks,
-  fetchWikibaseItems,
-  fetchWikitext,
-  mwApi,
-  mwHostApi,
-} from "./mediawiki.js";
-export {
-  decodeSnak,
-  fetchEntities,
-  isCircularReference,
-  labelOf,
-  matchValue,
-  quantityKeys,
-  referenceToSource,
-  referencedItemIds,
-  renderValue,
-} from "./wikidata.js";
-export type { WdEntity, WdReference, WdSnak, WdStatement, WdValue } from "./wikidata.js";
+export { fetchLangLinks, fetchArticleLangLinks, fetchWikitext, mwApi } from "./mediawiki.js";
 export { parseRefs, refToSource, resolveRefs } from "./wikitextRefs.js";
 export type { RefOccurrence, RefSource, ResolvedRef } from "./wikitextRefs.js";
 export * from "./types.js";

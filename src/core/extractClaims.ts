@@ -84,6 +84,11 @@ function claimFromParagraph(paragraph: string, cnOffset: number): string {
       // next char is lowercase or another period, keep scanning.
       const next = paragraph[i + 1] ?? "";
       const prev = paragraph[i - 1] ?? "";
+      // A period between two digits is a decimal point, not a sentence end.
+      // Without this the claim for "covers 297.8 square kilometres" becomes
+      // "8 square kilometres" — the figure the sentence is actually about is
+      // discarded before any pass, or the model, ever sees it.
+      if (/\d/.test(prev) && /\d/.test(next)) continue;
       if (next === "." || /[A-Z]/.test(prev) === false || /\s/.test(next)) {
         start = i + 1;
         break;
