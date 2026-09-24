@@ -223,14 +223,25 @@ fluent wrong answer), and lowers the bar the model has to clear.
   are the first thing to check on a networked machine — along with whether
   Wikipedia's CSP lets the user script reach other language editions at all,
   which is the next question below.
-- ~~**Wikipedia's CSP.**~~ **Answered, permissively.** A user script on
-  en.wikipedia.org reached another language edition, `www.wikidata.org`, and
-  `api.anthropic.com` — cross-wiki, cross-project and third-party alike. The
-  script is loaded with `importScript` and uses plain `fetch`, with no
-  `GM_xmlhttpRequest` escape hatch, so the page's CSP genuinely applies and
-  genuinely permits this. **Phase 3 retrieval can stay in the user script**;
-  no browser extension or backend is needed just to reach an API. Model
-  *weights* are a different kind of request and remain untested.
+- ~~**Wikipedia's CSP.**~~ **Answered: an allowlist, not an open door.** A
+  user script on en.wikipedia.org reached another language edition,
+  `www.wikidata.org`, and `api.anthropic.com`, which was first read as "any
+  third-party host works". It does not. The page's `default-src` names a fixed
+  set of hosts: every Wikimedia project, `*.toolforge.org`, `*.wmcloud.org`,
+  `api.anthropic.com`, `api.openai.com`, `doi.org`, `https://archive.org`
+  (that exact host) and `iiif.archive.org`, among others. Anything else is
+  refused before the request leaves the browser — including
+  `be-api.us.archive.org` (the `ia` package's full-text endpoint) and the
+  numbered `*.archive.org` servers that downloads redirect to. Checked from the
+  console, 2026-09: archive.org's own full-text search
+  (`archive.org/services/search/beta/page_production/?service_backend=fts`),
+  `advancedsearch.php` and `/metadata/{id}` all work from page context; OCR
+  text downloads do not. **Consequence for phase 3:** each corpus must be
+  checked against this list first. Of Direction 2, only the Internet Archive
+  (via archive.org) and `doi.org` are reachable today; OpenAlex, Crossref,
+  Europe PMC and GDELT would need a Toolforge proxy (allowed) or an addition
+  to the list. Model *weights* are a different kind of request and remain
+  untested.
 - **Toolforge terms and LiftWing access** are both free but both have a
   process; worth starting that conversation early.
 - **Does the small model actually hold up?** The whole plan rests on

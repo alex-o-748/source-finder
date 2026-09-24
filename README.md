@@ -235,8 +235,8 @@ quality and making the tool free to run without an API key. The wiki-local
 stage is phase 2 of that plan.
 
 Both passes have been exercised against the live API from a user script on
-en.wikipedia.org, which also settles the question that constrained the
-architecture: the page's CSP permits cross-wiki, cross-project and
-third-party `fetch` alike from page context. Retrieval in phase 3 can
-therefore stay in the user script — no browser extension or backend needed
-just to reach an API.
+en.wikipedia.org. The page's CSP is an allowlist: every Wikimedia project,
+Toolforge, the three model providers, `archive.org` and `doi.org` are on it,
+but most third-party APIs are not, and a request to one is refused before it
+leaves the browser. A new retrieval source has to be checked against that list
+first (see the plan doc); what is not on it needs a Toolforge proxy.
