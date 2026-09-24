@@ -99,9 +99,21 @@ function claimFromParagraph(paragraph: string, cnOffset: number): string {
   return paragraph.slice(start, end).trim();
 }
 
-/** Strips common wikitext noise (refs, comments) from a slice for readability. */
+/**
+ * A separate instance for stripping tags: `CN_REGEX` is stateful (`lastIndex`)
+ * and drives the scan loop in `extractClaims`.
+ */
+const CN_STRIP_REGEX = new RegExp(CN_REGEX.source, "gi");
+
+/**
+ * Strips common wikitext noise (refs, comments, other {{cn}} tags) from a slice
+ * for readability. The tag of a preceding sentence is not a sentence boundary,
+ * so without this the claim after it starts with "{{citation needed|date=…}}"
+ * and every search is built on the tag's date.
+ */
 function cleanForDisplay(s: string): string {
   return s
+    .replace(CN_STRIP_REGEX, "")
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<ref[^>]*\/>/gi, "")
     .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, "")
