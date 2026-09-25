@@ -2741,7 +2741,14 @@
       var raw = localStorage.getItem(archiveCacheKey);
       if (!raw) return;
       var parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') archiveState = parsed;
+      if (!parsed || typeof parsed !== 'object') return;
+      // A result saved before the funnel counted passages was scored the old
+      // way and can't say why it came back empty: forget it, so the search
+      // is offered again.
+      Object.keys(parsed).forEach(function (k) {
+        var r = parsed[k];
+        if (r && r.funnel && r.funnel.passages) archiveState[k] = r;
+      });
     } catch (e) { /* ignore */ }
   }
 
