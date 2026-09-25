@@ -29,6 +29,9 @@ const EXPOSED = [
   "toArchiveCandidate",
   "iaSearchUrl",
   "findArchiveCandidates",
+  "archivePassageSummary",
+  "anchorsOf",
+  "anchorScoreOf",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

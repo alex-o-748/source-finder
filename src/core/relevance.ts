@@ -43,6 +43,18 @@ export function normaliseDigits(text: string): string {
   return text.replace(/[٠-٩۰-۹०-९০-৯๐-๙０-９]/g, (c) => DIGIT_MAP[c] ?? c);
 }
 
+/**
+ * Joins thousands groups — "100,000", "1.250.000", "100\u202f000" — into one
+ * number, so a figure is one token rather than "100" and "000". A comma
+ * between whole numbers ("1861, 1927" or "1861,186") is left alone: only runs
+ * of one to three digits followed by three-digit groups are joined.
+ */
+export function joinDigitGroups(text: string): string {
+  return text.replace(/\b\d{1,3}(?:[,.\u00a0\u2009\u202f]\d{3})+\b/g, (m) =>
+    m.replace(/[^\d]/g, ""),
+  );
+}
+
 /** Lower-cases and strips combining marks, so "Zürich" matches "Zurich". */
 export function fold(text: string): string {
   return normaliseDigits(text)
@@ -53,7 +65,7 @@ export function fold(text: string): string {
 
 /** Splits text into raw word tokens, preserving original case. */
 export function words(text: string): string[] {
-  return normaliseDigits(text)
+  return joinDigitGroups(normaliseDigits(text))
     .replace(/[‘’“”]/g, "'")
     .split(/[^\p{L}\p{N}'’-]+/u)
     .map((w) => w.replace(/^[-']+|[-']+$/g, ""))
@@ -138,7 +150,7 @@ export interface Anchors {
 
 /** Extracts translation-stable anchors from a piece of plain text. */
 export function anchorsOf(text: string): Anchors {
-  const src = normaliseDigits(text).replace(/[\u2018\u2019\u201c\u201d]/g, "'");
+  const src = joinDigitGroups(normaliseDigits(text)).replace(/[\u2018\u2019\u201c\u201d]/g, "'");
   const numbers = new Set<string>();
   const names = new Set<string>();
   const re = /[\p{L}\p{N}][\p{L}\p{N}'-]*/gu;
@@ -198,7 +210,7 @@ export function anchorScore(
   text: string,
   extraNames: string[] = [],
 ): { score: number; matched: string[] } {
-  const folded = fold(text);
+  const folded = fold(joinDigitGroups(normaliseDigits(text)));
   const have = tokenSet(text);
   const matched = new Set<string>();
   let total = 0;

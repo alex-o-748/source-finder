@@ -1678,12 +1678,20 @@
       function (c) { return DIGIT_MAP[c] || c; });
   }
 
+  // "100,000", "1.250.000", "100\u202f000" → one number, not "100" and "000".
+  // Mirrors joinDigitGroups in src/core/relevance.ts.
+  function joinDigitGroups(text) {
+    return String(text).replace(/\b\d{1,3}(?:[,.\u00a0\u2009\u202f]\d{3})+\b/g, function (m) {
+      return m.replace(/[^\d]/g, '');
+    });
+  }
+
   function foldText(text) {
     return normaliseDigits(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
 
   function wordsOf(text) {
-    return normaliseDigits(text)
+    return joinDigitGroups(normaliseDigits(text))
       .replace(/[‘’“”]/g, "'")
       .split(/[^\p{L}\p{N}'-]+/u)
       .map(function (w) { return w.replace(/^[-']+|[-']+$/g, ''); })
@@ -1738,7 +1746,7 @@
   // Anchors are the parts of a sentence that survive translation: numbers and
   // dates, and proper nouns spelled the same way in the target language.
   function anchorsOf(text) {
-    var src = normaliseDigits(text).replace(/[‘’“”]/g, "'");
+    var src = joinDigitGroups(normaliseDigits(text)).replace(/[‘’“”]/g, "'");
     var numbers = [];
     var names = [];
     var seenNum = Object.create(null);
@@ -1786,7 +1794,7 @@
   }
 
   function anchorScoreOf(query, text, extraNames) {
-    var folded = foldText(text);
+    var folded = foldText(joinDigitGroups(normaliseDigits(text)));
     var have = tokenSetOf(text);
     var matched = [];
     var seen = Object.create(null);
@@ -2397,11 +2405,17 @@
   // datelineYear: a periodical issue's own year, which every page of it prints
   // in the masthead — not evidence, so not counted as a matched number.
   function scoreArchivePassage(text, ctx, bookIsAboutSubject, datelineYear) {
-    if (text.length < IA_MIN_PASSAGE_CHARS) return null;
+    var v = judgeArchivePassage(text, ctx, bookIsAboutSubject, datelineYear);
+    return v.reason ? null : v;
+  }
+
+  // scoreArchivePassage, but saying which gate a passage failed.
+  function judgeArchivePassage(text, ctx, bookIsAboutSubject, datelineYear) {
+    if (text.length < IA_MIN_PASSAGE_CHARS) return { reason: 'too short' };
     var have = tokenSetOf(text);
     if (!bookIsAboutSubject && ctx.subjectTokens.length > 0 &&
         !ctx.subjectTokens.some(function (t) { return have[t]; })) {
-      return null;
+      return { reason: 'no subject' };
     }
     var query = datelineYear
       ? { names: ctx.anchors.names,
@@ -2411,7 +2425,7 @@
     var numbersMatched = query.numbers.some(function (n) {
       return anchors.matched.indexOf(n) !== -1;
     });
-    if (ctx.anchors.numbers.length > 0 && !numbersMatched) return null;
+    if (ctx.anchors.numbers.length > 0 && !numbersMatched) return { reason: 'no claim number' };
     var cov = coverageOf(ctx.bag, text);
     var score = anchorCount(query) > 0 ? 0.6 * anchors.score + 0.4 * cov : cov;
     return { score: Math.round(score * 100) / 100, matched: anchors.matched };
@@ -2451,6 +2465,8 @@
     var available = 0;
     var borrowable = 0;
     var scored = [];
+    var stats = { seen: 0, dropped: {}, bestBelow: null };
+    var drop = function (reason) { stats.dropped[reason] = (stats.dropped[reason] || 0) + 1; };
     hits.forEach(function (hit) {
       var gate = archiveGate(hit);
       if (!gate.ok) {
@@ -2464,8 +2480,18 @@
         ? String(hit.year) : null;
       var passages = [];
       hit.highlights.forEach(function (text) {
-        var s = scoreArchivePassage(text, ctx, about, dateline);
-        if (s && s.score >= minScore) passages.push({ text: text, score: s.score, matched: s.matched });
+        stats.seen++;
+        var v = judgeArchivePassage(text, ctx, about, dateline);
+        if (v.reason) {
+          drop(v.reason);
+        } else if (v.score < minScore) {
+          drop('below threshold');
+          if (!stats.bestBelow || v.score > stats.bestBelow.score) {
+            stats.bestBelow = { score: v.score, identifier: hit.identifier, text: text };
+          }
+        } else {
+          passages.push({ text: text, score: v.score, matched: v.matched });
+        }
       });
       passages.sort(function (a, b) { return b.score - a.score; });
       if (passages.length) {
@@ -2485,7 +2511,7 @@
     });
     return {
       ranked: ranked, available: available, borrowable: borrowable,
-      rejected: rejected, matched: scored.length
+      rejected: rejected, matched: scored.length, passages: stats
     };
   }
 
@@ -2588,7 +2614,8 @@
     var queries = archiveQueriesFor(index);
     var funnel = {
       queries: [], hits: 0, available: 0, borrowable: 0, rejected: {},
-      matched: 0, lookedUp: 0, candidates: 0, errors: []
+      matched: 0, passages: { seen: 0, dropped: {}, bestBelow: null },
+      lookedUp: 0, candidates: 0, errors: []
     };
     var hits = [];
     var seen = {};
@@ -2625,6 +2652,7 @@
       funnel.borrowable = ranked.borrowable;
       funnel.rejected = ranked.rejected;
       funnel.matched = ranked.matched;
+      funnel.passages = ranked.passages;
 
       var shortlist = ranked.ranked.slice(0, IA_MAX_CANDIDATES + 2);
       funnel.lookedUp = shortlist.length;
@@ -2661,6 +2689,21 @@
       ' → ' + f.matched + ' with a matching passage → ' + f.candidates + ' lead(s)';
   }
 
+  // Why passages did or did not count. Mirrors passageSummary in
+  // src/core/archiveSources.ts.
+  function archivePassageSummary(p) {
+    if (!p) return '';
+    var dropped = Object.keys(p.dropped)
+      .map(function (r) { return [r, p.dropped[r]]; })
+      .sort(function (a, b) { return b[1] - a[1]; })
+      .map(function (e) { return e[1] + ' ' + e[0]; });
+    var best = p.bestBelow
+      ? ' (best below: ' + p.bestBelow.score + ' in ' + p.bestBelow.identifier + ': "' +
+        p.bestBelow.text + '")'
+      : '';
+    return p.seen + ' passage(s)' + (dropped.length ? ' → dropped: ' + dropped.join(', ') : '') + best;
+  }
+
   function runArchiveStage(index) {
     var current = archiveState[index];
     if (current && current.status === 'done') return Promise.resolve(current);
@@ -2678,6 +2721,8 @@
     entry.promise = findArchiveCandidates(index).then(function (r) {
       console.log('[CNfirmed] Internet Archive claim', index, ':', archiveFunnelLine(r.funnel),
         r.funnel, r.candidates);
+      console.log('[CNfirmed] Internet Archive claim', index, 'passages:',
+        archivePassageSummary(r.funnel.passages));
       archiveState[index] = { status: 'done', candidates: r.candidates, funnel: r.funnel };
       persistArchive();
       renderPanel(index);
