@@ -2568,11 +2568,24 @@
     });
   }
 
+  // The full-text queries for a claim; empty when it has no number or name to
+  // search on, and then the Archive stage is not offered at all.
+  function archiveTermsFor(index) {
+    var ctx = claimContexts[index];
+    if (!ctx || !ctx.claim) return null;
+    return iaClaimTerms(ctx.claim, mw.config.get('wgTitle') || pageTitle);
+  }
+
+  function archiveQueriesFor(index) {
+    var terms = archiveTermsFor(index);
+    return terms ? buildArchiveQueries(terms).slice(0, IA_MAX_QUERIES) : [];
+  }
+
   function findArchiveCandidates(index) {
     var ctx = claimContexts[index];
     var title = mw.config.get('wgTitle') || pageTitle;
-    var terms = iaClaimTerms(ctx.claim, title);
-    var queries = buildArchiveQueries(terms).slice(0, IA_MAX_QUERIES);
+    var terms = archiveTermsFor(index);
+    var queries = archiveQueriesFor(index);
     var funnel = {
       queries: [], hits: 0, available: 0, borrowable: 0, rejected: {},
       matched: 0, lookedUp: 0, candidates: 0, errors: []
@@ -3135,6 +3148,7 @@
   // request for now — experimental, and every click is a request to a donated
   // service — rather than on every badge click like the wiki stage.
   function renderArchiveInto($el, i, a) {
+    if (archiveQueriesFor(i).length === 0) return;
     var $section = $('<div class="cnfirmed-wiki cnfirmed-archive">');
     $section.append($('<div class="cnfirmed-wiki-head">').text('Books (Internet Archive)'));
 
@@ -3161,10 +3175,7 @@
 
     var candidates = a.candidates || [];
     var funnel = a.funnel || null;
-    if (funnel && funnel.queries.length === 0) {
-      $section.append($('<div class="cnfirmed-note">')
-        .text('Nothing specific to search for: the claim has no number or name.'));
-    } else if (candidates.length === 0) {
+    if (candidates.length === 0) {
       $section.append($('<div class="cnfirmed-note">')
         .text('No book on the Internet Archive matches this claim.'));
     }
