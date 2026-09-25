@@ -73,3 +73,16 @@ test("isLatinScript separates wikis that can share proper nouns from those that 
   assert.equal(isLatinScript("Der Turm ist einundvierzig Meter hoch und sehr alt."), true);
   assert.equal(isLatinScript("エッフェル塔は千八百八十九年に完成した高さ三百メートルの塔である。"), false);
 });
+
+test("a grouped figure is one number, not its thousands groups", () => {
+  const query = anchorsOf("In 1861, the number of inhabitants surpassed 100,000 and by 1927, had doubled.");
+  assert.deepEqual(query.numbers, ["1861", "100000", "1927"]);
+
+  for (const written of ["100,000", "100.000", "100 000"]) {
+    assert.deepEqual(anchorScore(query, `a town of ${written} souls`).matched, ["100000"], written);
+  }
+  // "000" is no longer a claim number that any round figure matches.
+  assert.deepEqual(anchorScore(query, "a garrison of 45,000 men").matched, []);
+  // A comma between whole numbers is a list, not a figure.
+  assert.deepEqual(anchorsOf("in 1861, 1927 and 1861,186").numbers, ["1861", "1927", "186"]);
+});

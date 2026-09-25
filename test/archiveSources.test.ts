@@ -10,6 +10,7 @@ import {
   detailsGate,
   editionKey,
   findArchiveCandidates,
+  passageSummary,
   formatArchiveCitation,
   parseSearchHits,
   rankArchiveHits,
@@ -127,6 +128,42 @@ test("scorePassage gates: no number, no subject, or a fragment scores nothing", 
   assert.ok(scorePassage(noSubject, ctx, true));
 
   assert.equal(scorePassage("the Eiffel Tower 1889 300", ctx, true), null);
+});
+
+test("rankArchiveHits counts why passages were dropped", () => {
+  const claim = "In 1861, the number of inhabitants surpassed 100,000 and by 1927, had doubled.";
+  const hit = {
+    identifier: "citybook",
+    title: "Travels in Italy",
+    creator: null,
+    year: 1900,
+    mediatype: "texts",
+    collections: ["americana"],
+    highlights: [
+      "Bologna 1861",
+      "Finished in 1861, it was the largest hall in the whole province of Emilia.",
+      "Bologna had a garrison of 45,000 men quartered in the old convents.",
+      "The census of 1861 gave Bologna a population of 109,395 souls, all told.",
+      "Bologna in 1861 already had over 100,000 inhabitants within its walls.",
+    ],
+    rank: 0,
+    query: "q",
+  };
+  // With one year and the subject, the census passage scores 0.3 — a pass at
+  // the default threshold, so a stricter one here to see it fall short.
+  assert.equal(rankArchiveHits([hit], claim, "Bologna", 0.3).ranked[0].passages.length, 2);
+  const r = rankArchiveHits([hit], claim, "Bologna", 0.5);
+  assert.equal(r.matched, 1);
+  assert.equal(r.passages.seen, 5);
+  assert.deepEqual(r.passages.dropped, {
+    "too short": 1,
+    "no subject": 1,
+    "no claim number": 1,
+    "below threshold": 1,
+  });
+  assert.equal(r.passages.bestBelow?.identifier, "citybook");
+  assert.match(r.passages.bestBelow!.text, /109,395/);
+  assert.match(passageSummary(r.passages), /^5 passage\(s\) → dropped: 1 too short, .* \(best below: 0\.\d+ in citybook: "The census/);
 });
 
 test("editionKey collapses scans of the same work, subtitle or not", () => {

@@ -312,21 +312,35 @@ export function scorePassage(
   bookIsAboutSubject: boolean,
   datelineYear: string | null = null,
 ): { score: number; matched: string[] } | null {
-  if (text.length < MIN_PASSAGE_CHARS) return null;
+  const v = judgePassage(text, ctx, bookIsAboutSubject, datelineYear);
+  return "reason" in v ? null : v;
+}
+
+/** Why a passage failed a gate, as the console summary counts it. */
+export type PassageDropReason = "too short" | "no subject" | "no claim number";
+
+/** `scorePassage`, but saying which gate a passage failed. */
+export function judgePassage(
+  text: string,
+  ctx: ScoringContext,
+  bookIsAboutSubject: boolean,
+  datelineYear: string | null = null,
+): { score: number; matched: string[] } | { reason: PassageDropReason } {
+  if (text.length < MIN_PASSAGE_CHARS) return { reason: "too short" };
   const have = tokenSet(text);
   if (
     !bookIsAboutSubject &&
     ctx.subjectTokens.length > 0 &&
     !ctx.subjectTokens.some((t) => have.has(t))
   ) {
-    return null;
+    return { reason: "no subject" };
   }
   const query: Anchors = datelineYear
     ? { names: ctx.anchors.names, numbers: ctx.anchors.numbers.filter((n) => n !== datelineYear) }
     : ctx.anchors;
   const anchors = anchorScore(query, text);
   const numbersMatched = query.numbers.some((n) => anchors.matched.includes(n));
-  if (ctx.anchors.numbers.length > 0 && !numbersMatched) return null;
+  if (ctx.anchors.numbers.length > 0 && !numbersMatched) return { reason: "no claim number" };
 
   const cov = coverage(ctx.bag, have);
   const hasAnchors = query.numbers.length + query.names.length > 0;
@@ -371,6 +385,19 @@ export function sameWork(
   return [...tokenSet(cleanCreator(a.creator))].some((t) => theirs.has(t));
 }
 
+/**
+ * What happened to the passages of the readable books: how many there were,
+ * how many each gate dropped, and the best one that scored but fell short —
+ * enough to tell from the console why a search came back empty.
+ */
+export interface PassageStats {
+  seen: number;
+  /** Counted by gate, plus "below threshold". */
+  dropped: Record<string, number>;
+  /** The highest-scoring passage under the threshold. */
+  bestBelow: { score: number; identifier: string; text: string } | null;
+}
+
 /** A hit that passed the gate, with its passages scored. */
 export interface ScoredHit {
   hit: ArchiveHit;
@@ -391,6 +418,7 @@ export interface RankedHits {
   rejected: Record<string, number>;
   /** Available books with at least one passage above the threshold. */
   matched: number;
+  passages: PassageStats;
 }
 
 /**
@@ -409,6 +437,10 @@ export function rankArchiveHits(
   let available = 0;
   let borrowable = 0;
   const scored: ScoredHit[] = [];
+  const stats: PassageStats = { seen: 0, dropped: {}, bestBelow: null };
+  const drop = (reason: string): void => {
+    stats.dropped[reason] = (stats.dropped[reason] ?? 0) + 1;
+  };
 
   for (const hit of hits) {
     const gate = accessGate(hit);
@@ -421,11 +453,22 @@ export function rankArchiveHits(
     const about = titleIsAbout(hit.title, ctx.subjectTokens);
     const dateline =
       hit.year !== null && hit.collections.includes("periodicals") ? String(hit.year) : null;
-    const passages = hit.highlights
-      .map((text) => ({ text, s: scorePassage(text, ctx, about, dateline) }))
-      .filter((p) => p.s !== null && p.s.score >= minScore)
-      .map((p) => ({ text: p.text, score: p.s!.score, matched: p.s!.matched }))
-      .sort((a, b) => b.score - a.score);
+    const passages: ScoredHit["passages"] = [];
+    for (const text of hit.highlights) {
+      stats.seen++;
+      const v = judgePassage(text, ctx, about, dateline);
+      if ("reason" in v) {
+        drop(v.reason);
+      } else if (v.score < minScore) {
+        drop("below threshold");
+        if (!stats.bestBelow || v.score > stats.bestBelow.score) {
+          stats.bestBelow = { score: v.score, identifier: hit.identifier, text };
+        }
+      } else {
+        passages.push({ text, score: v.score, matched: v.matched });
+      }
+    }
+    passages.sort((a, b) => b.score - a.score);
     if (passages.length > 0) {
       scored.push({ hit, access: gate.access, passages, score: passages[0].score });
     }
@@ -441,7 +484,7 @@ export function rankArchiveHits(
   for (const s of scored) {
     if (!ranked.some((kept) => sameWork(kept.hit, s.hit))) ranked.push(s);
   }
-  return { ranked, available, borrowable, rejected, matched: scored.length };
+  return { ranked, available, borrowable, rejected, matched: scored.length, passages: stats };
 }
 
 // ---------------------------------------------------------------------------
@@ -531,6 +574,21 @@ export function toArchiveCandidate(
   };
 }
 
+/**
+ * One line on the passages, for the console: "180 passages: 120 no subject,
+ * 40 no claim number, 20 below threshold (best 0.25 in someid: "…")".
+ */
+export function passageSummary(p: PassageStats): string {
+  const dropped = Object.entries(p.dropped)
+    .sort((a, b) => b[1] - a[1])
+    .map(([reason, n]) => `${n} ${reason}`)
+    .join(", ");
+  const best = p.bestBelow
+    ? ` (best below: ${p.bestBelow.score} in ${p.bestBelow.identifier}: "${p.bestBelow.text}")`
+    : "";
+  return `${p.seen} passage(s)` + (dropped ? ` → dropped: ${dropped}` : "") + best;
+}
+
 // ---------------------------------------------------------------------------
 // The funnel
 // ---------------------------------------------------------------------------
@@ -548,6 +606,8 @@ export interface ArchiveFunnel {
   rejected: Record<string, number>;
   /** Books with a passage above the score threshold. */
   matched: number;
+  /** Why the readable books' passages did or did not count. */
+  passages: PassageStats;
   /** Books whose metadata was read. */
   lookedUp: number;
   /** After collapsing editions, the metadata checks and the cap. */
@@ -579,6 +639,7 @@ export async function findArchiveCandidates(
     borrowable: 0,
     rejected: {},
     matched: 0,
+    passages: { seen: 0, dropped: {}, bestBelow: null },
     lookedUp: 0,
     candidates: 0,
     errors: [],
@@ -612,6 +673,7 @@ export async function findArchiveCandidates(
   funnel.borrowable = ranked.borrowable;
   funnel.rejected = ranked.rejected;
   funnel.matched = ranked.matched;
+  funnel.passages = ranked.passages;
 
   // 4. Metadata for the few kept: publisher, ISBN, and whether it is still
   // readable. A couple of spares, in case one turns out not to be.

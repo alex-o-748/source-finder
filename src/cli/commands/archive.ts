@@ -1,4 +1,5 @@
 import { findArticleArchiveSources } from "../../core/archiveSources.js";
+import { passageSummary } from "../../core/archiveSources.js";
 import type { ArchiveFunnel } from "../../core/archiveSources.js";
 import { httpArchiveClient, recordingClient } from "../../core/internetArchive.js";
 
@@ -64,6 +65,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
       return;
     }
     console.log(`    funnel: ${funnelLine(r.funnel)}`);
+    console.log(`    passages: ${passageSummary(r.funnel.passages)}`);
     for (const q of r.funnel.queries) console.log(`    query:  ${q}`);
     for (const e of r.funnel.errors) console.log(`    ! ${e}`);
     r.candidates.forEach((c, j) => {
