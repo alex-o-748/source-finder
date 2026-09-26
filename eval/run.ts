@@ -10,6 +10,11 @@
  *   NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record
  *                                          # fetch and save whatever is missing
  *                                          # (4 claims at a time; --concurrency N)
+ *   npx tsx eval/run.ts --web --limit 5    # also the paid web search (Claude), on 5 claims across subjects
+ *
+ * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record: replaying a
+ * recorded call needs no key. The key travels in a header, and headers are
+ * never written to disk.
  *
  * The default engine is the shipped user script, run over the rendered page as
  * in a browser: that is what an editor sees.
@@ -40,19 +45,47 @@ const engine = arg("engine") ?? "userscript";
 if (engine !== "userscript" && engine !== "core") throw new Error(`unknown engine ${engine}`);
 
 const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
+const web = process.argv.includes("--web");
+const limit = arg("limit") ? Number(arg("limit")) : undefined;
+// Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
+const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
+if (web && engine !== "userscript") throw new Error("--web runs the user script's web search only");
+if (web && record && !apiKey) {
+  throw new Error("recording the web search needs CNFIRMED_ANTHROPIC_API_KEY in the environment");
+}
+
+/** Model usage across the run, read off each Claude response (replayed or live). */
+const usage = { calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, searches: 0 };
+function tallyUsage(key: string, body: string): void {
+  if (!key.startsWith("POST api.anthropic.com/v1/messages")) return;
+  try {
+    const u = (JSON.parse(body) as { usage?: Record<string, unknown> }).usage;
+    if (!u) return;
+    const n = (v: unknown) => (typeof v === "number" ? v : 0);
+    usage.calls++;
+    usage.input += n(u.input_tokens);
+    usage.output += n(u.output_tokens);
+    usage.cacheRead += n(u.cache_read_input_tokens);
+    usage.cacheWrite += n(u.cache_creation_input_tokens);
+    usage.searches += n((u.server_tool_use as Record<string, unknown> | undefined)?.web_search_requests);
+  } catch {
+    // An error body: nothing to count.
+  }
+}
 
 const stats = installCassette({
   dir: CASSETTE_DIR,
   mode: record ? "record" : "replay",
-  hostConcurrency: { "archive.org": 2 },
+  hostConcurrency: { "archive.org": 2, "api.anthropic.com": 4 },
   log: (line) => console.error(line),
+  observe: tallyUsage,
 });
 
 /** A lead reduced to what judging and comparing runs needs. */
 export interface Lead {
   /** Stable identity across runs: URL, or the Archive identifier. */
   key: string;
-  origin: "same-article" | "sister-wiki" | "internet-archive";
+  origin: "same-article" | "sister-wiki" | "internet-archive" | "web";
   title: string;
   url: string | null;
   score: number;
@@ -79,6 +112,8 @@ export interface ClaimResult {
   wikiWarnings: string[];
   archive: Lead[];
   archiveFunnel: Omit<ArchiveFunnel, "passages"> | null;
+  /** The paid web search, when run with --web. */
+  web?: Lead[];
   errors: string[];
 }
 
@@ -164,7 +199,30 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
   } catch (err) {
     result.errors.push(`archive: ${(err as Error).message}`);
   }
+  if (web) {
+    try {
+      result.web = (await page.findWeb(index, apiKey || "replay-needs-no-key")).map(webLead);
+    } catch (err) {
+      result.web = [];
+      result.errors.push(`web: ${(err as Error).message}`);
+    }
+  }
   return result;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function webLead(s: any): Lead {
+  return {
+    key: normaliseKey(s.source.url),
+    origin: "web",
+    title: s.source.title,
+    url: s.source.url,
+    score: (s.verdict.confidence ?? 0) / 100,
+    matchedAnchors: [],
+    // The model's own reading of the page: usually a quote plus its reasoning.
+    evidence: [s.verdict.comments].filter(Boolean),
+    where: `model: ${s.verdict.verdict} ${s.verdict.confidence}, reliability ${s.verdict.reliability}`,
+  };
 }
 
 async function runCoreClaim(c: EvalClaim): Promise<ClaimResult> {
@@ -211,7 +269,11 @@ function pct(n: number, d: number): string {
 }
 
 async function main(): Promise<void> {
-  const claims = loadClaims().filter((c) => !only || c.id.includes(only) || c.stratum === only);
+  const matching = loadClaims().filter((c) => !only || c.id.includes(only) || c.stratum === only);
+  // --limit N takes N claims spread evenly over the set (it is ordered by
+  // subject), so a cheap probe still covers history, sport, science…
+  const step = limit ? Math.max(1, Math.floor(matching.length / limit)) : 1;
+  const claims = matching.filter((_, i) => i % step === 0).slice(0, limit);
   // Claims are independent, so when recording several run at once: one waits
   // out Wikipedia's rate limit while another waits on the Archive. Each host
   // still gets its requests one (or two) at a time.
@@ -244,14 +306,15 @@ async function main(): Promise<void> {
     ["other", results.filter((r) => !r.bookLeaning)],
   ];
   console.log(`\n${results.length} claims → ${out}`);
-  console.log("                 claims  same-article  sister-wiki  archive  any");
+  console.log("                 claims  same-article  sister-wiki  archive    web  any");
   for (const [label, rs] of rows) {
-    const has = (o: Lead["origin"]) => rs.filter((r) => [...r.wiki, ...r.archive].some((l) => l.origin === o)).length;
-    const any = rs.filter((r) => r.wiki.length + r.archive.length > 0).length;
+    const leads = (r: ClaimResult) => [...r.wiki, ...r.archive, ...(r.web ?? [])];
+    const has = (o: Lead["origin"]) => rs.filter((r) => leads(r).some((l) => l.origin === o)).length;
+    const any = rs.filter((r) => leads(r).length > 0).length;
     console.log(
       `  ${label.padEnd(14)} ${String(rs.length).padStart(6)}  ${pct(has("same-article"), rs.length).padStart(12)}` +
         `  ${pct(has("sister-wiki"), rs.length).padStart(11)}  ${pct(has("internet-archive"), rs.length).padStart(7)}` +
-        `  ${pct(any, rs.length).padStart(3)}`,
+        `  ${web ? pct(has("web"), rs.length).padStart(5) : "    –"}  ${pct(any, rs.length).padStart(3)}`,
     );
   }
   const failed = results.filter((r) => r.errors.length).length;
@@ -259,6 +322,13 @@ async function main(): Promise<void> {
     `  requests: ${stats.hits} replayed, ${stats.recorded} recorded, ${stats.misses.length} not recorded; ` +
       `${failed} claim(s) with errors`,
   );
+  if (usage.calls) {
+    console.log(
+      `  Claude: ${usage.calls} call(s), ${usage.searches} web searches, ` +
+        `${usage.input} input + ${usage.output} output tokens ` +
+        `(${usage.cacheRead} cache read, ${usage.cacheWrite} cache write)`,
+    );
+  }
 }
 
 main().catch((err) => {

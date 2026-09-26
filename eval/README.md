@@ -99,11 +99,29 @@ Six Archive searches fail on every attempt (the service reports its search
 backend failing, as HTTP 400) and are not recorded; those claims show
 "not recorded" on replay.
 
+## The web search (paid)
+
+The user script's Claude web search runs with `--web`. Recording it needs a key
+in the environment as `CNFIRMED_ANTHROPIC_API_KEY` (not `ANTHROPIC_API_KEY`,
+which Claude Code reads itself); replaying a recorded call needs none. Each
+call is recorded by a hash of its request body, so a prompt change is a new
+recording. The key is sent in a header and never written to disk.
+
+```sh
+# Probe cost first: 5 claims spread across subjects, then all 100.
+NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --web --limit 5 --name web-probe
+NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --web
+```
+
+The run prints the calls, web searches and tokens it used. Web leads are
+judged like the others, but from the model's own quote unless the page itself
+can be read: with network access limited to Wikipedia and archive.org, it
+cannot.
+
 ## What this set does not measure yet
 
 - **Recall against a known answer.** The labels say whether a lead is right,
   not whether the right source was missed. Wikipedia's history can supply
   that: edits that replaced a `{{citation needed}}` with a `<ref>` give the
   claim and the source an editor chose.
-- **The paid web search**, which needs an API key in the environment.
 - **The user interface** itself: badges, panel, insertion into the editor.

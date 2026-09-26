@@ -35,6 +35,7 @@ const EXPOSED = [
   "extractAllClaims",
   "loadWikiCorpus",
   "taggedSentenceRange",
+  "callClaude",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

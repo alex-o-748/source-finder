@@ -40,6 +40,8 @@ export interface CassetteOptions {
   /** Retries on 429 / 5xx / network errors before giving up (default 6). */
   maxRetries?: number;
   log?: (line: string) => void;
+  /** Sees every response body, replayed or live: for tallying model usage. */
+  observe?: (key: string, body: string) => void;
 }
 
 interface Recorded {
@@ -66,14 +68,20 @@ const EVAL_USER_AGENT = "CNfirmed-eval/0.1 (https://github.com/alex-o-748/source
 /** Query parameters that change nothing about the answer. */
 const IGNORED_PARAMS = new Set(["origin"]);
 
-/** A request's identity: method, host, path and sorted query, without noise. */
-export function requestKey(url: string, method = "GET"): string {
+/**
+ * A request's identity: method, host, path and sorted query, without noise.
+ * A request with a body (a model call) is also identified by a hash of the
+ * body, so each prompt has its own recording. Headers never are: they carry
+ * the API key, which is never written to disk.
+ */
+export function requestKey(url: string, method = "GET", body?: string): string {
   const u = new URL(url);
   const params = [...u.searchParams.entries()]
     .filter(([k]) => !IGNORED_PARAMS.has(k))
     .sort(([a, av], [b, bv]) => (a === b ? av.localeCompare(bv) : a.localeCompare(b)));
   const query = new URLSearchParams(params).toString();
-  return `${method.toUpperCase()} ${u.host}${u.pathname}${query ? `?${query}` : ""}`;
+  const digest = body ? `#${createHash("sha1").update(body).digest("hex").slice(0, 16)}` : "";
+  return `${method.toUpperCase()} ${u.host}${u.pathname}${query ? `?${query}` : ""}${digest}`;
 }
 
 export function cassettePath(dir: string, key: string): string {
@@ -158,12 +166,14 @@ export function installCassette(options: CassetteOptions): CassetteStats {
   const cassetteFetch = async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const method = init?.method ?? (input instanceof Request ? input.method : "GET");
-    const key = requestKey(url, method);
+    const body = typeof init?.body === "string" ? init.body : undefined;
+    const key = requestKey(url, method, body);
     const path = cassettePath(options.dir, key);
 
     if (existsSync(path)) {
       const rec = JSON.parse(gunzipSync(readFileSync(path)).toString("utf8")) as Recorded;
       stats.hits++;
+      options.observe?.(key, rec.body);
       return new Response(rec.body, {
         status: rec.status,
         headers: rec.contentType ? { "content-type": rec.contentType } : {},
@@ -182,16 +192,17 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     const previous = queues.get(lane) ?? Promise.resolve();
     const run = previous.catch(() => {}).then(() => live(url, init, host, lanes));
     queues.set(lane, run);
-    const { res, body } = await run;
+    const { res, body: text } = await run;
     // Rate limits and server errors that outlived the retries are not facts
     // about the world; everything else (200, 404, a MediaWiki error) is.
-    if (!isTransient(res.status, body)) {
-      const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body };
+    options.observe?.(key, text);
+    if (!isTransient(res.status, text)) {
+      const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body: text };
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, gzipSync(JSON.stringify(rec)));
       stats.recorded++;
     }
-    return new Response(body, {
+    return new Response(text, {
       status: res.status,
       statusText: res.statusText,
       headers: { "content-type": res.headers.get("content-type") ?? "" },
