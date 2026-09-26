@@ -40,6 +40,7 @@ import {
   sectionRanges,
   splitSentences,
   stripWikitext,
+  taggedSentenceRange,
 } from "./wikitext.js";
 import type { SectionRange } from "./wikitext.js";
 import { parseRefs, refText, refToSource, resolveRefs } from "./wikitextRefs.js";
@@ -416,11 +417,24 @@ function sameArticleCandidates(
   // sail through the lexical check below.
   const query = weightedTokens(claim.claim, background);
   const paragraph = paragraphRangeAt(corpus.local.wikitext, claim.offset);
+  const ownSentence = taggedSentenceRange(
+    corpus.local.wikitext,
+    claim.offset,
+    claim.offset + claim.tag.length,
+  );
 
   const out: WikiCandidate[] = [];
   for (const ref of corpus.local.refs) {
     // A footnote in an explanatory group is commentary, not a source.
     if (ref.occurrence.group) continue;
+    // Cited in the tagged sentence itself: an editor saw this reference and
+    // still asked for a citation, so it is the one source not to suggest.
+    if (
+      ref.occurrence.offset >= ownSentence.start &&
+      ref.occurrence.offset < ownSentence.end
+    ) {
+      continue;
+    }
 
     const sameParagraph =
       ref.occurrence.offset >= paragraph.start &&

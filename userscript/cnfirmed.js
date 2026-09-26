@@ -1421,6 +1421,90 @@
     };
   }
 
+  // The span of wikitext holding the sentence a {{citation needed}} tag is on,
+  // with the refs and tags attached to it. Mirrors taggedSentenceRange in
+  // src/core/wikitext.ts: a reference inside it is one an editor already saw
+  // and judged not enough, so it is never offered back for the claim.
+  var MASKED = String.fromCharCode(0);
+
+  function maskNonProse(text) {
+    var out = text.split('');
+    function blank(from, to) {
+      for (var k = from; k < to && k < out.length; k++) out[k] = MASKED;
+    }
+    var m;
+    var comment = /<!--[\s\S]*?-->/g;
+    while ((m = comment.exec(text))) blank(m.index, m.index + m[0].length);
+    var ref = /<ref\b[^>]*\/>|<ref\b[^>]*>[\s\S]*?<\/ref\s*>/gi;
+    while ((m = ref.exec(text))) blank(m.index, m.index + m[0].length);
+    for (var i = 0; i < text.length - 1; i++) {
+      if (text.charAt(i) === '{' && text.charAt(i + 1) === '{') {
+        var end = findTemplateEnd(text, i);
+        if (end < 0) end = text.length;
+        blank(i, end);
+        i = end - 1;
+      }
+    }
+    var file = /\[\[(?:File|Image):[^\]]*(?:\[\[[^\]]*\]\][^\]]*)*\]\]/gi;
+    while ((m = file.exec(text))) blank(m.index, m.index + m[0].length);
+    return out.join('');
+  }
+
+  function endsSentenceAt(masked, i) {
+    var ch = masked.charAt(i);
+    if (HARD_TERMINATORS.indexOf(ch) !== -1) return true;
+    if (ch !== '.' && ch !== '!' && ch !== '?') return false;
+    if (ch === '.' && /\d/.test(masked.charAt(i - 1)) && /\d/.test(masked.charAt(i + 1))) return false;
+    if (ch === '.' && endsAbbreviation(masked, i)) return false;
+    var j = i + 1;
+    var spaced = false;
+    var cited = false;
+    while (j < masked.length && /[.!?"”’')\]\u0000\s]/.test(masked.charAt(j))) {
+      if (/\s/.test(masked.charAt(j))) spaced = true;
+      if (masked.charAt(j) === MASKED) cited = true;
+      j++;
+    }
+    if (j >= masked.length) return true;
+    if (cited && spaced) return true;
+    return spaced && /[A-ZÀ-ÞА-ЯΑ-Ω(“"'\d[*]/.test(masked.charAt(j));
+  }
+
+  function taggedSentenceRange(wikitext, tagStart, tagEnd) {
+    var para = paragraphRangeAt(wikitext, tagStart);
+    var masked = maskNonProse(wikitext.slice(para.start, para.end));
+    var ts = tagStart - para.start;
+    var te = tagEnd - para.start;
+    var k = ts - 1;
+    while (k >= 0 && (masked.charAt(k) === MASKED || /\s/.test(masked.charAt(k)))) k--;
+    var end = masked.length;
+    if (k >= 0 && (/[.!?]/.test(masked.charAt(k)) || HARD_TERMINATORS.indexOf(masked.charAt(k)) !== -1)) {
+      end = k;
+    } else {
+      for (var i = te; i < masked.length; i++) {
+        if (endsSentenceAt(masked, i)) { end = i; break; }
+      }
+    }
+    var tail = Math.min(end + 1, masked.length);
+    while (tail < masked.length && /[\u0000\s"”’')\]]/.test(masked.charAt(tail))) tail++;
+    var start = 0;
+    for (var b = Math.min(k, end) - 1; b >= 0; b--) {
+      if (endsSentenceAt(masked, b)) { start = b + 1; break; }
+    }
+    while (start < ts && /[\u0000\s"”’')\]]/.test(masked.charAt(start))) start++;
+    return { start: para.start + start, end: para.start + tail };
+  }
+
+  // Without the page-to-wikitext mapping the tag's position is unknown; a
+  // reference whose sentence restates the claim is then taken to be on it.
+  function restatesClaim(sentence, claim) {
+    var a = tokenSetOf(sentence);
+    var b = Object.keys(tokenSetOf(claim));
+    var small = Math.min(Object.keys(a).length, b.length);
+    if (small < 4) return false;
+    var shared = b.filter(function (t) { return a[t]; }).length;
+    return shared / small >= 0.9;
+  }
+
   function sectionAt(sections, pos) {
     var found = null;
     for (var i = 0; i < sections.length; i++) {
@@ -2049,10 +2133,17 @@
     var range = corpus.claimOffsets
       ? paragraphRangeAt(corpus.local.wikitext, corpus.claimOffsets[index].start)
       : null;
+    var own = corpus.claimOffsets
+      ? taggedSentenceRange(corpus.local.wikitext, corpus.claimOffsets[index].start, corpus.claimOffsets[index].end)
+      : null;
 
     var out = [];
     corpus.local.refs.forEach(function (ref) {
       if (ref.occurrence.group) return;
+      // Cited in the tagged sentence itself: an editor saw this reference and
+      // still asked for a citation, so it is the one source not to suggest.
+      if (own ? (ref.occurrence.offset >= own.start && ref.occurrence.offset < own.end)
+        : restatesClaim(ref.sentence, ctx.claim)) return;
       var sameParagraph = !!range &&
         ref.occurrence.offset >= range.start && ref.occurrence.offset < range.end;
       var sameSection = !!ctx.section && ref.section === ctx.section;

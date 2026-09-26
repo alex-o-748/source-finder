@@ -201,6 +201,11 @@ fluent wrong answer), and lowers the bar the model has to clear.
    with hand-checked correct sources, spanning claim types. Everything
    after this is a comparison against it. (The current Claude pipeline is
    a reasonable one-off way to help assemble it.)
+   *(Started: `eval/` holds 100 real claims across 15 subject strata, every
+   response the free stages need recorded for offline replay, the sentence
+   each tag is really on, and a verdict on every lead the free stages
+   proposed. What it does not have yet is a known correct source per claim;
+   see `eval/README.md`.)*
 2. **Zero-inference layer** (1–2 weeks): Wikidata lookup via wikilink QIDs,
    sister-language reference mining, check-existing-references-first,
    Citoid formatting. Measure coverage on the eval set — this sizes how

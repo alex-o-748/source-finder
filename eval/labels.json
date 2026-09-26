@@ -1,0 +1,446 @@
+{
+  "Silvae@1345841665#7076": {
+    "ia:silvaetranslated00statuoft": {
+      "verdict": "unrelated",
+      "why": "Passages about the Silvae matched only on 'Roman'."
+    },
+    "ia:silvaestatius01statgoog": {
+      "verdict": "unrelated",
+      "why": "Passages about the Silvae matched only on 'Roman'."
+    },
+    "ia:L206NStatiusIIISilvaeThebald14": {
+      "verdict": "unrelated",
+      "why": "Passages about the Silvae matched only on 'Roman'."
+    }
+  },
+  "Iranian peoples@1371323076#78171": {
+    "jofamericanscience.org/journals/am-sci/am0911s/008_21547am0911s_38_45.pdf": {
+      "verdict": "unrelated",
+      "why": "Cited for a different table cell (where a group lives)."
+    },
+    "jepeterson.net/sitebuildercontent/sitebuilderfiles/peterson_baluch_presence_in_the_gulf_2013.pdf": {
+      "verdict": "unrelated",
+      "why": "Cited for a different table cell (where a group lives)."
+    },
+    "repository.arizona.edu/bitstream/handle/10150/193398/azu_etd_10189_sip1_m.pdf": {
+      "verdict": "unrelated",
+      "why": "Cited for a different table cell (where a group lives)."
+    },
+    "ia:in.ernet.dli.2015.283672": {
+      "verdict": "topic",
+      "why": "About Old Persian inscriptions, not which language descends from it."
+    },
+    "ia:in.ernet.dli.2015.61010": {
+      "verdict": "topic",
+      "why": "About Old Persian inscriptions, not which language descends from it."
+    },
+    "ia:AvestanLiteratureHintzeA": {
+      "verdict": "unrelated",
+      "why": "Author biography; matched 'old'."
+    }
+  },
+  "Siege of Ganja (1804)@1370741420#4836": {
+    "iranicaonline.org/articles/golestan-treaty": {
+      "verdict": "supports",
+      "why": "The fa.wiki sentence is a translation of the claim, cited to Encyclopaedia Iranica."
+    }
+  },
+  "Royal Marine Police@1368542794#3076": {
+    "ia:navylist1938": {
+      "verdict": "unrelated",
+      "why": "Navy List promotion dates that happen to include 1934."
+    }
+  },
+  "Naval Submarine Base New London@1371669909#4014": {
+    "ia:DTIC_ADA031433": {
+      "verdict": "topic",
+      "why": "Address listings for the base in Groton; nothing on why New London is in its name."
+    },
+    "ia:sim_federal-register-find_1990-05-30_55_104": {
+      "verdict": "topic",
+      "why": "Address listings for the base in Groton; nothing on why New London is in its name."
+    },
+    "ia:sim_federal-register-find_1998-07-31_63_147": {
+      "verdict": "topic",
+      "why": "Address listings for the base in Groton; nothing on why New London is in its name."
+    }
+  },
+  "USS Shasta (AE-33)@1376634405#10149": {
+    "history.navy.mil/research/histories/ship-histories/danfs/s/shasta-ii.html": {
+      "verdict": "unknown",
+      "why": "DANFS entry cited for the neighbouring sentence on the same operation; may mention the storm."
+    },
+    "ia:allhands6246unit": {
+      "verdict": "unrelated",
+      "why": "Other ships and other gulfs; matched a single word."
+    },
+    "ia:DTIC_ADA294384": {
+      "verdict": "unrelated",
+      "why": "Other ships and other gulfs; matched a single word."
+    },
+    "ia:sim_armed-forces-journal_1946-07-13_83_46": {
+      "verdict": "unrelated",
+      "why": "Other ships and other gulfs; matched a single word."
+    }
+  },
+  "BMP-1@1371674680#37323": {
+    "oryxspioenkop.com/2022/02/attack-on-europe-documenting-equipment.html": {
+      "verdict": "unrelated",
+      "why": "Cited for equipment losses in Ukraine."
+    },
+    "armyrecognition.com/weapons_defence_industry_military_technology_uk/bmd-4m_russia_airborne_new_radio_equipment_r-168-25ue-2_12006172.html": {
+      "verdict": "unrelated",
+      "why": "Cited for a 2018 radio upgrade."
+    },
+    "tagesschau.de/ausland/europa/ukraine-ringtausch-101.html": {
+      "verdict": "unrelated",
+      "why": "Cited for transfers to Ukraine."
+    },
+    "militaryland.net/news/ukraine-received-bmps-from-czech-republic": {
+      "verdict": "unrelated",
+      "why": "Cited for transfers to Ukraine."
+    },
+    "stern.de/politik/ausland/ukraine--bundesregierung-genehmigt-lieferung-von-schuetzenpanzern-31749818.html": {
+      "verdict": "unrelated",
+      "why": "Cited for transfers to Ukraine."
+    },
+    "ia:cia-readingroom-document-cia-rdp86t01017r000605540001-0": {
+      "verdict": "unrelated",
+      "why": "Inventory table of vehicle counts."
+    },
+    "ia:osprey-new-vanguard-345-soviet-tanks-at-stalingrad": {
+      "verdict": "topic",
+      "why": "Compares BMP-1 and BMP-2 turrets; nothing on ammunition stowage."
+    },
+    "ia:armor-of-the-afghanistan-war": {
+      "verdict": "topic",
+      "why": "BMP columns in Afghanistan; nothing on ammunition stowage."
+    }
+  },
+  "Junkers Ju 52@1374490506#15921": {
+    "aviation-safety.net/database/record.php?id=19460522-0": {
+      "verdict": "unrelated",
+      "why": "Individual accident reports; matched on numbers that are not in these sentences."
+    },
+    "aviation-safety.net/database/record.php?id=19460628-0": {
+      "verdict": "unrelated",
+      "why": "Individual accident reports; matched on numbers that are not in these sentences."
+    },
+    "aviation-safety.net/database/record.php?id=19461026-0": {
+      "verdict": "unrelated",
+      "why": "Individual accident reports; matched on numbers that are not in these sentences."
+    },
+    "aviation-safety.net/database/record.php?id=19470106-1": {
+      "verdict": "unrelated",
+      "why": "Individual accident reports; matched on numbers that are not in these sentences."
+    },
+    "aviation-safety.net/database/record.php?id=19470126-1": {
+      "verdict": "unrelated",
+      "why": "Individual accident reports; matched on numbers that are not in these sentences."
+    },
+    "ia:ian-allan-classic-colours-luftwaffe-colours-zerstorer-volume-1-luftwaffe-fighter": {
+      "verdict": "topic",
+      "why": "Ju 52s and DFS 230 gliders at Crete; not what one Ju 52 could tow."
+    },
+    "ia:144_20260710": {
+      "verdict": "partial",
+      "why": "Ju 52s as tugs for DFS 230 gliders; not 'up to two'."
+    },
+    "ia:Luft_3": {
+      "verdict": "topic",
+      "why": "Numbers of Ju 52s and gliders at Crete."
+    }
+  },
+  "Walter HWK 109-509@1357930638#10451": {
+    "cosmospheretour.com/exhibit.php?exhibit_no=9": {
+      "verdict": "topic",
+      "why": "Cited for a different museum in the same list."
+    },
+    "nationalmuseum.af.mil/visit/museum-exhibits/fact-sheets/display/article/196240/walter-hwk-509a-rocket": {
+      "verdict": "topic",
+      "why": "Cited for a different museum in the same list."
+    },
+    "nationalmuseum.af.mil/visit/museum-exhibits/fact-sheets/display/article/196241/walter-hwk-509b-1-rocket": {
+      "verdict": "topic",
+      "why": "Cited for a different museum in the same list."
+    },
+    "walterwerke.co.uk/museum/sworth.htm": {
+      "verdict": "topic",
+      "why": "Cited for a different museum in the same list."
+    }
+  },
+  "A-Imdugud@1358747319#1777": {
+    "books.google.com/books?id=yzbu9bairfkc&pg=pa183": {
+      "verdict": "partial",
+      "why": "Cited for the reading of the name in the same lead sentence; likely gives the sign sequence."
+    }
+  },
+  "Moses ben Joseph ben Merwan ha-Levi@1375319065#3308": {
+    "ia:JewishEncyclopediaDescriptiveRecordHistoryReligionLiteratureCustoms": {
+      "verdict": "unrelated",
+      "why": "About a different man (Dunash) in Seville."
+    },
+    "ia:the-jewish-encyclopedia-vol.-9": {
+      "verdict": "unrelated",
+      "why": "About a different man (Dunash) in Seville."
+    },
+    "ia:jewishencycloped0009isid": {
+      "verdict": "unrelated",
+      "why": "About a different man (Dunash) in Seville."
+    }
+  },
+  "Cathedral of Évora@1373206424#3475": {
+    "ia:newcatholicencyc08thom": {
+      "verdict": "partial",
+      "why": "A pupil studying at Évora cathedral with Manuel Mendes: one composer's link, not the list."
+    }
+  },
+  "Vipakasutra@1242493963#775": {
+    "ia:aclcpl00000329a880": {
+      "verdict": "unrelated",
+      "why": "Matched '10' from a list numbering."
+    },
+    "ia:in.ernet.dli.2015.282839": {
+      "verdict": "unrelated",
+      "why": "Matched '10' from a list numbering."
+    }
+  },
+  "Mari Iijima@1371035676#4445": {
+    "web.archive.org/web/20190214041848/http://www.jpfolks.com/musicawards/2006/winners/song.htm": {
+      "verdict": "topic",
+      "why": "Cited for a different award in 2006."
+    }
+  },
+  "Kim Stanley Robinson@1374486108#9680": {
+    "theguardian.com/books/2005/sep/14/sciencefictionfantasyandhorror.sarahcrown": {
+      "verdict": "partial",
+      "why": "de.wiki: the trilogy deals with the consequences of global warming."
+    },
+    "huffingtonpost.com/jerry-cope/2312-an-extraordinary-vision_b_1550548.html": {
+      "verdict": "partial",
+      "why": "de.wiki: the trilogy deals with the consequences of global warming."
+    },
+    "kirkusreviews.com/book-reviews/kim-stanley-robinson/forty-signs-of-rain": {
+      "verdict": "supports",
+      "why": "The Kirkus review is cited right after the tag, for this sentence."
+    },
+    "newyorker.com/magazine/2022/01/31/can-science-fiction-wake-us-up-to-our-climate-reality-kim-stanley-robinson": {
+      "verdict": "topic",
+      "why": "His works rank among climate fiction's most important."
+    },
+    "deutschlandfunk.de/auf-der-sturmhoehe-der-zeit-wie-climate-fiction-vom-aufgeheizten-planeten-erzaehlt-100.html": {
+      "verdict": "topic",
+      "why": "His works rank among climate fiction's most important."
+    },
+    "ia:libraryjournal129jan": {
+      "verdict": "partial",
+      "why": "Library Journal note: 'Forty Signs of Rain — Global warming is happening'."
+    },
+    "ia:globalwarmingver00masl_0": {
+      "verdict": "topic",
+      "why": "Mentions the novel's term 'Hypernino'."
+    },
+    "auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech": {
+      "verdict": "unrelated",
+      "why": "it.wiki sentence: Robinson calls himself a hiker, not a mountaineer; the anchors matched the paragraph, not this sentence."
+    }
+  },
+  "Lance Fung Gallery@1200606096#1353": {
+    "ia:artinamerica91math": {
+      "verdict": "partial",
+      "why": "The gallery represents Richard Humann: one of the five artists."
+    }
+  },
+  "Black Country Urban Forest@1336709937#1340": {
+    "ia:countrysidechara0005unse": {
+      "verdict": "unrelated",
+      "why": "Medieval forest clearance."
+    }
+  },
+  "Zhangjiajie National Forest Park@1376163968#3963": {
+    "web.archive.org/web/20110606043905/http://www2.chinadaily.com.cn/life/2010-01/26/content_9375209.htm": {
+      "verdict": "supports",
+      "why": "China Daily is cited at the end of this same sentence."
+    }
+  },
+  "Xi Sagittarii@1369728394#573": {
+    "ia:appletonsannual50unkngoog": {
+      "verdict": "unrelated",
+      "why": "A binary star's period; matched '22'."
+    }
+  },
+  "Cenomanian@1362029724#3853": {
+    "ia:zitteliana1113198486baye": {
+      "verdict": "unrelated",
+      "why": "A journal citation containing '95'."
+    },
+    "ia:paleotectonicsse0000unse": {
+      "verdict": "topic",
+      "why": "Dates the early Cenomanian at 95 m.y.; not the start of the Upper Cenomanian."
+    },
+    "ia:chalkproceedings0000inst": {
+      "verdict": "unrelated",
+      "why": "95% carbonate content."
+    }
+  },
+  "Tyson Miller@1373361987#9190": {
+    "mlbtraderumors.com/2022/11/brewers-claim-tyson-miller-from-rangers.html": {
+      "verdict": "unrelated",
+      "why": "ja.wiki sentence on a November 2022 waiver claim."
+    }
+  },
+  "Popular Problems@1351791401#1453": {
+    "web.archive.org/web/20140822010436/http://www.leonardcohen.com/us/news/leonard-cohen-releases-%e2%80%98popular-problems%e2%80%99-september-23-2014-dynamic-studio-album-new-songs": {
+      "verdict": "topic",
+      "why": "Cited for the album's opening description; the title gives a different release date."
+    },
+    "ia:rolling-stone-2014": {
+      "verdict": "unrelated",
+      "why": "A Rolling Stone chart page."
+    },
+    "ia:usa-set-6b0e19ea-rolling-stone-08fda6": {
+      "verdict": "unrelated",
+      "why": "A Rolling Stone chart page."
+    }
+  },
+  "Clinton Sparks@1371326718#746": {
+    "thesituation.co.uk/us_interviews/05/clinton_sparks/clinton_sparks.html": {
+      "verdict": "supports",
+      "why": "ar.wiki sentence: born 18 September 1979 in Boston."
+    },
+    "archive.boston.com/ae/music/articles/2005/04/17/get_familiar_with_clinton_sparks?pg=full": {
+      "verdict": "supports",
+      "why": "ar.wiki sentence: born 18 September 1979 in Boston."
+    },
+    "linkedin.com/in/clinton-sparks-158096b7": {
+      "verdict": "supports",
+      "why": "ar.wiki sentence: born 18 September 1979 (LinkedIn is not a reliable source)."
+    }
+  },
+  "Hossein Abedini@1256675326#3377": {
+    "ia:unita_2005-08-19": {
+      "verdict": "unrelated",
+      "why": "A TV listing."
+    }
+  },
+  "Goodrich Quality Theaters@1373115973#4818": {
+    "ia:2004harrisindian00fran": {
+      "verdict": "unrelated",
+      "why": "A 2004 directory; matched '25'."
+    }
+  },
+  "Mercedes Moné@1376796620#216276": {
+    "fightful.com/wrestling/mercedes-mone-comments-divorce-sarath-ton": {
+      "verdict": "partial",
+      "why": "Cited for the July 2024 filing, not the finalisation."
+    }
+  },
+  "Metal Skin@1362856159#6848": {
+    "ia:oxfordcompaniont0000unse_h5j6": {
+      "verdict": "topic",
+      "why": "A Film Critics Circle award to Nadine Garner, not Young and Mendelsohn."
+    }
+  },
+  "Guido Henkel@1355143432#5492": {
+    "web.archive.org/web/20080517001305/http://rpgvaultarchive.ign.com/features/mini/emusement.shtml": {
+      "verdict": "unknown",
+      "why": "Interview about eMusement cited for his joining it; may cover the SquareSoft project."
+    }
+  },
+  "Brian Kernighan@1371976733#7302": {
+    "cm.bell-labs.com/cm/cs/who/dmr/btut.html": {
+      "verdict": "unrelated",
+      "why": "fr.wiki sentence about Hello World in B."
+    },
+    "ia:bitsavers_decdecusDEISIG198404UNISIG_4142328": {
+      "verdict": "topic",
+      "why": "Mentions the Software Tools book; not the BASIC edition."
+    },
+    "ia:the-c-answer-book-second-edition-by-gimpel-tondo": {
+      "verdict": "topic",
+      "why": "Mentions the Software Tools book; not the BASIC edition."
+    },
+    "ia:gawk-effective-awk-programming-a-users-guide-for-gnu-awk-edition-5.4": {
+      "verdict": "topic",
+      "why": "Mentions the Software Tools book; not the BASIC edition."
+    }
+  },
+  "Rail shooter@1365330287#5172": {
+    "hardcoregamer.com/previews/saving-the-solar-system-in-the-rail-shooter-of-ex-zodiac/425342": {
+      "verdict": "partial",
+      "why": "Cited at the end of the same sentence, for the Ex-Zodiac example rather than the trend."
+    },
+    "destructoid.com/its-time-for-the-rail-shooter-to-take-flight-again": {
+      "verdict": "topic",
+      "why": "Cited for the neighbouring sentence on linear levels."
+    }
+  },
+  "Nioh@1374892738#2819": {
+    "ia:gamer-games-iv": {
+      "verdict": "partial",
+      "why": "'Presented again in 2015 as a PS4 release': the second half of the claim."
+    }
+  },
+  "Viva (Bolivia)@1359623532#498": {
+    "ia:spiritofserra0000reve": {
+      "verdict": "unrelated",
+      "why": "'Viva' and 'Cruz' in unrelated books (the claim read was the wrong tag)."
+    },
+    "ia:selena0000erne": {
+      "verdict": "unrelated",
+      "why": "'Viva' and 'Cruz' in unrelated books (the claim read was the wrong tag)."
+    },
+    "ia:rareernestbrawle0000unse": {
+      "verdict": "unrelated",
+      "why": "'Viva' and 'Cruz' in unrelated books (the claim read was the wrong tag)."
+    }
+  },
+  "Belstaff@1369795595#5996": {
+    "telegraph.co.uk/fashion/people/david-beckham-on-acting-in-belstaff-outlaws-film": {
+      "verdict": "supports",
+      "why": "The Telegraph is cited at the end of this same sentence."
+    }
+  },
+  "Democracy in Mexico@1369756707#49059": {
+    "ia:democracymarkets0000unse": {
+      "verdict": "unrelated",
+      "why": "About Chile's Supreme Court."
+    }
+  },
+  "Belgium–Luxembourg relations@1360654760#8370": {
+    "luxtimes.lu/luxembourg/number-of-belgian-cross-border-commuters-in-luxembourg-is-stagnating/42287917.html": {
+      "verdict": "topic",
+      "why": "de.wiki sentence on commuters; matched numbers not in the claim."
+    },
+    "luxembourg.public.lu/de/gesellschaft-und-kultur/internationale-offenheit/belgien-luxemburg-freundschaft-gemeinsamkeiten.html": {
+      "verdict": "topic",
+      "why": "de.wiki sentence on the 1921 economic union."
+    },
+    "gouvernement.lu/fr/actualites/toutes_actualites/communiques/2025/05-mai/21-anniversaire-convention-luxembourg-belgique-cooperation-consulaire.html": {
+      "verdict": "unrelated",
+      "why": "de.wiki sentence on consular help."
+    },
+    "benelux.int/de/info-buerger/benelux-union/ueber-uns/geschichte": {
+      "verdict": "unrelated",
+      "why": "de.wiki sentence on recognition of degrees."
+    }
+  },
+  "Okhrana@1370650714#4928": {
+    "ref:en:<ref>{{cite book|title=Black Night White Snow|author=Salisbury, Harrison E.|publ": {
+      "verdict": "supports",
+      "why": "Cited later in this same sentence."
+    },
+    "ref:en:<ref>Evans, Charles T. Father Gapon</ref>": {
+      "verdict": "supports",
+      "why": "Cited at the end of this same sentence."
+    },
+    "ia:russiagermany1870000wall": {
+      "verdict": "topic",
+      "why": "Okhrana and Bloody Sunday in one passage; not that communists blamed it."
+    },
+    "ia:russiaintransiti0000wrig": {
+      "verdict": "topic",
+      "why": "Glossary entry for the Okhrana."
+    }
+  }
+}

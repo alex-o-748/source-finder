@@ -32,15 +32,30 @@ const EXPOSED = [
   "archivePassageSummary",
   "anchorsOf",
   "anchorScoreOf",
+  "extractAllClaims",
+  "loadWikiCorpus",
+  "taggedSentenceRange",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UserScriptModule = Record<string, (...args: any[]) => any> & {
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
+  getClaimContexts(): { claim: string; context: string; section: string | null; links: string[] }[];
 };
 
-export function loadUserScript(overrides: Record<string, unknown> = {}): UserScriptModule {
+/**
+ * A real page to run against, for the evaluation: a parsed DOM (the rendered
+ * article) and the `fetch` the script's requests go through.
+ */
+export interface UserScriptEnv {
+  document?: unknown;
+}
+
+export function loadUserScript(
+  overrides: Record<string, unknown> = {},
+  env: UserScriptEnv = {},
+): UserScriptModule {
   const src = readFileSync(join(root, "userscript/cnfirmed.js"), "utf8");
   const open = "(function () {";
   const body = src.slice(src.indexOf(open) + open.length, src.lastIndexOf("})();"));
@@ -48,7 +63,8 @@ export function loadUserScript(overrides: Record<string, unknown> = {}): UserScr
     return {
       ${EXPOSED.map((name) => `${name}: ${name},`).join("\n      ")}
       setClaimContexts: function (v) { claimContexts = v; },
-      setCnSups: function (v) { cnSups = v; }
+      setCnSups: function (v) { cnSups = v; },
+      getClaimContexts: function () { return claimContexts; }
     };`;
 
   const config: Record<string, unknown> = {
@@ -88,7 +104,7 @@ export function loadUserScript(overrides: Record<string, unknown> = {}): UserScr
   return factory(
     mw,
     {},
-    { addEventListener() {}, querySelectorAll: () => [] },
+    env.document ?? { addEventListener() {}, querySelectorAll: () => [] },
     localStorage,
     jquery,
     {},

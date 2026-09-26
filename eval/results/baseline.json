@@ -1,0 +1,4169 @@
+[
+  {
+    "id": "Silvae@1345841665#7076",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Silvae",
+    "claim": "A Roman relief depicting a funeral feast",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:silvaetranslated00statuoft",
+        "origin": "internet-archive",
+        "title": "Silvae. Translated with introd. and notes; by D.A. Slater",
+        "url": "https://archive.org/details/silvaetranslated00statuoft",
+        "score": 0.72,
+        "matchedAnchors": [
+          "roman"
+        ],
+        "evidence": [
+          "The Muses and the Nymphs are the fairies of Greek and Roman literature. And if Statius"
+        ],
+        "where": "1908, open"
+      },
+      {
+        "key": "ia:silvaestatius01statgoog",
+        "origin": "internet-archive",
+        "title": "The Silvae of Statius",
+        "url": "https://archive.org/details/silvaestatius01statgoog",
+        "score": 0.72,
+        "matchedAnchors": [
+          "roman"
+        ],
+        "evidence": [
+          "enlightenment. The Muses and the Nymphs are the fairies of Greek and Roman literature. And if Statius peopled"
+        ],
+        "where": "1908, open"
+      },
+      {
+        "key": "ia:L206NStatiusIIISilvaeThebald14",
+        "origin": "internet-archive",
+        "title": "L 206 N Statius I & II Silvae Thebald 1 4",
+        "url": "https://archive.org/details/L206NStatiusIIISilvaeThebald14",
+        "score": 0.72,
+        "matchedAnchors": [
+          "roman"
+        ],
+        "evidence": [
+          "style, and antiquities ; he also instructed his pupils in augury and the various rites of the Roman state",
+          "observation in the Roman Cireus, as, for example, in the boxing and wrestling matches and the discus-throwing"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Silvae\" AND \"roman\""
+      ],
+      "hits": 49,
+      "available": 49,
+      "borrowable": 17,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 10,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Khirbet Kerak@1368547483#14129",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Khirbet Kerak",
+    "claim": "The Greek name was chosen by Ptolemy II Philadelphus, who named it for his sister.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Khirbet Kerak\" AND \"philadelphus\" AND \"ptolemy\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 40,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "MS Ilos@1368787865#9100",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "MS Ilos",
+    "claim": "In January 2010, it was reported",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"MS Ilos\" AND \"2010\" AND \"january\"",
+        "\"MS Ilos\" AND \"2010\""
+      ],
+      "hits": 7,
+      "available": 7,
+      "borrowable": 3,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Iranian peoples@1371323076#78171",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Iranian peoples",
+    "claim": "A branch of Old Persian.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "jofamericanscience.org/journals/am-sci/am0911s/008_21547am0911s_38_45.pdf",
+        "origin": "same-article",
+        "title": "A Study of Derivational Morphemes in Lari & Tati as Two Endangered Iranian Languages: An Analytical Contrastive Examination with Persian",
+        "url": "https://www.jofamericanscience.org/journals/am-sci/am0911s/008_21547am0911s_38_45.pdf",
+        "score": 0.582,
+        "matchedAnchors": [],
+        "evidence": [
+          "Notable presence in Shiraz and Arab Gulf states , , , , ."
+        ],
+        "where": "en:Iranian peoples"
+      },
+      {
+        "key": "jepeterson.net/sitebuildercontent/sitebuilderfiles/peterson_baluch_presence_in_the_gulf_2013.pdf",
+        "origin": "same-article",
+        "title": "Sectarian Politics in the Persian Gulf",
+        "url": "http://jepeterson.net/sitebuildercontent/sitebuilderfiles/Peterson_Baluch_Presence_in_the_Gulf_2013.pdf",
+        "score": 0.418,
+        "matchedAnchors": [],
+        "evidence": [
+          "Notable presence in: , , ,"
+        ],
+        "where": "en:Iranian peoples"
+      },
+      {
+        "key": "repository.arizona.edu/bitstream/handle/10150/193398/azu_etd_10189_sip1_m.pdf",
+        "origin": "same-article",
+        "title": "Iranians in Bahrain and the United Arab Emirates: Migration, Minorities, and Identities in the Persian Gulf Arab States",
+        "url": "https://repository.arizona.edu/bitstream/handle/10150/193398/azu_etd_10189_sip1_m.pdf",
+        "score": 0.356,
+        "matchedAnchors": [],
+        "evidence": [
+          "Notable presence in: , , (Bakhtiaris),"
+        ],
+        "where": "en:Iranian peoples"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:in.ernet.dli.2015.283672",
+        "origin": "internet-archive",
+        "title": "The Religion Of The Iranian Peoples",
+        "url": "https://archive.org/details/in.ernet.dli.2015.283672",
+        "score": 0.91,
+        "matchedAnchors": [
+          "old persian"
+        ],
+        "evidence": [
+          "Media, and at Persepolis and Naksh-i« Rustum in Persia proper. They are composed in old Persian, a tongue"
+        ],
+        "where": "1912, open"
+      },
+      {
+        "key": "ia:in.ernet.dli.2015.61010",
+        "origin": "internet-archive",
+        "title": "The Religion Of The Iranian Peoples Part I",
+        "url": "https://archive.org/details/in.ernet.dli.2015.61010",
+        "score": 0.91,
+        "matchedAnchors": [
+          "old persian"
+        ],
+        "evidence": [
+          "Media, and at Persepolis and Naksh-iRustum in Persia proper. They are composed in old Persian, a tongue"
+        ],
+        "where": "1912, open"
+      },
+      {
+        "key": "ia:AvestanLiteratureHintzeA",
+        "origin": "internet-archive",
+        "title": "Avestan Literature Hintze, A.",
+        "url": "https://archive.org/details/AvestanLiteratureHintzeA",
+        "score": 0.36,
+        "matchedAnchors": [
+          "old"
+        ],
+        "evidence": [
+          "School of Oriental and African Studies (1964-71) and Visiting Associate Professor of Old and Middle Iranian"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Iranian peoples\" AND \"old persian\""
+      ],
+      "hits": 46,
+      "available": 45,
+      "borrowable": 15,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 5,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Eileen Ascroft@1353902884#2491",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Eileen Ascroft",
+    "claim": "Her book, The Magic Key to Charm (1938), is a collection of her journalism for women published by the Mirror.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Eileen Ascroft\" AND \"1938\" AND \"magic key\" AND \"mirror\"",
+        "\"Eileen Ascroft\" AND \"1938\""
+      ],
+      "hits": 52,
+      "available": 52,
+      "borrowable": 14,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Takaharu Mitsui@1366505112#345",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Takaharu Mitsui",
+    "claim": "He is considered the \"dean of Japanese philately\" by many in the philatelic world.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Takaharu Mitsui\" AND \"japanese\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 11,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Didius Julianus@1370266531#1728",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Didius Julianus",
+    "claim": "His reign is a common delineation in the decline and fall of the Roman Empire.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "1 {{cn}}-family tag(s) found in wikitext but 2 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Didius Julianus\" AND \"roman empire\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 21,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "Baalshamin@1362034634#6870",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Baalshamin",
+    "claim": "Writers in Syriac refer to Baalshamin as Zeus Olympios Zeus who shines.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Baalshamin\" AND \"zeus olympios zeus\" AND \"syriac\"",
+        "\"Baalshamin\" AND \"zeus olympios zeus\""
+      ],
+      "hits": 13,
+      "available": 11,
+      "borrowable": 3,
+      "rejected": {
+        "not a text": 2
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Abigail May Alcott Nieriker@1373256207#9938",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Abigail May Alcott Nieriker",
+    "claim": "↑ After the death of Anna Alcott's husband John Pratt in 1871, Louisa returned to Concord, while May stayed in Europe to begin serious study.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "4 {{cn}}-family tag(s) found in wikitext but 5 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Abigail May Alcott Nieriker\" AND \"1871\" AND \"anna alcott's\" AND \"john pratt\"",
+        "\"Abigail May Alcott Nieriker\" AND \"1871\""
+      ],
+      "hits": 18,
+      "available": 18,
+      "borrowable": 12,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "Muazzez Sultan@1370515564#2311",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Muazzez Sultan",
+    "claim": "She was the most beautiful of all of Ibrahim's concubine and was known for her mild character and good manners in the palace.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Muazzez Sultan\" AND \"ibrahim's\""
+      ],
+      "hits": 12,
+      "available": 10,
+      "borrowable": 1,
+      "rejected": {
+        "not a text": 2
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Princess Feodora of Leiningen@1373372849#2645",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Princess Feodora of Leiningen",
+    "claim": "Feodora's father died in 1814.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Princess Feodora of Leiningen\" AND \"1814\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 38,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Senate of the Roman Empire@1339603052#5947",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Senate of the Roman Empire",
+    "claim": "Since no senator could stand for election to a magisterial office without the emperor's approval, senators usually did not vote against bills that had been presented by the emperor.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Siege of Ganja (1804)@1370741420#4836",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "Siege of Ganja (1804)",
+    "claim": "After Tsar Paul's decision to annex Georgia (December 1800) and, after Paul's assassination (11 March 1801), the activist policy followed by his son and successor, Alexander I, aimed at establishing Russian control over the khanates of the eastern Caucasus.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "iranicaonline.org/articles/golestan-treaty",
+        "origin": "sister-wiki",
+        "title": "Golestān Treaty",
+        "url": "http://www.iranicaonline.org/articles/golestan-treaty",
+        "score": 1,
+        "matchedAnchors": [
+          "1800",
+          "11",
+          "1801"
+        ],
+        "evidence": [
+          "پس از تصمیم تزار و گسیل نیروهای ارتش روسیه برای پیوست گرجستان به امپراتوری روسیه (دسامبر ۱۸۰۰ میلادی) و پس از ترور پاول یکم (۱۱ مارس ۱۸۰۱)، سیاستی که جانشین او، الکساندر یکم دنبال می‌کرد، با هدف ایجاد کنترل روسیه بر خانات‌های قفقاز شرقی بود. در سال ۱۸۰۳، فرمانده تازه گماشته شده نیروهای روسی در قفقاز، پال سیسیانوف به گنجه حمله کرد."
+        ],
+        "where": "fa:سقوط گنجه (۱۸۰۴)"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Siege of Ganja\" AND \"1800\" AND \"1801\" AND \"11\" AND \"tsar paul's\" AND \"alexander\"",
+        "\"Siege of Ganja\" AND \"1800\" AND \"1801\" AND \"11\"",
+        "\"Siege of Ganja\" AND \"1800\""
+      ],
+      "hits": 28,
+      "available": 27,
+      "borrowable": 1,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Three Gemstones@1336833166#3911",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "Three Gemstones",
+    "claim": "There is versions and huge possibility that later the biggest gemstone in 1980s-90s was sold in black market or in secrecy in Arabia peninsula, during the period of rise of Arab investment/financial world.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Three Gemstones\" AND \"1980\" AND \"90\" AND \"arabia\" AND \"arab\""
+      ],
+      "hits": 10,
+      "available": 10,
+      "borrowable": 3,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Royal Marine Police@1368542794#3076",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "Royal Marine Police",
+    "claim": "No. 3 (Devonport) Division was the last of these six divisions to be pulled out, leaving in 1934, the year which also saw the formal formation of the Royal Marine Police.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [
+      {
+        "key": "ia:navylist1938",
+        "origin": "internet-archive",
+        "title": "The Navy List [Great Britain] 1938 January, April, July, October [Monthly publications]",
+        "url": "https://archive.org/details/navylist1938",
+        "score": 0.38,
+        "matchedAnchors": [
+          "1934",
+          "royal",
+          "marine"
+        ],
+        "evidence": [
+          "lJan 1938 Sub-Liewt. 1 Sept 1934 Sub-Lieut. 1 Sept 1934 Sub-Lieut 1Sept 1934 THE ROYAL MARINE FORCES. 189"
+        ],
+        "where": "1938, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Royal Marine Police\" AND \"1934\" AND \"devonport\" AND \"division\""
+      ],
+      "hits": 40,
+      "available": 40,
+      "borrowable": 11,
+      "rejected": {},
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Naval Submarine Base New London@1371669909#4014",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "Naval Submarine Base New London",
+    "claim": "The submarine base is physically located in the Town of Groton, but New London became associated with it because the base had its post office, main offices, and housing in New London.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:DTIC_ADA031433",
+        "origin": "internet-archive",
+        "title": "DTIC ADA031433: Final Environmental Impact Statement, Dredge River Channel: Naval Submarine Base, New London, Groton, Connecticut. Volume 1. Final Supplement.",
+        "url": "https://archive.org/details/DTIC_ADA031433",
+        "score": 0.73,
+        "matchedAnchors": [
+          "town",
+          "groton",
+          "new london"
+        ],
+        "evidence": [
+          "New London, CT 06320 Town Manager, Town Hall, 45 Fort Hill Road, Groton, CT 06340 Chairman,",
+          "STATEMENT DREDGE RIVER CHANNEL: NAVAL SUBMARINE BASE NEW LONDON, GROTON, CONNECTICUT\" DATED DECEMBER",
+          "March 1967. 270. Town of Groton Planning Director's Office, Environment , Groton, CT, A Report",
+          "Report of the Town of Groton's Planning Commission, July 1972. 271. Town of Groton Planning Director's",
+          "else- where. 5) Mayor of the Town of Groton and the Town Council support the project as"
+        ],
+        "where": "1976, open"
+      },
+      {
+        "key": "ia:sim_federal-register-find_1990-05-30_55_104",
+        "origin": "internet-archive",
+        "title": "Federal Register 1990-05-30: Vol 55 Iss 104",
+        "url": "https://archive.org/details/sim_federal-register-find_1990-05-30_55_104",
+        "score": 0.61,
+        "matchedAnchors": [
+          "groton",
+          "new london"
+        ],
+        "evidence": [
+          "Legal Service Office, Naval Submarine Base, New London, Box 10, Building 137, Groton, CT 06349-5010. Commanding",
+          "Connecticut Commanding Officer, Naval Submarine Base, New London, Box 00, Groton, CT 06349-5000. Commanding",
+          "Activity, New London, Box 63, Naval Submarine Base, New London, Groton, CT 06349-5063. Officer in Charge",
+          "Security Group Activity, Box 99, Naval Submarine Base, New London, Groton, CT 06349-5099. Director, Consolidated",
+          "Civilian Personnel, P.O. Box 20, Naval Submarine Base, New London, Groton, CT 06349-5099. Commanding Officer"
+        ],
+        "where": "1990, open"
+      },
+      {
+        "key": "ia:sim_federal-register-find_1998-07-31_63_147",
+        "origin": "internet-archive",
+        "title": "Federal Register 1998-07-31: Vol 63 Iss 147",
+        "url": "https://archive.org/details/sim_federal-register-find_1998-07-31_63_147",
+        "score": 0.61,
+        "matchedAnchors": [
+          "groton",
+          "new london"
+        ],
+        "evidence": [
+          "Connecticut Naval Housing—7 Bldgs. Naval Submarine Base New London Co: Groton CT Landholding Agency: Navy Property",
+          "Bldg. 84, Anx. of Gilmore Hall Naval Submarine Base New London Groton Co: New London CT 06349- Landholding",
+          "use only Bldg. 150, McNeil Hall Naval Submarine Base New London Groton Co: New London CT 06349— Landholding",
+          "off-site use only Bldg. 437, Fife Hall Naval Submarine Base New London Groton Co: New London CT 06349- Landholding",
+          "rehab, off-site use only Bldg. 295 Naval Submarine Base New London Groton Co: New London CT 06349- Landholding"
+        ],
+        "where": "1998, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Naval Submarine Base New London\" AND \"groton\" AND \"town\""
+      ],
+      "hits": 49,
+      "available": 49,
+      "borrowable": 7,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 42,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "USS Shasta (AE-33)@1376634405#10149",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "USS Shasta (AE-33)",
+    "claim": "Shasta conducted these operations during a major winter storm in the Gulf of Alaska.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "history.navy.mil/research/histories/ship-histories/danfs/s/shasta-ii.html",
+        "origin": "same-article",
+        "title": "Shasta II",
+        "url": "https://www.history.navy.mil/research/histories/ship-histories/danfs/s/shasta-ii.html",
+        "score": 0.556,
+        "matchedAnchors": [],
+        "evidence": [
+          "Shasta operated with the battle group in the Gulf of Alaska 24 January to 6 February 1987."
+        ],
+        "where": "en:USS Shasta (AE-33)"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:allhands6246unit",
+        "origin": "internet-archive",
+        "title": "All hands",
+        "url": "https://archive.org/details/allhands6246unit",
+        "score": 0.41,
+        "matchedAnchors": [
+          "gulf"
+        ],
+        "evidence": [
+          "right: USS Lexington (CVT 16) cruises in the Gulf of Mexico during a lull in flight operations"
+        ],
+        "where": "1945, open"
+      },
+      {
+        "key": "ia:DTIC_ADA294384",
+        "origin": "internet-archive",
+        "title": "DTIC ADA294384: Plastics Removal in a Marine Environment (PRIME) An Overview.",
+        "url": "https://archive.org/details/DTIC_ADA294384",
+        "score": 0.37,
+        "matchedAnchors": [
+          "gulf"
+        ],
+        "evidence": [
+          "32) , KTTJ: XO, FPO SF 96678-1155 USS Leyte Gulf (CG 55) ATH;: XO, FPO HI 34091-1175 USS"
+        ],
+        "where": "1993, open"
+      },
+      {
+        "key": "ia:sim_armed-forces-journal_1946-07-13_83_46",
+        "origin": "internet-archive",
+        "title": "Army Navy Journal 1946-07-13: Vol 83 Iss 46",
+        "url": "https://archive.org/details/sim_armed-forces-journal_1946-07-13_83_46",
+        "score": 0.37,
+        "matchedAnchors": [
+          "alaska"
+        ],
+        "evidence": [
+          "Stickley, Com-1, to ComCruDiv- 4; add. duty as CO, USS Alaska, CB 1. George F. Watson, CO, NAS, Moffett Fid,",
+          "Gen- eral, Chicago, Il. James D. L. Grant, USS Alaska, CB 1, to Dist. Comm. Officer, Com-7, Jacksonville;"
+        ],
+        "where": "1946, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"USS Shasta\" AND \"alaska\" AND \"gulf\""
+      ],
+      "hits": 49,
+      "available": 49,
+      "borrowable": 8,
+      "rejected": {},
+      "matched": 4,
+      "lookedUp": 4,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "BMP-1@1371674680#37323",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "BMP-1",
+    "claim": "In the BMP-1 and BMP-2, ammunition is stored near or even inside the compartment, which can lead to a catastrophic failure in case of a hull breach.",
+    "claimChanged": false,
+    "wiki": [
+      {
+        "key": "oryxspioenkop.com/2022/02/attack-on-europe-documenting-equipment.html",
+        "origin": "sister-wiki",
+        "title": "Attack On Europe: Documenting Russian Equipment Losses During The Russian Invasion Of Ukraine",
+        "url": "https://www.oryxspioenkop.com/2022/02/attack-on-europe-documenting-equipment.html",
+        "score": 1,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "Bei 192 weiteren Fahrzeugverlusten konnte nicht eindeutig zwischen BMP-1 und BMP-2 unterschieden werden (Stand 14. Juni 2024)."
+        ],
+        "where": "de:BMP-1"
+      },
+      {
+        "key": "armyrecognition.com/weapons_defence_industry_military_technology_uk/bmd-4m_russia_airborne_new_radio_equipment_r-168-25ue-2_12006172.html",
+        "origin": "sister-wiki",
+        "title": "BMD-4M Russia airborne new radio equipment R-168-25UE-2 12006172 weapons defence industry military technology UK analysis focus army defence military industry army",
+        "url": "https://armyrecognition.com/weapons_defence_industry_military_technology_uk/bmd-4m_russia_airborne_new_radio_equipment_r-168-25ue-2_12006172.html",
+        "score": 1,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "Modernisation du BMP-1 présenté en 2018, il reçoit un nouveau moteur diesel UTD-20S1 qui est également utilisé sur le BMP-2, il reçoit également la radio R-168-25U-2 qui est plus résistante au brouillage, à la guerre électronique et aux vibrations"
+        ],
+        "where": "fr:BMP-1"
+      },
+      {
+        "key": "tagesschau.de/ausland/europa/ukraine-ringtausch-101.html",
+        "origin": "sister-wiki",
+        "title": "Ukraine erhält über Ringtausch 40 weitere Schützenpanzer",
+        "url": "https://www.tagesschau.de/ausland/europa/ukraine-ringtausch-101.html",
+        "score": 0.7,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "Davon wurden 40 Stück an die Ukraine im Jahr 2022 abgegeben."
+        ],
+        "where": "de:BMP-1"
+      },
+      {
+        "key": "militaryland.net/news/ukraine-received-bmps-from-czech-republic",
+        "origin": "sister-wiki",
+        "title": "Ukraine received BMPs from Czechia",
+        "url": "https://militaryland.net/news/ukraine-received-bmps-from-czech-republic/",
+        "score": 0.7,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "B. 40 BMP-1 aus Griechenland (Stand 2022), mindestens 12 Exemplare aus Tschechien (Stand 12/2018),"
+        ],
+        "where": "de:BMP-1"
+      },
+      {
+        "key": "stern.de/politik/ausland/ukraine--bundesregierung-genehmigt-lieferung-von-schuetzenpanzern-31749818.html",
+        "origin": "sister-wiki",
+        "title": "DDR-Schützenpanzer für die Ukraine – Bundesregierung gibt ihr Go",
+        "url": "https://www.stern.de/politik/ausland/ukraine--bundesregierung-genehmigt-lieferung-von-schuetzenpanzern-31749818.html",
+        "score": 0.7,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "B. 40 BMP-1 aus Griechenland (Stand 2022), mindestens 12 Exemplare aus Tschechien (Stand 12/2018), 56 PbV-501 aus ehemaligen NVA-Beständen (Stand 2022)"
+        ],
+        "where": "de:BMP-1"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:cia-readingroom-document-cia-rdp86t01017r000605540001-0",
+        "origin": "internet-archive",
+        "title": "CIA Reading Room cia-rdp86t01017r000605540001-0: (UNTITLED)",
+        "url": "https://archive.org/details/cia-readingroom-document-cia-rdp86t01017r000605540001-0",
+        "score": 0.69,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "(M1981/2) 8 8 8 BMD-1 1387 1387 1387 BMP-1 17156 14178 8840 5388 2978 8366 BMP-2 1312 1209 459 750 103 853 Cee",
+          "T-80 1460 5677 INFANTRY FIGHTING VEHICLES BMP-1 3426 BMP-2 750 4176 ARMORED PERSONNEL CARRIERS BTR-60",
+          "31 T-80 288 319 INFANTRY FIGHTING VEHICLES BMP-1 170 BMP-2 60 230 ARMORED PERSONNEL CARRIERS BTR-60 APC"
+        ],
+        "where": "1986, open"
+      },
+      {
+        "key": "ia:osprey-new-vanguard-345-soviet-tanks-at-stalingrad",
+        "origin": "internet-archive",
+        "title": "Osprey New Vanguard",
+        "url": "https://archive.org/details/osprey-new-vanguard-345-soviet-tanks-at-stalingrad",
+        "score": 0.69,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "wire link. BMP-2 Armament The BMP-2 turret is considerably larger than the BMP-1 turret, and houses two",
+          "the BMP-1. The BMP-1 incorporated the new chemical filter system to the left of the tur- ret, and had"
+        ],
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:armor-of-the-afghanistan-war",
+        "origin": "internet-archive",
+        "title": "Armor of the Afghanistan War",
+        "url": "https://archive.org/details/armor-of-the-afghanistan-war",
+        "score": 0.69,
+        "matchedAnchors": [
+          "bmp-1",
+          "bmp-2"
+        ],
+        "evidence": [
+          "x Mixed column of BMP-1, BMP-2 and BTR-80. Note the anchor symbol on the last BMP-1. This is probably",
+          "transporters- the BTR-60, BMP-1 and BMD-1, did not. The BIR-60 was old and mediocre. Particularly worrisome",
+          "wosquadsfrom the BMP-1 platoon dismount from sPairvetitclee and move forward. The troops and equipment look"
+        ],
+        "where": "2009, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"BMP-1\" AND \"bmp-2\""
+      ],
+      "hits": 48,
+      "available": 48,
+      "borrowable": 6,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 21,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Junkers Ju 52@1374490506#15921",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "Junkers Ju 52",
+    "claim": "The Ju 52 could tow up to two DFS 230 gliders.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "aviation-safety.net/database/record.php?id=19460522-0",
+        "origin": "sister-wiki",
+        "title": "Unfallbericht Ju 52 LN-LAB",
+        "url": "https://aviation-safety.net/database/record.php?id=19460522-0",
+        "score": 0.56,
+        "matchedAnchors": [
+          "52",
+          "230"
+        ],
+        "evidence": [
+          "Alle 12 Insassen bis auf einen Passagier starben."
+        ],
+        "where": "de:Junkers Ju 52/3m"
+      },
+      {
+        "key": "aviation-safety.net/database/record.php?id=19460628-0",
+        "origin": "sister-wiki",
+        "title": "Unfallbericht AAC.1/Ju 52 F-BAJS",
+        "url": "https://aviation-safety.net/database/record.php?id=19460628-0",
+        "score": 0.56,
+        "matchedAnchors": [
+          "52",
+          "230"
+        ],
+        "evidence": [
+          "Von den drei Besatzungsmitgliedern des Postfluges kamen 2 ums Leben."
+        ],
+        "where": "de:Junkers Ju 52/3m"
+      },
+      {
+        "key": "aviation-safety.net/database/record.php?id=19461026-0",
+        "origin": "sister-wiki",
+        "title": "Unfallbericht AAC.1/Ju 52 F-BBYL",
+        "url": "https://aviation-safety.net/database/record.php?id=19461026-0",
+        "score": 0.56,
+        "matchedAnchors": [
+          "52",
+          "230"
+        ],
+        "evidence": [
+          "Über Personenschäden ist nichts bekannt."
+        ],
+        "where": "de:Junkers Ju 52/3m"
+      },
+      {
+        "key": "aviation-safety.net/database/record.php?id=19470106-1",
+        "origin": "sister-wiki",
+        "title": "Unfallbericht AAC.1/Ju 52 F-BBYK",
+        "url": "https://aviation-safety.net/database/record.php?id=19470106-1",
+        "score": 0.56,
+        "matchedAnchors": [
+          "52",
+          "230"
+        ],
+        "evidence": [
+          "Die dreiköpfige Besatzung des Frachtflugs von Marseille nach Lyon überlebte."
+        ],
+        "where": "de:Junkers Ju 52/3m"
+      },
+      {
+        "key": "aviation-safety.net/database/record.php?id=19470126-1",
+        "origin": "sister-wiki",
+        "title": "Unfallbericht Ju 52 G-AHOK",
+        "url": "https://aviation-safety.net/database/record.php?id=19470126-1",
+        "score": 0.56,
+        "matchedAnchors": [
+          "52",
+          "230"
+        ],
+        "evidence": [
+          "Nähere Umstände, auch über Opfer, sind derzeit nicht bekannt."
+        ],
+        "where": "de:Junkers Ju 52/3m"
+      }
+    ],
+    "wikiWarnings": [
+      "4 {{cn}}-family tag(s) found in wikitext but 5 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [
+      {
+        "key": "ia:ian-allan-classic-colours-luftwaffe-colours-zerstorer-volume-1-luftwaffe-fighter",
+        "origin": "internet-archive",
+        "title": "Ian Allan - Classic Colours - Luftwaffe Colours - Jagdwaffe Volume 5 Section 1 - Defending the Reich 1943-44",
+        "url": "https://archive.org/details/ian-allan-classic-colours-luftwaffe-colours-zerstorer-volume-1-luftwaffe-fighter",
+        "score": 0.91,
+        "matchedAnchors": [
+          "52",
+          "230",
+          "dfs"
+        ],
+        "evidence": [
+          "Crete began with DFS 230 gliders landing 15 minutes ahead of the parachute force. Here, Ju 52/3ms are seen",
+          "KGrzbV 9 Ju 52/3m KG 27 (two Gruppen) He 111 KGrzbV 50 Ju 52/3m I./KG 55 He 111 KGrzbV 102 Ju 52/3m IIL."
+        ],
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:144_20260710",
+        "origin": "internet-archive",
+        "title": "osprey tactics",
+        "url": "https://archive.org/details/144_20260710",
+        "score": 0.91,
+        "matchedAnchors": [
+          "52",
+          "230",
+          "dfs"
+        ],
+        "evidence": [
+          "would be delivered by nine to 12 DFS 230 gliders, totalling 42, plus 58 Ju 52 tugs/transports. Six of the"
+        ],
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:Luft_3",
+        "origin": "internet-archive",
+        "title": "Luftwaffe_3",
+        "url": "https://archive.org/details/Luft_3",
+        "score": 0.91,
+        "matchedAnchors": [
+          "52",
+          "230",
+          "dfs"
+        ],
+        "evidence": [
+          "airborne invasion of the island, the 493 Ju 52/3ms and about 80 DFS 230 gliders were intended to attack in three"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Junkers Ju 52\" AND \"52\" AND \"230\" AND \"dfs\""
+      ],
+      "hits": 48,
+      "available": 48,
+      "borrowable": 23,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 20,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "Walter HWK 109-509@1357930638#10451",
+    "stratum": "military",
+    "bookLeaning": true,
+    "title": "Walter HWK 109-509",
+    "claim": "National Museum of Flight",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "cosmospheretour.com/exhibit.php?exhibit_no=9",
+        "origin": "same-article",
+        "title": "Komet engine at the Cosmosphere",
+        "url": "https://cosmospheretour.com/exhibit.php?exhibit_no=9",
+        "score": 0.813,
+        "matchedAnchors": [],
+        "evidence": [
+          "National Museum of Flight Cosmosphere"
+        ],
+        "where": "en:Walter HWK 109-509"
+      },
+      {
+        "key": "nationalmuseum.af.mil/visit/museum-exhibits/fact-sheets/display/article/196240/walter-hwk-509a-rocket",
+        "origin": "sister-wiki",
+        "title": "Walter HWK 509A Rocket",
+        "url": "http://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196240/walter-hwk-509a-rocket/",
+        "score": 0.7,
+        "matchedAnchors": [
+          "museum",
+          "flight"
+        ],
+        "evidence": [
+          "National Museum of the United States Air Force, aux États-Unis : Exemplaires des versions à simple"
+        ],
+        "where": "fr:Walter HWK 109-509"
+      },
+      {
+        "key": "nationalmuseum.af.mil/visit/museum-exhibits/fact-sheets/display/article/196241/walter-hwk-509b-1-rocket",
+        "origin": "sister-wiki",
+        "title": "Walter HWK 509B-1 Rocket",
+        "url": "http://www.nationalmuseum.af.mil/Visit/Museum-Exhibits/Fact-Sheets/Display/Article/196241/walter-hwk-509b-1-rocket/",
+        "score": 0.7,
+        "matchedAnchors": [
+          "museum",
+          "flight"
+        ],
+        "evidence": [
+          "National Museum of the United States Air Force, aux États-Unis : Exemplaires des versions à simple et double chambre"
+        ],
+        "where": "fr:Walter HWK 109-509"
+      },
+      {
+        "key": "walterwerke.co.uk/museum/sworth.htm",
+        "origin": "sister-wiki",
+        "title": "HWK 109-509.A-1 Wkr.Nr. None",
+        "url": "http://www.walterwerke.co.uk/museum/sworth.htm",
+        "score": 0.7,
+        "matchedAnchors": [
+          "museum",
+          "flight"
+        ],
+        "evidence": [
+          ", à Berlin-Gatow, en Allemagne ; , Royaume-Uni"
+        ],
+        "where": "fr:Walter HWK 109-509"
+      }
+    ],
+    "wikiWarnings": [
+      "3 {{cn}}-family tag(s) found in wikitext but 5 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Walter HWK 109-509\" AND \"flight\" AND \"museum\""
+      ],
+      "hits": 26,
+      "available": 23,
+      "borrowable": 9,
+      "rejected": {
+        "not a text": 3
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "A-Imdugud@1358747319#1777",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "A-Imdugud",
+    "claim": "A-Imdugud (𒀀𒀭𒅎𒂂",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "books.google.com/books?id=yzbu9bairfkc&pg=pa183",
+        "origin": "same-article",
+        "title": "Orientalia: Vol. 73",
+        "url": "https://books.google.com/books?id=YZbu9bAiRfkC&pg=PA183",
+        "score": 0.388,
+        "matchedAnchors": [],
+        "evidence": [
+          "A-Imdugud ( A D IM.DUGUD MUŠEN , named after God Imdugud, also read Aja-Anzu; ),"
+        ],
+        "where": "en:A-Imdugud"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "September 1954@1348095199#6345",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "September 1954",
+    "claim": "According to Japanese government official confirmed reported, total 261.4 acres lost to burned, killing 38 people with 551 hurt.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"September 1954\" AND \"261.4\" AND \"38\" AND \"551\" AND \"japanese\""
+      ],
+      "hits": 48,
+      "available": 48,
+      "borrowable": 6,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Bosnian–Ragusan war of 1403–1404@1370606015#1063",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "Bosnian–Ragusan war of 1403–1404",
+    "claim": "King Ostoja led a war against Ragusa, at the time an ally of Hungary.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Bosnian–Ragusan war of 1403–1404\" AND \"hungary\" AND \"ostoja\"",
+        "\"Bosnian–Ragusan war of 1403–1404\" AND \"hungary\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Moses ben Joseph ben Merwan ha-Levi@1375319065#3308",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "Moses ben Joseph ben Merwan ha-Levi",
+    "claim": "Originally written in Judeo-Arabic in Seville",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:JewishEncyclopediaDescriptiveRecordHistoryReligionLiteratureCustoms",
+        "origin": "internet-archive",
+        "title": "Jewish Encyclopedia Descriptive Record History Religion Literature Customs Jewish People from Earliest Times to Present Day.Prepared by More than Four Hundred Scholars and Specialists. Two Thousand Illustrations. Complete in Twelve Volumes. Editor,Singer, Adler, etc, other editors. 12 (13) Volumes 1900-1912.",
+        "url": "https://archive.org/details/JewishEncyclopediaDescriptiveRecordHistoryReligionLiteratureCustoms",
+        "score": 0.41,
+        "matchedAnchors": [
+          "seville"
+        ],
+        "evidence": [
+          "Dunash is identical with the Dunash living in Seville, who is mentioned by Joseph ibn Migash, he, as"
+        ],
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:the-jewish-encyclopedia-vol.-9",
+        "origin": "internet-archive",
+        "title": "The Jewish Encyclopedia, Volume 9",
+        "url": "https://archive.org/details/the-jewish-encyclopedia-vol.-9",
+        "score": 0.41,
+        "matchedAnchors": [
+          "seville"
+        ],
+        "evidence": [
+          "Dunash is identical with the Dunash living in Seville, who is mentioned by Joseph ibn Migash, he, as"
+        ],
+        "where": "1912, open"
+      },
+      {
+        "key": "ia:jewishencycloped0009isid",
+        "origin": "internet-archive",
+        "title": "The Jewish Encyclopedia",
+        "url": "https://archive.org/details/jewishencycloped0009isid",
+        "score": 0.41,
+        "matchedAnchors": [
+          "seville"
+        ],
+        "evidence": [
+          "Dunash is identical with the Dunash living in Seville, who is mentioned by Joseph ibn Migash, he, as"
+        ],
+        "where": "1909, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Moses ben Joseph ben Merwan ha-Levi\" AND \"judeo-arabic\" AND \"seville\"",
+        "\"Moses ben Joseph ben Merwan ha-Levi\" AND \"judeo-arabic\""
+      ],
+      "hits": 5,
+      "available": 5,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 3,
+      "lookedUp": 3,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Jelena Ćetković@1374357645#6993",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "Jelena Ćetković",
+    "claim": "A bust of Ćetković by sculptor Dragutin Spasić stands in front of the school building.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Jelena Ćetković\" AND \"dragutin spasic\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Afuzhiluo@1337056068#3140",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "Afuzhiluo",
+    "claim": "With the elimination of Rouran influence, the Hephthalites, kindred steppe nomads, for the first time extended their domain as far as Karashahr, where Qiongqi was killed and his son Mi'etu (彌俄突) was taken hostage",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Afuzhiluo\" AND \"hephthalites\" AND \"karashahr\"",
+        "\"Afuzhiluo\" AND \"hephthalites\""
+      ],
+      "hits": 5,
+      "available": 5,
+      "borrowable": 1,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Elena Aiello@1374070223#5056",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "Elena Aiello",
+    "claim": "Alessandro became so moved that he told her that he would receive the sacraments if she continued to tend to him; she did so for three months.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Giovanna of Savoy@1366086768#3780",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "Giovanna of Savoy",
+    "claim": "Stress and a heart condition were the official reasons for his death.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Cathedral of Évora@1373206424#3475",
+    "stratum": "religion-philosophy",
+    "bookLeaning": true,
+    "title": "Cathedral of Évora",
+    "claim": "Composers related to the Cathedral include Mateus de Aranda and Manuel Mendes and his pupils Duarte Lobo and Filipe de Magalhães.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:newcatholicencyc08thom",
+        "origin": "internet-archive",
+        "title": "New Catholic Encyclopedia 2003: Vol 8 Second Edition",
+        "url": "https://archive.org/details/newcatholicencyc08thom",
+        "score": 0.3,
+        "matchedAnchors": [
+          "cathedral",
+          "manuel mendes"
+        ],
+        "evidence": [
+          "choirboy studying in Evora cathedral with Manuel Mendes, he attracted the attention of Cardinal"
+        ],
+        "where": "n.d., borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Cathedral of Évora\" AND \"manuel mendes\" AND \"duarte lobo\"",
+        "\"Cathedral of Évora\" AND \"manuel mendes\""
+      ],
+      "hits": 16,
+      "available": 16,
+      "borrowable": 11,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 2,
+      "lookedUp": 2,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Luigi Caburlotto@1310536546#3903",
+    "stratum": "religion-philosophy",
+    "bookLeaning": true,
+    "title": "Luigi Caburlotto",
+    "claim": "It first went to a medical board in 2013 and went to theologians before proceeding to the Congregation for the Causes of Saints for approval both in 2014.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Luigi Caburlotto\" AND \"2013\" AND \"2014\" AND \"congregation\" AND \"causes\"",
+        "\"Luigi Caburlotto\" AND \"2013\" AND \"2014\"",
+        "\"Luigi Caburlotto\" AND \"2013\""
+      ],
+      "hits": 6,
+      "available": 6,
+      "borrowable": 3,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Diana L. Eck@1376718403#5475",
+    "stratum": "religion-philosophy",
+    "bookLeaning": true,
+    "title": "Diana L. Eck",
+    "claim": "She has worked for many years in Interfaith Relations with the World Council of Churches, and the National Council of Churches.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Diana L. Eck\" AND \"interfaith relations\" AND \"national council\""
+      ],
+      "hits": 19,
+      "available": 19,
+      "borrowable": 14,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Mien Shiang@1349789729#2207",
+    "stratum": "religion-philosophy",
+    "bookLeaning": true,
+    "title": "Mien Shiang",
+    "claim": "It was said that if Wang could stare straight at the sun, he had a face with good fortune (贵相).",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Mien Shiang\" AND \"wang\""
+      ],
+      "hits": 10,
+      "available": 10,
+      "borrowable": 5,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Transcendental Meditation movement@1374321389#44979",
+    "stratum": "religion-philosophy",
+    "bookLeaning": true,
+    "title": "Transcendental Meditation movement",
+    "claim": "The Maharishi's revised system of Ayurveda was endorsed by the \"All India Ayurvedic Congress\" in 1997.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Transcendental Meditation movement\" AND \"1997\" AND \"india ayurvedic congress\" AND \"maharishi's\"",
+        "\"Transcendental Meditation movement\" AND \"1997\""
+      ],
+      "hits": 50,
+      "available": 49,
+      "borrowable": 26,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Vipakasutra@1242493963#775",
+    "stratum": "religion-philosophy",
+    "bookLeaning": true,
+    "title": "Vipakasutra",
+    "claim": "It contains 10 stories of people who experience the fruit of bad karma and 10 stories of people who experience the fruit of good karma.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [
+      {
+        "key": "ia:aclcpl00000329a880",
+        "origin": "internet-archive",
+        "title": "ACL-CPL 00329 Jainism Through Prakrt Sources",
+        "url": "https://archive.org/details/aclcpl00000329a880",
+        "score": 0.7,
+        "matchedAnchors": [
+          "10"
+        ],
+        "evidence": [
+          "(9) Anuttaroupapadikadasa, (10) Prasnavydkarana, (11) Vipakasütra and (12) Drstivada. In addition to"
+        ],
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:in.ernet.dli.2015.282839",
+        "origin": "internet-archive",
+        "title": "The Kalas 1911",
+        "url": "https://archive.org/details/in.ernet.dli.2015.282839",
+        "score": 0.6,
+        "matchedAnchors": [
+          "10"
+        ],
+        "evidence": [
+          "143; Vipakasutra, p. 100; and Jataka, V. 129, 11. 17, 26; 4 sabdavedha’, Divya. 100-442, and 4 sabdavedhigandha"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Vipakasutra\" AND \"10\""
+      ],
+      "hits": 48,
+      "available": 48,
+      "borrowable": 2,
+      "rejected": {},
+      "matched": 3,
+      "lookedUp": 2,
+      "candidates": 2,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Jelena Skerlić Ćorović@1371735455#3111",
+    "stratum": "literature",
+    "bookLeaning": true,
+    "title": "Jelena Skerlić Ćorović",
+    "claim": "The Ćorović family initially changed their place of residence frequently, living in Sarajevo (1910–1914), Jajce and Banjaluka (1914–1917), Zagreb, Dubrovnik, and Mostar (1917–1919).",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Jelena Skerlić Ćorović\" AND \"1910\" AND \"1914\" AND \"1917\" AND \"banjaluka\" AND \"dubrovnik\"",
+        "\"Jelena Skerlić Ćorović\" AND \"1910\" AND \"1914\" AND \"1917\"",
+        "\"Jelena Skerlić Ćorović\" AND \"1910\""
+      ],
+      "hits": 4,
+      "available": 4,
+      "borrowable": 1,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Fear and Trembling (novel)@1373905722#6796",
+    "stratum": "literature",
+    "bookLeaning": true,
+    "title": "Fear and Trembling (novel)",
+    "claim": "According to the novel, in Japan, protocol states that in the presence of the Emperor, who until 1947 had been considered a living god, a person must demonstrate his or her reverence with fear and trembling, though most Japanese citizens today are unaware of this injunction.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Fear and Trembling\" AND \"1947\" AND \"japanese\" AND \"emperor\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 18,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Genny Lim@1371387863#3125",
+    "stratum": "literature",
+    "bookLeaning": true,
+    "title": "Genny Lim",
+    "claim": "Bay Guardian Goldie, Creative Work Fund and Rockefeller for \"Songline: The Spiritual Tributary of Paul Robeson Jr. and Mei Lanfang,\" collaboration with Jon Jang and James Newton.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Genny Lim\" AND \"spiritual tributary\" AND \"creative work fund\"",
+        "\"Genny Lim\" AND \"spiritual tributary\""
+      ],
+      "hits": 1,
+      "available": 1,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Erik Menkveld@1371553809#5371",
+    "stratum": "literature",
+    "bookLeaning": true,
+    "title": "Erik Menkveld",
+    "claim": "Menkveld was married to Maria Vlaar.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Erik Menkveld\" AND \"maria vlaar\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Mari Iijima@1371035676#4445",
+    "stratum": "literature",
+    "bookLeaning": true,
+    "title": "Mari Iijima",
+    "claim": "After releasing her first independent (and first English language) album, No Limit, she was nominated for the 2000 Los Angeles Music Awards' Best Pop Artist for the album and she was in the final four for the award.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "web.archive.org/web/20190214041848/http://www.jpfolks.com/musicawards/2006/winners/song.htm",
+        "origin": "same-article",
+        "title": "2006 Just Plain Folks Music Awards Song Winners",
+        "url": "https://web.archive.org/web/20190214041848/http://www.jpfolks.com/MusicAwards/2006/Winners/Song.htm",
+        "score": 0.328,
+        "matchedAnchors": [],
+        "evidence": [
+          "She won the best Asian song for her track Unspoken Love from the album Wonderful People at the Just Plain Folks Awards in 2006 and performed as a guest performer."
+        ],
+        "where": "en:Mari Iijima"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Mari Iijima\" AND \"2000\" AND \"angeles music awards' best pop artist\" AND \"english\"",
+        "\"Mari Iijima\" AND \"2000\""
+      ],
+      "hits": 17,
+      "available": 14,
+      "borrowable": 2,
+      "rejected": {
+        "not a text": 3
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Kim Stanley Robinson@1374486108#9680",
+    "stratum": "literature",
+    "bookLeaning": true,
+    "title": "Kim Stanley Robinson",
+    "claim": "The novel Forty Signs of Rain has an entirely ecological thrust, taking global warming as its principal subject.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "theguardian.com/books/2005/sep/14/sciencefictionfantasyandhorror.sarahcrown",
+        "origin": "sister-wiki",
+        "title": "Future tense",
+        "url": "https://www.theguardian.com/books/2005/sep/14/sciencefictionfantasyandhorror.sarahcrown",
+        "score": 1,
+        "matchedAnchors": [
+          "forty signs",
+          "forty",
+          "signs",
+          "rain"
+        ],
+        "evidence": [
+          "In seiner Trilogie Forty Signs of Rain, Fifty Degrees Below und Sixty Days and Counting, sowie in den Romanen 2312, New York 2140 und The Ministry for the Future thematisiert er die Folgen der globalen Erwärmung."
+        ],
+        "where": "de:Kim Stanley Robinson"
+      },
+      {
+        "key": "huffingtonpost.com/jerry-cope/2312-an-extraordinary-vision_b_1550548.html",
+        "origin": "sister-wiki",
+        "title": "The Climate Changed World of 2312. With Kim Stanley Robinson",
+        "url": "http://www.huffingtonpost.com/jerry-cope/2312-an-extraordinary-vision_b_1550548.html",
+        "score": 1,
+        "matchedAnchors": [
+          "forty signs",
+          "forty",
+          "signs",
+          "rain"
+        ],
+        "evidence": [
+          "In seiner Trilogie Forty Signs of Rain, Fifty Degrees Below und Sixty Days and Counting, sowie in den Romanen 2312, New York 2140 und The Ministry for the Future thematisiert er die Folgen der globalen Erwärmung."
+        ],
+        "where": "de:Kim Stanley Robinson"
+      },
+      {
+        "key": "newyorker.com/magazine/2022/01/31/can-science-fiction-wake-us-up-to-our-climate-reality-kim-stanley-robinson",
+        "origin": "sister-wiki",
+        "title": "Can Science Fiction Wake Us Up to Our Climate Reality?",
+        "url": "https://www.newyorker.com/magazine/2022/01/31/can-science-fiction-wake-us-up-to-our-climate-reality-kim-stanley-robinson",
+        "score": 0.7,
+        "matchedAnchors": [
+          "forty signs",
+          "forty",
+          "signs",
+          "rain"
+        ],
+        "evidence": [
+          "Seine Werke werden oft zu den bedeutendsten des Genres Klimafiktion gezählt."
+        ],
+        "where": "de:Kim Stanley Robinson"
+      },
+      {
+        "key": "deutschlandfunk.de/auf-der-sturmhoehe-der-zeit-wie-climate-fiction-vom-aufgeheizten-planeten-erzaehlt-100.html",
+        "origin": "sister-wiki",
+        "title": "Auf der Sturmhöhe der Zeit - Wie Climate Fiction vom aufgeheizten Planeten erzählt",
+        "url": "https://www.deutschlandfunk.de/auf-der-sturmhoehe-der-zeit-wie-climate-fiction-vom-aufgeheizten-planeten-erzaehlt-100.html",
+        "score": 0.7,
+        "matchedAnchors": [
+          "forty signs",
+          "forty",
+          "signs",
+          "rain"
+        ],
+        "evidence": [
+          "Seine Werke werden oft zu den bedeutendsten des Genres Klimafiktion gezählt."
+        ],
+        "where": "de:Kim Stanley Robinson"
+      },
+      {
+        "key": "auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech",
+        "origin": "sister-wiki",
+        "title": "On ‘Kim Stanley Robinson – Guest of Honour Speech'",
+        "url": "http://auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech/",
+        "score": 0.7,
+        "matchedAnchors": [
+          "forty signs",
+          "forty",
+          "signs",
+          "rain"
+        ],
+        "evidence": [
+          "Robinson si descrive come un escursionista ma non un alpinista"
+        ],
+        "where": "it:Kim Stanley Robinson"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:libraryjournal129jan",
+        "origin": "internet-archive",
+        "title": "Library journal",
+        "url": "https://archive.org/details/libraryjournal129jan",
+        "score": 0.81,
+        "matchedAnchors": [
+          "forty signs",
+          "rain"
+        ],
+        "evidence": [
+          "I 60,000 I Knopf I HC Kim Stanley Robinson FORTY SIGNS OF RAIN Global warming is happening",
+          "favorite. D ROBINSON, Kim Stanley. Forty Signs of Rain. Bantam. Jun. 2004. 384p. ISBN 0-553-80311-5"
+        ],
+        "where": "1976, borrow"
+      },
+      {
+        "key": "ia:globalwarmingver00masl_0",
+        "origin": "internet-archive",
+        "title": "Global warming",
+        "url": "https://archive.org/details/globalwarmingver00masl_0",
+        "score": 0.78,
+        "matchedAnchors": [
+          "forty signs",
+          "rain"
+        ],
+        "evidence": [
+          "American dry season. Kim Stanley Robinson in his novel Forty Signs of Rain uses the term Hypernino",
+          "Academy Press. Robinson, K. S. (2004) Forty Signs of Rain (novel which has some excellent insights"
+        ],
+        "where": "2004, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Kim Stanley Robinson\" AND \"forty signs\" AND \"rain\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 18,
+      "rejected": {
+        "access restricted": 3
+      },
+      "matched": 36,
+      "lookedUp": 5,
+      "candidates": 2,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Bellsmyre@1359003853#1408",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "Bellsmyre",
+    "claim": "Much of the remaining publicly owned housing under landlord Scottish Homes was transferred to the Bellsmyre Housing Association in 1992.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Bellsmyre\" AND \"1992\" AND \"bellsmyre housing association\" AND \"scottish homes\"",
+        "\"Bellsmyre\" AND \"1992\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 41,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Cromlix House@1366407855#7121",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "Cromlix House",
+    "claim": "In January 2023, the Murrays moved to self-management of the hotel and closed the hotel for a total refurbishment.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Cromlix House\" AND \"2023\" AND \"january\" AND \"murrays\"",
+        "\"Cromlix House\" AND \"2023\""
+      ],
+      "hits": 49,
+      "available": 49,
+      "borrowable": 47,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Lance Fung Gallery@1200606096#1353",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "Lance Fung Gallery",
+    "claim": "Among many artists who showed at Lance Fung Gallery, permanent artists of the first five years include Gordon Matta-Clark, Gema Alava, Richard Humann, Peter Hutchinson and Nam June Paik.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [
+      {
+        "key": "ia:artinamerica91math",
+        "origin": "internet-archive",
+        "title": "Art in America",
+        "url": "https://archive.org/details/artinamerica91math",
+        "score": 0.33,
+        "matchedAnchors": [
+          "lance fung gallery",
+          "richard humann",
+          "june"
+        ],
+        "evidence": [
+          "Childish Fear s MAY - 6 June, 2003 The Lance Fung Gallery IS PROUD TO represent Richard Humann"
+        ],
+        "where": "1939, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Lance Fung Gallery\" AND \"gordon matta-clark\" AND \"peter hutchinson\"",
+        "\"Lance Fung Gallery\" AND \"gordon matta-clark\""
+      ],
+      "hits": 41,
+      "available": 41,
+      "borrowable": 38,
+      "rejected": {},
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "California Club@1376314187#10999",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "California Club",
+    "claim": "Bischoff, George Kennedy Brandriff, William Wendt and Paul Lauritz.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"California Club\" AND \"george kennedy brandriff\" AND \"william wendt\"",
+        "\"California Club\" AND \"george kennedy brandriff\""
+      ],
+      "hits": 2,
+      "available": 2,
+      "borrowable": 2,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Erasmus Darwin House@1344721583#4434",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "Erasmus Darwin House",
+    "claim": "After the Darwins moved into the new front of their house, a wooden bridge was thrown across the ditch and a twin-tier terrace was built, causing alterations to be made to the basement windows.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Erasmus Darwin House\" AND \"darwins\""
+      ],
+      "hits": 19,
+      "available": 19,
+      "borrowable": 9,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Fort Buford Stage Road@1373286591#872",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "Fort Buford Stage Road",
+    "claim": "It presumably went to Fort Buford, in the Dakota Territory.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Fort Buford Stage Road\" AND \"dakota territory\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Mahmuei@1376443929#5709",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Mahmuei",
+    "claim": "The inhabitants are Shiite Muslims speaking a local dialect of Persian.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Mahmuei\" AND \"shiite muslims\" AND \"persian\"",
+        "\"Mahmuei\" AND \"shiite muslims\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Black Country Urban Forest@1336709937#1340",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Black Country Urban Forest",
+    "claim": "At the end of the 20th Century ambitious targets were set and huge increases in planting proposed.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [
+      {
+        "key": "ia:countrysidechara0005unse",
+        "origin": "internet-archive",
+        "title": "Countryside character : the character of England's natural and man-made landscape. Vol.5, West Midlands",
+        "url": "https://archive.org/details/countrysidechara0005unse",
+        "score": 0.66,
+        "matchedAnchors": [
+          "century"
+        ],
+        "evidence": [
+          "forest century. There was the medieval period and much more rapid clearance in the early 16th century. The"
+        ],
+        "where": "1999, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Black Country Urban Forest\" AND \"20\" AND \"century\""
+      ],
+      "hits": 10,
+      "available": 10,
+      "borrowable": 3,
+      "rejected": {},
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Lankaran-Astara Economic Region@1373625035#8298",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Lankaran-Astara Economic Region",
+    "claim": "The area of this reserve is 15,000 hectares, where the mountain goat is protected.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Lankaran-Astara Economic Region\" AND \"15,000\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Zhangjiajie National Forest Park@1376163968#3963",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Zhangjiajie National Forest Park",
+    "claim": "One of the park's quartz-sandstone pillars, the 1,080-metre (3,540 ft)",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Zhangjiajie National Forest Park\" AND \"1,080\" AND \"3,540\"",
+        "\"Zhangjiajie National Forest Park\" AND \"1,080\""
+      ],
+      "hits": 11,
+      "available": 11,
+      "borrowable": 4,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Chaleur Bay@1366531001#3353",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Chaleur Bay",
+    "claim": "A drawing of a ghost wielding an anchor and menacing two sailors can be seen on the city's welcome sign.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Uintah Lake@1370072314#3368",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Uintah Lake",
+    "claim": "Although it has a slightly different spelling, the name of the lake has the same etymology as the mountain range in which it is located.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "National Freeway 1@1368145753#3238",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "National Freeway 1",
+    "claim": "A 20.7 km (12.9 mi) viaduct on top of the freeway between Xizhi and Wugu was completed in 1997 in order to expand the capacity of the road.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"National Freeway 1\" AND \"1997\" AND \"20.7\" AND \"12.9\" AND \"xizhi\" AND \"wugu\"",
+        "\"National Freeway 1\" AND \"1997\" AND \"20.7\" AND \"12.9\"",
+        "\"National Freeway 1\" AND \"1997\""
+      ],
+      "hits": 7,
+      "available": 7,
+      "borrowable": 1,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Pavenham Osier Beds@1353566902#1741",
+    "stratum": "places",
+    "bookLeaning": true,
+    "title": "Pavenham Osier Beds",
+    "claim": "There are no footpaths in this small site.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Xi Sagittarii@1369728394#573",
+    "stratum": "science",
+    "bookLeaning": true,
+    "title": "Xi Sagittarii",
+    "claim": "The last occultation of ξ² Sagittarii by a planet took place on 22 December 1810, when it was occulted by Venus.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:appletonsannual50unkngoog",
+        "origin": "internet-archive",
+        "title": "Appletons' annual cyclopædia and register of important events of the year ..",
+        "url": "https://archive.org/details/appletonsannual50unkngoog",
+        "score": 0.33,
+        "matchedAnchors": [
+          "22",
+          "sagittarii"
+        ],
+        "evidence": [
+          "Delta Equulei, 11.43 years; Xi Sagittarii, 18.85 years; Rho Ar^s, 22 years; and 85 Pegasi, 24"
+        ],
+        "where": "1902, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Xi Sagittarii\" AND \"1810\" AND \"22\" AND \"december\" AND \"venus\"",
+        "\"Xi Sagittarii\" AND \"1810\" AND \"22\"",
+        "\"Xi Sagittarii\" AND \"1810\""
+      ],
+      "hits": 15,
+      "available": 15,
+      "borrowable": 2,
+      "rejected": {},
+      "matched": 2,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Spotted corydoras@1355298494#2999",
+    "stratum": "science",
+    "bookLeaning": true,
+    "title": "Spotted corydoras",
+    "claim": "It feeds on worms, benthic crustaceans, insects, and plant matter.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Cenomanian@1362029724#3853",
+    "stratum": "science",
+    "bookLeaning": true,
+    "title": "Cenomanian",
+    "claim": "The Upper Cenomanian starts around at 95 Mya.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:zitteliana1113198486baye",
+        "origin": "internet-archive",
+        "title": "Zitteliana",
+        "url": "https://archive.org/details/zitteliana1113198486baye",
+        "score": 0.44,
+        "matchedAnchors": [
+          "95",
+          "cenomanian"
+        ],
+        "evidence": [
+          "from the Albian and Cenomanian of Texas and adjacent areas. - Geol. Soc. Am. Mem., 95, 995., 22 Abb., 1"
+        ],
+        "where": "1969, open"
+      },
+      {
+        "key": "ia:paleotectonicsse0000unse",
+        "origin": "internet-archive",
+        "title": "Paleotectonics and sedimentation in the Rocky Mountain Region, United States",
+        "url": "https://archive.org/details/paleotectonicsse0000unse",
+        "score": 0.44,
+        "matchedAnchors": [
+          "95",
+          "cenomanian"
+        ],
+        "evidence": [
+          "(Viking, Muddy, Newcastle, or J); (4) early Cenomanian, 95 m.y. (lower Frontier—Peay and D); (5) late",
+          "93-94 M.Y. Middle to late Cenomanian Late late Turonian 95-96 M.Y. Early Cenomanian Early late Turonian ?"
+        ],
+        "where": "1986, borrow"
+      },
+      {
+        "key": "ia:chalkproceedings0000inst",
+        "origin": "internet-archive",
+        "title": "Chalk: Proceedings",
+        "url": "https://archive.org/details/chalkproceedings0000inst",
+        "score": 0.44,
+        "matchedAnchors": [
+          "95",
+          "cenomanian"
+        ],
+        "evidence": [
+          "(Figure 2). In the Cenomanian (Lower) Chalk CaCo, contents apparently vary between 45% and 95% (Destombes and"
+        ],
+        "where": "1990, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Cenomanian\" AND \"95\" AND \"upper cenomanian\" AND \"mya\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 24,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 5,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Otter civet@1371730282#2216",
+    "stratum": "science",
+    "bookLeaning": true,
+    "title": "Otter civet",
+    "claim": "The otter civet possesses webbed feet, which is an adaptation to its aquatic habitat.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Endocrine system@1356929510#9852",
+    "stratum": "science",
+    "bookLeaning": true,
+    "title": "Endocrine system",
+    "claim": "The acini secrete digestive enzymes.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Methyl isobutyl ketone@1353925244#7532",
+    "stratum": "science",
+    "bookLeaning": true,
+    "title": "Methyl isobutyl ketone",
+    "claim": "It has a similar polarity to ethyl acetate, but greater stability towards aqueous acids and bases.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Al-Fatat SC@1322980387#1256",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Al-Fatat SC",
+    "claim": "It fields teams in several sports, and it was one of the founding members of the Kuwaiti Women's League football tournament in 2017.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "1 {{cn}}-family tag(s) found in wikitext but 2 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Al-Fatat SC\" AND \"2017\" AND \"kuwaiti women's league\"",
+        "\"Al-Fatat SC\" AND \"2017\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "BWF World Ranking@1376221205#3792",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "BWF World Ranking",
+    "claim": "Though the highest points ever achieved are 123,905 by the korean men’s double pair of Kim Won-ho and Seo Seung-jae on 14 April 2026.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"BWF World Ranking\" AND \"2026\" AND \"123,905\" AND \"14\" AND \"seo seung-jae\" AND \"kim won-ho\"",
+        "\"BWF World Ranking\" AND \"2026\" AND \"123,905\" AND \"14\"",
+        "\"BWF World Ranking\" AND \"2026\""
+      ],
+      "hits": 3,
+      "available": 3,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": [
+        "search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22BWF+World+Ranking%22+AND+%222026%22+AND+%22123%2C905%22+AND+%2214%22"
+      ]
+    },
+    "errors": [
+      "archive: search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22BWF+World+Ranking%22+AND+%222026%22+AND+%22123%2C905%22+AND+%2214%22"
+    ],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Scott Becker@1376671906#4090",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Scott Becker",
+    "claim": "Married in 2019 to Jenna Morris-Williamson (now Becker).",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Scott Becker\" AND \"2019\" AND \"jenna morris-williamson\"",
+        "\"Scott Becker\" AND \"2019\""
+      ],
+      "hits": 45,
+      "available": 43,
+      "borrowable": 3,
+      "rejected": {
+        "not a text": 2
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Denis Kang@1340706510#7295",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Denis Kang",
+    "claim": "Kang won via unanimous decision but was unable to compete for several months.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Deepak Jain (cricketer)@1366672876#1810",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Deepak Jain (cricketer)",
+    "claim": "There he played most of his career for BPCL, Shivaji Park Youngsters & Rajasthan Club.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Deepak Jain\" AND \"shivaji park youngsters\" AND \"rajasthan club\"",
+        "\"Deepak Jain\" AND \"shivaji park youngsters\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Euan Burton@1367167230#7389",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Euan Burton",
+    "claim": "Burton later announced his retirement and return to full-time coaching.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Santiago Carreras@1351998562#2570",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Santiago Carreras",
+    "claim": "His playing positions are Fullback, Wing and Fly-half.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Santiago Carreras\" AND \"fly-half\" AND \"fullback\"",
+        "\"Santiago Carreras\" AND \"fly-half\""
+      ],
+      "hits": 3,
+      "available": 3,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Tyson Miller@1373361987#9190",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Tyson Miller",
+    "claim": "In his only appearance, against the Houston Astros, Miller took the loss after allowing six runs on four hits and two walks in two-thirds of an inning.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "mlbtraderumors.com/2022/11/brewers-claim-tyson-miller-from-rangers.html",
+        "origin": "sister-wiki",
+        "title": "Brewers Claim Tyson Miller From Rangers",
+        "url": "https://www.mlbtraderumors.com/2022/11/brewers-claim-tyson-miller-from-rangers.html",
+        "score": 0.6,
+        "matchedAnchors": [
+          "10",
+          "2022",
+          "11"
+        ],
+        "evidence": [
+          "2022年11月10日にウェイバー公示を経てミルウォーキー・ブルワーズへ移籍した"
+        ],
+        "where": "ja:タイソン・ミラー"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Tyson Miller\" AND \"houston astros\""
+      ],
+      "hits": 48,
+      "available": 48,
+      "borrowable": 6,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Jače manijače@1288911932#3972",
+    "stratum": "music",
+    "bookLeaning": false,
+    "title": "Jače manijače",
+    "claim": "It was the first Croatian music video to be aired on MTV.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Jače manijače\" AND \"croatian\" AND \"mtv\"",
+        "\"Jače manijače\" AND \"croatian\""
+      ],
+      "hits": 2,
+      "available": 2,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Al Hodge (rock musician)@1375828388#2605",
+    "stratum": "music",
+    "bookLeaning": false,
+    "title": "Al Hodge (rock musician)",
+    "claim": "He wrote music for numerous television programmes and appeared on many TV shows throughout Europe.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Al Hodge\" AND \"europe\""
+      ],
+      "hits": 50,
+      "available": 49,
+      "borrowable": 18,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Need You Tonight@1353697445#17649",
+    "stratum": "music",
+    "bookLeaning": false,
+    "title": "Need You Tonight",
+    "claim": "\"One of My Kind\" is the second single released by the Rogue Traders for their debut album We Know What You're Up To.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Need You Tonight\" AND \"rogue traders\" AND \"you're\"",
+        "\"Need You Tonight\" AND \"rogue traders\""
+      ],
+      "hits": 12,
+      "available": 12,
+      "borrowable": 6,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Kill Trend Suicide@1350659220#1260",
+    "stratum": "music",
+    "bookLeaning": false,
+    "title": "Kill Trend Suicide",
+    "claim": "Riffs that sound similar to that of Frank Zappa can also be found on this mini-album, most prominent being on the song \"Zombie\".",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Kill Trend Suicide\" AND \"frank zappa\" AND \"zombie\"",
+        "\"Kill Trend Suicide\" AND \"frank zappa\""
+      ],
+      "hits": 23,
+      "available": 23,
+      "borrowable": 7,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Popular Problems@1351791401#1453",
+    "stratum": "music",
+    "bookLeaning": false,
+    "title": "Popular Problems",
+    "claim": "Popular Problems is the thirteenth studio album by Canadian singer-songwriter Leonard Cohen, released on September 19, 2014 in Friday-release countries (such as France and Ireland) and on September 22, 2014 elsewhere.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:rolling-stone-2014",
+        "origin": "internet-archive",
+        "title": "Rolling Stone",
+        "url": "https://archive.org/details/rolling-stone-2014",
+        "score": 0.34,
+        "matchedAnchors": [
+          "22",
+          "problems",
+          "leonard cohen"
+        ],
+        "evidence": [
+          "on Drugs Lost in the Dream Leonard Cohen Popular Problems 22 23 24 Alt-J This Is All Yours Parquet Courts"
+        ],
+        "where": "2014, open"
+      },
+      {
+        "key": "ia:usa-set-6b0e19ea-rolling-stone-08fda6",
+        "origin": "internet-archive",
+        "title": "Rolling Stone — Music — USA folder archive",
+        "url": "https://archive.org/details/usa-set-6b0e19ea-rolling-stone-08fda6",
+        "score": 0.34,
+        "matchedAnchors": [
+          "22",
+          "problems",
+          "leonard cohen"
+        ],
+        "evidence": [
+          "on Drugs Lost in the Dream Leonard Cohen Popular Problems 22 23 24 Alt-J This Is All Yours Parquet Courts"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Popular Problems\" AND \"2014\" AND \"19\" AND \"22\" AND \"friday-release\" AND \"leonard cohen\"",
+        "\"Popular Problems\" AND \"2014\" AND \"19\" AND \"22\""
+      ],
+      "hits": 50,
+      "available": 49,
+      "borrowable": 6,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 2,
+      "lookedUp": 2,
+      "candidates": 2,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Clinton Sparks@1371326718#746",
+    "stratum": "music",
+    "bookLeaning": false,
+    "title": "Clinton Sparks",
+    "claim": "Clinton Charls Sparks (1979-09-18) September 18, 1979 (age 47)",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "thesituation.co.uk/us_interviews/05/clinton_sparks/clinton_sparks.html",
+        "origin": "sister-wiki",
+        "title": "http://www.thesituation.co.uk/us_interviews/05/clinton_sparks/clinton_sparks.html",
+        "url": "http://www.thesituation.co.uk/us_interviews/05/clinton_sparks/clinton_sparks.html",
+        "score": 0.667,
+        "matchedAnchors": [
+          "18",
+          "1979"
+        ],
+        "evidence": [
+          "كلينتون سباركس ( ) هو منتج أسطوانات وملحن ودي جيه أمريكي، ولد في 18 سبتمبر 1979 في بوسطن في الولايات المتحدة."
+        ],
+        "where": "ar:كلينتون سباركس"
+      },
+      {
+        "key": "archive.boston.com/ae/music/articles/2005/04/17/get_familiar_with_clinton_sparks?pg=full",
+        "origin": "sister-wiki",
+        "title": "http://archive.boston.com/ae/music/articles/2005/04/17/get_familiar_with_clinton_sparks?pg=full",
+        "url": "http://archive.boston.com/ae/music/articles/2005/04/17/get_familiar_with_clinton_sparks?pg=full",
+        "score": 0.667,
+        "matchedAnchors": [
+          "18",
+          "1979"
+        ],
+        "evidence": [
+          "كلينتون سباركس ( ) هو منتج أسطوانات وملحن ودي جيه أمريكي، ولد في 18 سبتمبر 1979 في بوسطن في الولايات المتحدة."
+        ],
+        "where": "ar:كلينتون سباركس"
+      },
+      {
+        "key": "linkedin.com/in/clinton-sparks-158096b7",
+        "origin": "sister-wiki",
+        "title": "https://www.linkedin.com/in/clinton-sparks-158096b7",
+        "url": "https://www.linkedin.com/in/clinton-sparks-158096b7",
+        "score": 0.667,
+        "matchedAnchors": [
+          "18",
+          "1979"
+        ],
+        "evidence": [
+          "كلينتون سباركس ( ) هو منتج أسطوانات وملحن ودي جيه أمريكي، ولد في 18 سبتمبر 1979 في بوسطن في الولايات المتحدة."
+        ],
+        "where": "ar:كلينتون سباركس"
+      }
+    ],
+    "wikiWarnings": [
+      "1 {{cn}}-family tag(s) found in wikitext but 2 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Clinton Sparks\" AND \"1979\" AND \"09\" AND \"18\" AND \"charls sparks\" AND \"september\"",
+        "\"Clinton Sparks\" AND \"1979\" AND \"09\" AND \"18\""
+      ],
+      "hits": 40,
+      "available": 40,
+      "borrowable": 3,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 0.83"
+  },
+  {
+    "id": "Hossein Abedini@1256675326#3377",
+    "stratum": "film-tv",
+    "bookLeaning": false,
+    "title": "Hossein Abedini",
+    "claim": "Fajr Film Festival",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:unita_2005-08-19",
+        "origin": "internet-archive",
+        "title": "l'Unità (2005-08-19)",
+        "url": "https://archive.org/details/unita_2005-08-19",
+        "score": 0.33,
+        "matchedAnchors": [
+          "film"
+        ],
+        "evidence": [
+          "50 BARAN. Film drammatico (Iran, 2002). Con Hossein Abedini CARTOON NETWORK 15.50 AT0MIC BETTY. Cartoni"
+        ],
+        "where": "2005, open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Hossein Abedini\" AND \"film festival\""
+      ],
+      "hits": 48,
+      "available": 47,
+      "borrowable": 20,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Goodrich Quality Theaters@1373115973#4818",
+    "stratum": "film-tv",
+    "bookLeaning": false,
+    "title": "Goodrich Quality Theaters",
+    "claim": "By comparison, the average price for a movie ticket nationwide hovered between 23 and 25 cents during the 1930s.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:2004harrisindian00fran",
+        "origin": "internet-archive",
+        "title": "2004 harris indiana services directory",
+        "url": "https://archive.org/details/2004harrisindian00fran",
+        "score": 0.36,
+        "matchedAnchors": [
+          "25"
+        ],
+        "evidence": [
+          "Selectory CD-ROM products for an additional 25% charge. IW HARRIS :\\m INFOSOURCE Our Quality"
+        ],
+        "where": "2003, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Goodrich Quality Theaters\" AND \"1930\" AND \"23\" AND \"25\""
+      ],
+      "hits": 11,
+      "available": 11,
+      "borrowable": 8,
+      "rejected": {},
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Mercedes Moné@1376796620#216276",
+    "stratum": "film-tv",
+    "bookLeaning": false,
+    "title": "Mercedes Moné",
+    "claim": "Varnado and Ton amicably separated in late 2020, but kept the separation secret as she was concerned that she would face adverse booking from WWE's writers, including then-owner Vince McMahon; they filed for divorce in July 2024, and finalized on August 2.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Mercedes Moné\" AND \"2020\" AND \"2024\" AND \"vince mcmahon\" AND \"august\"",
+        "\"Mercedes Moné\" AND \"2020\" AND \"2024\"",
+        "\"Mercedes Moné\" AND \"2020\""
+      ],
+      "hits": 7,
+      "available": 7,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Metal Skin@1362856159#6848",
+    "stratum": "film-tv",
+    "bookLeaning": false,
+    "title": "Metal Skin",
+    "claim": "Aden Young and Ben Mendelsohn shared the Film Critics Circle of Australia prize for Best Actor.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:oxfordcompaniont0000unse_h5j6",
+        "origin": "internet-archive",
+        "title": "The Oxford companion to Australian film",
+        "url": "https://archive.org/details/oxfordcompaniont0000unse_h5j6",
+        "score": 0.39,
+        "matchedAnchors": [
+          "film critics circle",
+          "best"
+        ],
+        "evidence": [
+          "Australian films include: Metal Skin (1995), for which Gar- ner received a Film Critics Circle Award for ‘Best"
+        ],
+        "where": "1999, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Metal Skin\" AND \"film critics circle\" AND \"ben mendelsohn\"",
+        "\"Metal Skin\" AND \"film critics circle\""
+      ],
+      "hits": 9,
+      "available": 8,
+      "borrowable": 8,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": [
+        "search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Metal+Skin%22+AND+%22film+critics+circle%22"
+      ]
+    },
+    "errors": [
+      "archive: search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Metal+Skin%22+AND+%22film+critics+circle%22"
+    ],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Michael J. Kohut@1357063490#1962",
+    "stratum": "film-tv",
+    "bookLeaning": false,
+    "title": "Michael J. Kohut",
+    "claim": "He was honored with a Career Achievement Award by the Cinema Audio Society, several Cinema Audio Society Award wins and nominations, and was included in the \"In Memoriam\" tribute of the Academy Awards broadcast in 2013.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Michael J. Kohut\" AND \"2013\" AND \"cinema audio society award\" AND \"career achievement award\"",
+        "\"Michael J. Kohut\" AND \"2013\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": [
+        "search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Michael+J.+Kohut%22+AND+%222013%22"
+      ]
+    },
+    "errors": [
+      "archive: search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Michael+J.+Kohut%22+AND+%222013%22"
+    ],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Active Duty (web site)@1376123405#2439",
+    "stratum": "film-tv",
+    "bookLeaning": false,
+    "title": "Active Duty (web site)",
+    "claim": "Dink Flamingo is the executive producer and owns Dirty Bird Pictures.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Active Duty\" AND \"dirty bird pictures\" AND \"flamingo\"",
+        "\"Active Duty\" AND \"dirty bird pictures\""
+      ],
+      "hits": 1,
+      "available": 1,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Knytt Underground@1363780905#7377",
+    "stratum": "games-internet",
+    "bookLeaning": false,
+    "title": "Knytt Underground",
+    "claim": "Underground was Nifflas' biggest project at the time of its release, encompassing the biggest world and the most characters, sub-quests and secrets of any of his games thus far.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Knytt Underground\" AND \"nifflas'\""
+      ],
+      "hits": 10,
+      "available": 9,
+      "borrowable": 1,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Guido Henkel@1355143432#5492",
+    "stratum": "games-internet",
+    "bookLeaning": false,
+    "title": "Guido Henkel",
+    "claim": "In 2001, Henkel joined a new company eMusement as a Vice President. eMusement was slated to develop a game with SquareSoft, but after six months, the project was cancelled and the company shut down.",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "web.archive.org/web/20080517001305/http://rpgvaultarchive.ign.com/features/mini/emusement.shtml",
+        "origin": "same-article",
+        "title": "Guido Henkel (eMusement) Mini-Interview",
+        "url": "https://web.archive.org/web/20080517001305/http://rpgvaultarchive.ign.com/features/mini/emusement.shtml",
+        "score": 0.506,
+        "matchedAnchors": [],
+        "evidence": [
+          "In 2001, Henkel joined a new company eMusement as a Vice President."
+        ],
+        "where": "en:Guido Henkel"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Guido Henkel\" AND \"2001\" AND \"vice president\" AND \"squaresoft\"",
+        "\"Guido Henkel\" AND \"2001\""
+      ],
+      "hits": 47,
+      "available": 46,
+      "borrowable": 3,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Brian Kernighan@1371976733#7302",
+    "stratum": "games-internet",
+    "bookLeaning": false,
+    "title": "Brian Kernighan",
+    "claim": "His \"Software Tools\" series spread the essence of \"C/Unix thinking\" with makeovers for BASIC",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "cm.bell-labs.com/cm/cs/who/dmr/btut.html",
+        "origin": "sister-wiki",
+        "title": "A TUTORIAL INTRODUCTION TO THE LANGUAGE B",
+        "url": "http://cm.bell-labs.com/cm/cs/who/dmr/btut.html",
+        "score": 0.56,
+        "matchedAnchors": [
+          "software tools",
+          "software",
+          "tools",
+          "unix"
+        ],
+        "evidence": [
+          "Hello, world, (Bonjour, le monde), un programme initialement écrit par Brian Kernighan de Bell Labs dans Un tutoriel d'introduction au B"
+        ],
+        "where": "fr:Brian Kernighan"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:bitsavers_decdecusDEISIG198404UNISIG_4142328",
+        "origin": "internet-archive",
+        "title": "dec :: decus :: DECUS SIG Newsletters :: UNISIG :: 198404 UNISIG",
+        "url": "https://archive.org/details/bitsavers_decdecusDEISIG198404UNISIG_4142328",
+        "score": 0.48,
+        "matchedAnchors": [
+          "software tools"
+        ],
+        "evidence": [
+          "development environment which is based on the Software Tools book by Kernighan and Plauger. It provides"
+        ],
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:the-c-answer-book-second-edition-by-gimpel-tondo",
+        "origin": "internet-archive",
+        "title": "The C Answer Book( Second Edition) By Gimpel, Tondo",
+        "url": "https://archive.org/details/the-c-answer-book-second-edition-by-gimpel-tondo",
+        "score": 0.48,
+        "matchedAnchors": [
+          "software tools"
+        ],
+        "evidence": [
+          "is the entab program in Kernighan & Plauger, Software Tools (Addison-Wesley, 1976). Each element in the",
+          "is the detab program in Kernighan & Plauger, Software Tools (Addison-Wesley, 1976). The routines tabpos",
+          "the en tab program in Kernighan & PI auger. Software Tools (Addison-Wesley, 1976). This solution is similar"
+        ],
+        "where": "1989, open"
+      },
+      {
+        "key": "ia:gawk-effective-awk-programming-a-users-guide-for-gnu-awk-edition-5.4",
+        "origin": "internet-archive",
+        "title": "GAWK Effective AWK Programming A User’s Guide For GNU Awk Edition 5.4",
+        "url": "https://archive.org/details/gawk-effective-awk-programming-a-users-guide-for-gnu-awk-edition-5.4",
+        "score": 0.48,
+        "matchedAnchors": [
+          "software tools"
+        ],
+        "evidence": [
+          "readable. In their seminal 1976 book, Software Tools,! Brian Kernighan and P.J. Plauger wrote: Good Programming"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Brian Kernighan\" AND \"software tools\" AND \"basic\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 19,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 12,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Rail shooter@1365330287#5172",
+    "stratum": "games-internet",
+    "bookLeaning": false,
+    "title": "Rail shooter",
+    "claim": "In the modern day, the genre has become largely relegated to indie games,",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "destructoid.com/its-time-for-the-rail-shooter-to-take-flight-again",
+        "origin": "same-article",
+        "title": "It's time for the rail shooter to take flight again",
+        "url": "https://www.destructoid.com/its-time-for-the-rail-shooter-to-take-flight-again/",
+        "score": 0.438,
+        "matchedAnchors": [],
+        "evidence": [
+          "While many modern games limit the player to linear levels, they still allow for free movement within those levels."
+        ],
+        "where": "en:Rail shooter"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Nioh@1374892738#2819",
+    "stratum": "games-internet",
+    "bookLeaning": false,
+    "title": "Nioh",
+    "claim": "Development information was sporadic until 2015, when it was reintroduced to the public.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "3 {{cn}}-family tag(s) found in wikitext but 4 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [
+      {
+        "key": "ia:gamer-games-iv",
+        "origin": "internet-archive",
+        "title": "GAMER & GAMES #4",
+        "url": "https://archive.org/details/gamer-games-iv",
+        "score": 0.72,
+        "matchedAnchors": [
+          "2015"
+        ],
+        "evidence": [
+          "presentó de nuevo en 2015 como un lanzamiento para PlayStation 4. Gran dificultad Nioh nos lleva a vivir"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Nioh\" AND \"2015\""
+      ],
+      "hits": 42,
+      "available": 40,
+      "borrowable": 0,
+      "rejected": {
+        "not a text": 2
+      },
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "Leitch Review@1195865435#6462",
+    "stratum": "business",
+    "bookLeaning": false,
+    "title": "Leitch Review",
+    "claim": "This has provoked debate about whether the ramifications of the Leitch Report will stifle the benefits of learning for learning's sake.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Leitch Review\" AND \"leitch report\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 28,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "OzSpy@1370437951#2568",
+    "stratum": "business",
+    "bookLeaning": false,
+    "title": "OzSpy",
+    "claim": "There are also mobile franchises that provide a low cost entry into the market.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Viva (Bolivia)@1359623532#498",
+    "stratum": "business",
+    "bookLeaning": false,
+    "title": "Viva (Bolivia)",
+    "claim": "Santa Cruz de la Sierra",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "0 {{cn}}-family tag(s) found in wikitext but 2 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [
+      {
+        "key": "ia:spiritofserra0000reve",
+        "origin": "internet-archive",
+        "title": "The spirit of serra",
+        "url": "https://archive.org/details/spiritofserra0000reve",
+        "score": 0.57,
+        "matchedAnchors": [
+          "cruz"
+        ],
+        "evidence": [
+          "and to the shouts of Viva Santa Barbara, the boat entered the harbor of Vera Cruz on December 6. Father"
+        ],
+        "where": "1935, borrow"
+      },
+      {
+        "key": "ia:selena0000erne",
+        "origin": "internet-archive",
+        "title": "Selena",
+        "url": "https://archive.org/details/selena0000erne",
+        "score": 0.43,
+        "matchedAnchors": [
+          "cruz"
+        ],
+        "evidence": [
+          "partments. “ Viva la huelga!” Range or Selena or Corky Dejesus or Gloria Cruz or Jovita"
+        ],
+        "where": "1979, borrow"
+      },
+      {
+        "key": "ia:rareernestbrawle0000unse",
+        "origin": "internet-archive",
+        "title": "Rare Ernest Brawley SELENA First edition 1979 California Novel Set in the 1950s HC dj",
+        "url": "https://archive.org/details/rareernestbrawle0000unse",
+        "score": 0.43,
+        "matchedAnchors": [
+          "cruz"
+        ],
+        "evidence": [
+          "sheriffs’ de- partments. “Viva la huelga!” Range or Selena or Corky DeJesus or Gloria Cruz or Jovita or Nacho"
+        ],
+        "where": "n.d., borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Viva\" AND \"sierra\" AND \"cruz\""
+      ],
+      "hits": 49,
+      "available": 49,
+      "borrowable": 19,
+      "rejected": {},
+      "matched": 3,
+      "lookedUp": 3,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00"
+  },
+  {
+    "id": "KCC Malls@1359563706#1244",
+    "stratum": "business",
+    "bookLeaning": false,
+    "title": "KCC Malls",
+    "claim": "KCC started in 1947",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"KCC Malls\" AND \"1947\""
+      ],
+      "hits": 1,
+      "available": 1,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Belstaff@1369795595#5996",
+    "stratum": "business",
+    "bookLeaning": false,
+    "title": "Belstaff",
+    "claim": "In 2015, Belstaff produced a 17-minute commercial, Outlaws, with appearances by David Beckham, Harvey Keitel, Katherine Waterston and Cathy Moriarty.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Belstaff\" AND \"2015\" AND \"17\" AND \"katherine waterston\" AND \"cathy moriarty\"",
+        "\"Belstaff\" AND \"2015\" AND \"17\""
+      ],
+      "hits": 47,
+      "available": 42,
+      "borrowable": 6,
+      "rejected": {
+        "not a text": 5
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": [
+        "search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Belstaff%22+AND+%222015%22+AND+%2217%22+AND+%22katherine+waterston%22+AND+%22cathy+moriarty%22"
+      ]
+    },
+    "errors": [
+      "archive: search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Belstaff%22+AND+%222015%22+AND+%2217%22+AND+%22katherine+waterston%22+AND+%22cathy+moriarty%22"
+    ],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Democracy in Mexico@1369756707#49059",
+    "stratum": "politics",
+    "bookLeaning": false,
+    "title": "Democracy in Mexico",
+    "claim": "To ensure the dominance of the president, the PRI also took steps to ensure the Supreme Court would not function as a check on the combined power of the executive and legislative branches.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:democracymarkets0000unse",
+        "origin": "internet-archive",
+        "title": "Democracy, markets, and structural reform in contemporary Latin America : Argentina, Bolivia, Brazil, Chile, and Mexico",
+        "url": "https://archive.org/details/democracymarkets0000unse",
+        "score": 0.53,
+        "matchedAnchors": [
+          "supreme court"
+        ],
+        "evidence": [
+          "other “authoritarian enclaves” (e.g., the Supreme Court, unremovable senators appointed by Pinochet)"
+        ],
+        "where": "1994, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Democracy in Mexico\" AND \"supreme court\" AND \"pri\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 15,
+      "rejected": {},
+      "matched": 1,
+      "lookedUp": 1,
+      "candidates": 1,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Sanjiv Kumar (Jharkhand politician)@1355594348#589",
+    "stratum": "politics",
+    "bookLeaning": false,
+    "title": "Sanjiv Kumar (Jharkhand politician)",
+    "claim": "Sanjiv Kumar is a politician from Jharkhand Mukti Morcha Party.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Sanjiv Kumar\" AND \"jharkhand mukti morcha party\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "2010 Yeonpyeongdo bombardment@1376755701#61635",
+    "stratum": "politics",
+    "bookLeaning": false,
+    "title": "2010 Yeonpyeongdo bombardment",
+    "claim": "France: French President Nicolas Sarkozy expresses deep concern over the north–south dispute and urges it to be resolved politically.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"2010 Yeonpyeongdo bombardment\" AND \"french president nicolas sarkozy\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": [
+        "search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%222010+Yeonpyeongdo+bombardment%22+AND+%22french+president+nicolas+sarkozy%22"
+      ]
+    },
+    "errors": [
+      "archive: search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%222010+Yeonpyeongdo+bombardment%22+AND+%22french+president+nicolas+sarkozy%22"
+    ],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Belgium–Luxembourg relations@1360654760#8370",
+    "stratum": "politics",
+    "bookLeaning": false,
+    "title": "Belgium–Luxembourg relations",
+    "claim": "Numerous Belgian companies operate in Luxembourg, and conversely, Luxembourg companies are often managed by Belgians.",
+    "claimChanged": false,
+    "wiki": [
+      {
+        "key": "luxtimes.lu/luxembourg/number-of-belgian-cross-border-commuters-in-luxembourg-is-stagnating/42287917.html",
+        "origin": "sister-wiki",
+        "title": "Number of Belgian cross-border commuters in Luxembourg is stagnating",
+        "url": "https://www.luxtimes.lu/luxembourg/number-of-belgian-cross-border-commuters-in-luxembourg-is-stagnating/42287917.html",
+        "score": 0.538,
+        "matchedAnchors": [
+          "1921",
+          "2022",
+          "2023",
+          "48000",
+          "2015"
+        ],
+        "evidence": [
+          "Täglich pendelten 2023 rund 48.000 belgische Arbeitnehmer zur Arbeit nach Luxemburg, was die enge Verflechtung der Arbeitsmärkte widerspiegelt."
+        ],
+        "where": "de:Belgisch-luxemburgische Beziehungen"
+      },
+      {
+        "key": "luxembourg.public.lu/de/gesellschaft-und-kultur/internationale-offenheit/belgien-luxemburg-freundschaft-gemeinsamkeiten.html",
+        "origin": "sister-wiki",
+        "title": "Belgier und Luxemburger – Dinge, die uns verbinden.",
+        "url": "http://luxembourg.public.lu/de/gesellschaft-und-kultur/internationale-offenheit/belgien-luxemburg-freundschaft-gemeinsamkeiten.html",
+        "score": 0.538,
+        "matchedAnchors": [
+          "1921",
+          "2022",
+          "2023",
+          "48000",
+          "2015"
+        ],
+        "evidence": [
+          "Ein Grundpfeiler ist die Belgisch-Luxemburgische Wirtschaftsunion (UEBL) von 1921, die seither mehrfach erneuert wurde (zuletzt 2022) und bis heute als Fundament der bilateralen Wirtschaftskooperation dient."
+        ],
+        "where": "de:Belgisch-luxemburgische Beziehungen"
+      },
+      {
+        "key": "gouvernement.lu/fr/actualites/toutes_actualites/communiques/2025/05-mai/21-anniversaire-convention-luxembourg-belgique-cooperation-consulaire.html",
+        "origin": "sister-wiki",
+        "title": "60e anniversaire de la Convention entre le Luxembourg et la Belgique relative à la coopération consulaire",
+        "url": "http://gouvernement.lu/fr/actualites/toutes_actualites/communiques/2025/05-mai/21-anniversaire-convention-luxembourg-belgique-cooperation-consulaire.html",
+        "score": 0.538,
+        "matchedAnchors": [
+          "1921",
+          "2022",
+          "2023",
+          "48000",
+          "2015"
+        ],
+        "evidence": [
+          "So können Luxemburger Bürger in Ländern ohne eigene Botschaft konsularische Hilfe durch belgische Vertretungen erhalten – ein einzigartiges Arrangement, das auf die UEBL zurückgeht."
+        ],
+        "where": "de:Belgisch-luxemburgische Beziehungen"
+      },
+      {
+        "key": "benelux.int/de/info-buerger/benelux-union/ueber-uns/geschichte",
+        "origin": "sister-wiki",
+        "title": "Geschichte der Benelux-Staaten",
+        "url": "https://www.benelux.int/de/info-buerger/benelux-union/ueber-uns/geschichte/",
+        "score": 0.538,
+        "matchedAnchors": [
+          "1921",
+          "2022",
+          "2023",
+          "48000",
+          "2015"
+        ],
+        "evidence": [
+          "Auch Hochschulabschlüsse werden seit 2015 grenzüberschreitend anerkannt."
+        ],
+        "where": "de:Belgisch-luxemburgische Beziehungen"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Belgium–Luxembourg relations\" AND \"belgians\" AND \"belgian\"",
+        "\"Belgium–Luxembourg relations\" AND \"belgians\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": [
+        "search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Belgium%E2%80%93Luxembourg+relations%22+AND+%22belgians%22"
+      ]
+    },
+    "errors": [
+      "archive: search failed: not recorded: GET archive.org/services/search/beta/page_production/?hits_per_page=50&service_backend=fts&user_query=%22Belgium%E2%80%93Luxembourg+relations%22+AND+%22belgians%22"
+    ],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Okhrana@1370650714#4928",
+    "stratum": "politics",
+    "bookLeaning": false,
+    "title": "Okhrana",
+    "claim": "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905,",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:russiagermany1870000wall",
+        "origin": "internet-archive",
+        "title": "Russia and Germany, 1871-1914",
+        "url": "https://archive.org/details/russiagermany1870000wall",
+        "score": 0.88,
+        "matchedAnchors": [
+          "1905",
+          "okhrana",
+          "bloody sunday",
+          "january"
+        ],
+        "evidence": [
+          "the Okhrana. The 1905 revolution Russo-Japanese War and the events of ‘Bloody Sunday’ (9 January 1905)"
+        ],
+        "where": "2008, borrow"
+      },
+      {
+        "key": "ia:russiaintransiti0000wrig",
+        "origin": "internet-archive",
+        "title": "Russia in transition 1914-1924",
+        "url": "https://archive.org/details/russiaintransiti0000wrig",
+        "score": 0.37,
+        "matchedAnchors": [
+          "1905",
+          "okhrana"
+        ],
+        "evidence": [
+          "granted in the manifesto issued by Nicholas II in 1905 Okhrana The tsarist secret police Orthodox Church Branch"
+        ],
+        "where": "2012, borrow"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Okhrana\" AND \"1905\" AND \"bloody sunday\" AND \"january\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 40,
+      "rejected": {},
+      "matched": 2,
+      "lookedUp": 2,
+      "candidates": 2,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Oxiracetam@1368668595#7927",
+    "stratum": "medicine",
+    "bookLeaning": false,
+    "title": "Oxiracetam",
+    "claim": "The major metabolites of Oxiracetam include: beta-hydroxy-2-pyrrolidone, N-aminoacetyl-GABOB, GABOB (beta-hydroxy-GABA) and glycine.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Oxiracetam\" AND \"n-aminoacetyl-gabob\" AND \"gabob\"",
+        "\"Oxiracetam\" AND \"n-aminoacetyl-gabob\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Unlimit Health@1359608601#3624",
+    "stratum": "medicine",
+    "bookLeaning": false,
+    "title": "Unlimit Health",
+    "claim": "In 2006, the SCI was a founding partner of the Global Network for Neglected Tropical Diseases, which promoted integration of control or elimination programmes against seven neglected tropical diseases (NTDs).",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Unlimit Health\" AND \"2006\" AND \"neglected tropical diseases\" AND \"global network\"",
+        "\"Unlimit Health\" AND \"2006\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Diagonal band of Broca@1220886502#2424",
+    "stratum": "medicine",
+    "bookLeaning": false,
+    "title": "Diagonal band of Broca",
+    "claim": "It interconnects the subcallosal gyrus in the septal area with the hippocampus and lateral olfactory area.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Chakapa@1291746289#1676",
+    "stratum": "medicine",
+    "bookLeaning": false,
+    "title": "Chakapa",
+    "claim": "Shamans have a large variety of chakapa movements that create different sounds and energy waves; these movements match the coinciding icaro and healing that is being done at the time.",
+    "claimChanged": false,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  },
+  {
+    "id": "Nitroxinil@1352698310#3075",
+    "stratum": "medicine",
+    "bookLeaning": false,
+    "title": "Nitroxinil",
+    "claim": "Nitroxynil is also used against strains of the red gum worm (Haemonchus contortus) that have become resistant to benzimidazoles.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Nitroxinil\" AND \"haemonchus\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 8,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position"
+  }
+]
