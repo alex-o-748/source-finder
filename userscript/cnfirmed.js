@@ -49,6 +49,10 @@
       keyStorage: 'cnfirmed-key-claude',
       defaultModel: 'claude-sonnet-5',
       modelOverride: 'cnfirmedModelClaude',
+      // web_search_20260209 filters result pages with code before the model
+      // reads them; web_search_20250305 hands them over as they are.
+      defaultSearchTool: 'web_search_20260209',
+      searchToolOverride: 'cnfirmedSearchToolClaude',
       run: callClaude
     },
     gemini: {
@@ -90,6 +94,11 @@
   function modelFor(providerId) {
     var p = PROVIDERS[providerId];
     return window[p.modelOverride] || p.defaultModel;
+  }
+
+  function searchToolFor(providerId) {
+    var p = PROVIDERS[providerId];
+    return window[p.searchToolOverride] || p.defaultSearchTool;
   }
 
   // ---- WP:RSP blocklist (in-script) -------------------------------------
@@ -2872,9 +2881,7 @@
         max_tokens: 16000,
         system: SYSTEM_PROMPT,
         tools: [
-          // The 2026 variant filters result pages before they reach the
-          // model, which keeps input tokens (most of the cost) down.
-          { type: 'web_search_20260209', name: 'web_search', max_uses: 6 }
+          { type: searchToolFor('claude'), name: 'web_search', max_uses: 6 }
         ],
         messages: messages
       };

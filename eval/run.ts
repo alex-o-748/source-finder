@@ -11,6 +11,8 @@
  *                                          # fetch and save whatever is missing
  *                                          # (4 claims at a time; --concurrency N)
  *   npx tsx eval/run.ts --web --limit 5    # also the paid web search (Claude), on 5 claims across subjects
+ *   npx tsx eval/run.ts --web --model claude-sonnet-4-6 --search-tool web_search_20250305
+ *                                          # the web search with another model or search tool
  *
  * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record: replaying a
  * recorded call needs no key. The key travels in a header, and headers are
@@ -47,6 +49,10 @@ if (engine !== "userscript" && engine !== "core") throw new Error(`unknown engin
 const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
 const web = process.argv.includes("--web");
 const limit = arg("limit") ? Number(arg("limit")) : undefined;
+// The user script's own overrides, as an editor would set them in common.js.
+const scriptWindow: Record<string, unknown> = {};
+if (arg("model")) scriptWindow.cnfirmedModelClaude = arg("model");
+if (arg("search-tool")) scriptWindow.cnfirmedSearchToolClaude = arg("search-tool");
 // Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
 const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
 if (web && engine !== "userscript") throw new Error("--web runs the user script's web search only");
@@ -55,9 +61,10 @@ if (web && record && !apiKey) {
 }
 
 /** Model usage across the run, read off each Claude response (replayed or live). */
-const usage = { calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, searches: 0 };
-function tallyUsage(key: string, body: string): void {
+const usage = { calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, searches: 0, ms: [] as number[] };
+function tallyUsage(key: string, body: string, ms: number | undefined): void {
   if (!key.startsWith("POST api.anthropic.com/v1/messages")) return;
+  if (ms !== undefined) usage.ms.push(ms);
   try {
     const u = (JSON.parse(body) as { usage?: Record<string, unknown> }).usage;
     if (!u) return;
@@ -77,6 +84,8 @@ const stats = installCassette({
   dir: CASSETTE_DIR,
   mode: record ? "record" : "replay",
   hostConcurrency: { "archive.org": 2, "api.anthropic.com": 4 },
+  hostTimeouts: { "api.anthropic.com": { ms: 600_000, retryNetworkErrors: false } },
+  recordOnlyOk: ["api.anthropic.com"],
   log: (line) => console.error(line),
   observe: tallyUsage,
 });
@@ -170,7 +179,7 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
   const result = emptyResult(c);
   let page;
   try {
-    page = await loadScriptArticle(c);
+    page = await loadScriptArticle(c, scriptWindow);
   } catch (err) {
     result.errors.push(`page: ${(err as Error).message}`);
     return result;
@@ -328,6 +337,14 @@ async function main(): Promise<void> {
         `${usage.input} input + ${usage.output} output tokens ` +
         `(${usage.cacheRead} cache read, ${usage.cacheWrite} cache write)`,
     );
+    if (usage.ms.length) {
+      const s = [...usage.ms].sort((a, b) => a - b);
+      const sec = (v: number) => `${Math.round(v / 1000)}s`;
+      console.log(
+        `  Claude call time: median ${sec(s[Math.floor(s.length / 2)])}, slowest ${sec(s[s.length - 1])} ` +
+          `(${s.length} timed)`,
+      );
+    }
   }
 }
 

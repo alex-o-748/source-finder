@@ -51,6 +51,8 @@ export type UserScriptModule = Record<string, (...args: any[]) => any> & {
  */
 export interface UserScriptEnv {
   document?: unknown;
+  /** Globals on `window`, such as the script's model overrides. */
+  window?: Record<string, unknown>;
 }
 
 export function loadUserScript(
@@ -104,7 +106,7 @@ export function loadUserScript(
 
   return factory(
     mw,
-    {},
+    { ...env.window },
     env.document ?? { addEventListener() {}, querySelectorAll: () => [] },
     localStorage,
     jquery,
