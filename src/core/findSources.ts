@@ -38,7 +38,7 @@ export async function findSources(
     system,
     tools: [
       {
-        type: "web_search_20250305",
+        type: "web_search_20260209",
         name: "web_search",
         max_uses: maxSearches,
       },

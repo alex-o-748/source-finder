@@ -47,7 +47,7 @@
     claude: {
       name: 'Claude',
       keyStorage: 'cnfirmed-key-claude',
-      defaultModel: 'claude-sonnet-4-6',
+      defaultModel: 'claude-sonnet-5',
       modelOverride: 'cnfirmedModelClaude',
       run: callClaude
     },
@@ -2858,36 +2858,53 @@
       'Article: ' + pageTitle.replace(/_/g, ' ');
   }
 
+  // A long server-side search turn can stop with pause_turn; it is resumed by
+  // sending the partial assistant turn back, a few times at most.
+  var CLAUDE_MAX_CONTINUATIONS = 3;
+
   function callClaude(ctx, apiKey) {
-    var body = {
-      model: modelFor('claude'),
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      tools: [
-        { type: 'web_search_20250305', name: 'web_search', max_uses: 6 }
-      ],
-      messages: [{ role: 'user', content: buildUserMessage(ctx) }]
-    };
-    return fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      return res.text().then(function (t) {
-        if (!res.ok) throw new Error('Claude API ' + res.status + ': ' + truncate(t, 200));
-        var data = JSON.parse(t);
-        var text = (data.content || [])
-          .filter(function (b) { return b && b.type === 'text'; })
-          .map(function (b) { return b.text; })
-          .join('\n');
-        return parseSuggestions(text);
+    var userMessage = { role: 'user', content: buildUserMessage(ctx) };
+    var blocks = [];
+
+    function request(messages, continuations) {
+      var body = {
+        model: modelFor('claude'),
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        tools: [
+          // The 2026 variant filters result pages before they reach the
+          // model, which keeps input tokens (most of the cost) down.
+          { type: 'web_search_20260209', name: 'web_search', max_uses: 6 }
+        ],
+        messages: messages
+      };
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(body)
+      }).then(function (res) {
+        return res.text().then(function (t) {
+          if (!res.ok) throw new Error('Claude API ' + res.status + ': ' + truncate(t, 200));
+          var data = JSON.parse(t);
+          blocks = blocks.concat(data.content || []);
+          if (data.stop_reason === 'pause_turn' && continuations < CLAUDE_MAX_CONTINUATIONS) {
+            return request([userMessage, { role: 'assistant', content: blocks }],
+              continuations + 1);
+          }
+          return parseSuggestions(blocks
+            .filter(function (b) { return b && b.type === 'text'; })
+            .map(function (b) { return b.text; })
+            .join('\n'));
+        });
       });
-    });
+    }
+
+    return request([userMessage], 0);
   }
 
   function callGemini(ctx, apiKey) {
