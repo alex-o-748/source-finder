@@ -1849,18 +1849,6 @@
         "where": "de:Kim Stanley Robinson"
       },
       {
-        "key": "kirkusreviews.com/book-reviews/kim-stanley-robinson/forty-signs-of-rain",
-        "origin": "same-article",
-        "title": "FORTY SIGNS OF RAIN Kirkus Reviews",
-        "url": "https://www.kirkusreviews.com/book-reviews/kim-stanley-robinson/forty-signs-of-rain/",
-        "score": 1,
-        "matchedAnchors": [],
-        "evidence": [
-          "The novel Forty Signs of Rain has an entirely ecological thrust, taking global warming as its principal subject."
-        ],
-        "where": "en:Kim Stanley Robinson"
-      },
-      {
         "key": "newyorker.com/magazine/2022/01/31/can-science-fiction-wake-us-up-to-our-climate-reality-kim-stanley-robinson",
         "origin": "sister-wiki",
         "title": "Can Science Fiction Wake Us Up to Our Climate Reality?",
@@ -1893,6 +1881,23 @@
           "Seine Werke werden oft zu den bedeutendsten des Genres Klimafiktion gezählt."
         ],
         "where": "de:Kim Stanley Robinson"
+      },
+      {
+        "key": "auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech",
+        "origin": "sister-wiki",
+        "title": "On ‘Kim Stanley Robinson – Guest of Honour Speech'",
+        "url": "http://auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech/",
+        "score": 0.7,
+        "matchedAnchors": [
+          "forty signs",
+          "forty",
+          "signs",
+          "rain"
+        ],
+        "evidence": [
+          "Robinson si descrive come un escursionista ma non un alpinista"
+        ],
+        "where": "it:Kim Stanley Robinson"
       }
     ],
     "wikiWarnings": [],
@@ -2248,20 +2253,7 @@
     "title": "Zhangjiajie National Forest Park",
     "claim": "One of the park's quartz-sandstone pillars, the 1,080-metre (3,540 ft)",
     "claimChanged": true,
-    "wiki": [
-      {
-        "key": "web.archive.org/web/20110606043905/http://www2.chinadaily.com.cn/life/2010-01/26/content_9375209.htm",
-        "origin": "same-article",
-        "title": "\"Avatar\" inspires China province to rename mountain",
-        "url": "https://web.archive.org/web/20110606043905/http://www2.chinadaily.com.cn/life/2010-01/26/content_9375209.htm",
-        "score": 0.475,
-        "matchedAnchors": [],
-        "evidence": [
-          "One of the park's quartz-sandstone pillars, the 1080 m Southern Sky Column, was officially renamed \"Avatar Hallelujah Mountain\" ( ) in honor of the movie Avatar in January 2010."
-        ],
-        "where": "en:Zhangjiajie National Forest Park"
-      }
-    ],
+    "wiki": [],
     "wikiWarnings": [],
     "archive": [],
     "archiveFunnel": {
@@ -2978,20 +2970,7 @@
     "title": "Popular Problems",
     "claim": "Popular Problems is the thirteenth studio album by Canadian singer-songwriter Leonard Cohen, released on September 19, 2014 in Friday-release countries (such as France and Ireland) and on September 22, 2014 elsewhere.",
     "claimChanged": true,
-    "wiki": [
-      {
-        "key": "web.archive.org/web/20140822010436/http://www.leonardcohen.com/us/news/leonard-cohen-releases-%e2%80%98popular-problems%e2%80%99-september-23-2014-dynamic-studio-album-new-songs",
-        "origin": "same-article",
-        "title": "Leonard Cohen Releases 'Popular Problems' on September 23, 2014. A Dynamic studio album of new songs",
-        "url": "https://web.archive.org/web/20140822010436/http://www.leonardcohen.com/us/news/leonard-cohen-releases-%E2%80%98popular-problems%E2%80%99-september-23-2014-dynamic-studio-album-new-songs",
-        "score": 0.59,
-        "matchedAnchors": [],
-        "evidence": [
-          "Popular Problems is the thirteenth studio album by Canadian singer-songwriter Leonard Cohen,"
-        ],
-        "where": "en:Popular Problems"
-      }
-    ],
+    "wiki": [],
     "wikiWarnings": [],
     "archive": [
       {
@@ -3216,20 +3195,7 @@
     "title": "Mercedes Moné",
     "claim": "Varnado and Ton amicably separated in late 2020, but kept the separation secret as she was concerned that she would face adverse booking from WWE's writers, including then-owner Vince McMahon; they filed for divorce in July 2024, and finalized on August 2.",
     "claimChanged": true,
-    "wiki": [
-      {
-        "key": "fightful.com/wrestling/mercedes-mone-comments-divorce-sarath-ton",
-        "origin": "same-article",
-        "title": "Mercedes Moné Comments On Divorce From Sarath Ton Fightful News",
-        "url": "https://www.fightful.com/wrestling/mercedes-mone-comments-divorce-sarath-ton",
-        "score": 0.806,
-        "matchedAnchors": [],
-        "evidence": [
-          "Varnado and Ton amicably separated in late 2020, but kept the separation secret as she was concerned that she would face adverse booking from WWE's writers, including then-owner Vince McMahon; they filed for divorce in July 2024,"
-        ],
-        "where": "en:Mercedes Moné"
-      }
-    ],
+    "wiki": [],
     "wikiWarnings": [],
     "archive": [],
     "archiveFunnel": {
@@ -3534,18 +3500,6 @@
     "claimChanged": true,
     "wiki": [
       {
-        "key": "hardcoregamer.com/previews/saving-the-solar-system-in-the-rail-shooter-of-ex-zodiac/425342",
-        "origin": "same-article",
-        "title": "Saving the Solar System in the Rail Shooter of Ex-Zodiac",
-        "url": "https://hardcoregamer.com/previews/saving-the-solar-system-in-the-rail-shooter-of-ex-zodiac/425342/",
-        "score": 1,
-        "matchedAnchors": [],
-        "evidence": [
-          "In the modern day, the genre has become largely relegated to indie games, such as Ex-Zodiac, a retro-styled game heavily inspired by the Star Fox series."
-        ],
-        "where": "en:Rail shooter"
-      },
-      {
         "key": "destructoid.com/its-time-for-the-rail-shooter-to-take-flight-again",
         "origin": "same-article",
         "title": "It's time for the rail shooter to take flight again",
@@ -3785,20 +3739,7 @@
     "title": "Belstaff",
     "claim": "In 2015, Belstaff produced a 17-minute commercial, Outlaws, with appearances by David Beckham, Harvey Keitel, Katherine Waterston and Cathy Moriarty.",
     "claimChanged": true,
-    "wiki": [
-      {
-        "key": "telegraph.co.uk/fashion/people/david-beckham-on-acting-in-belstaff-outlaws-film",
-        "origin": "same-article",
-        "title": "Beckham makes lead role debut for Belstaff – but acting career isn't on the cards",
-        "url": "https://www.telegraph.co.uk/fashion/people/david-beckham-on-acting-in-belstaff-outlaws-film/",
-        "score": 0.875,
-        "matchedAnchors": [],
-        "evidence": [
-          "In 2015, Belstaff produced a 17-minute commercial, Outlaws, with appearances by David Beckham, Harvey Keitel, Katherine Waterston and Cathy Moriarty."
-        ],
-        "where": "en:Belstaff"
-      }
-    ],
+    "wiki": [],
     "wikiWarnings": [],
     "archive": [],
     "archiveFunnel": {
@@ -4039,32 +3980,7 @@
     "title": "Okhrana",
     "claim": "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905,",
     "claimChanged": true,
-    "wiki": [
-      {
-        "key": "ref:en:<ref>{{cite book|title=Black Night White Snow|author=Salisbury, Harrison E.|publ",
-        "origin": "same-article",
-        "title": "Black Night White Snow",
-        "url": null,
-        "score": 1,
-        "matchedAnchors": [],
-        "evidence": [
-          "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905, when Tsarist troops"
-        ],
-        "where": "en:Okhrana"
-      },
-      {
-        "key": "ref:en:<ref>Evans, Charles T. Father Gapon</ref>",
-        "origin": "same-article",
-        "title": "Evans, Charles T. Father Gapon",
-        "url": null,
-        "score": 0.875,
-        "matchedAnchors": [],
-        "evidence": [
-          "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905, when Tsarist troops killed hundreds of unarmed protesters who were marching during a demonstration organized by Father Georgy Gapon,"
-        ],
-        "where": "en:Okhrana"
-      }
-    ],
+    "wiki": [],
     "wikiWarnings": [],
     "archive": [
       {

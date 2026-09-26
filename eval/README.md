@@ -34,6 +34,7 @@ tags whose claim was under 30 characters, table markup, or under five words.
 npm run eval                              # replay the free stages, then score
 npx tsx eval/score.ts --against baseline  # what a change gained and lost
 npx tsx eval/score.ts --unlabelled        # leads nobody has judged yet
+# The first table is the headline: per method, how often a source is found.
 npx tsx eval/run.ts --engine core         # the Node core (CLI) instead of the user script
 npx tsx eval/run.ts --only military       # one stratum
 ```
@@ -64,19 +65,25 @@ re-record takes the better part of an hour. Replay is instant.
 
 ## Baseline (September 2026)
 
-The user script as of this commit, on all 100 claims. "Good" means the lead's
-evidence states the claim's fact, fully or in part; precision is over judged
-leads.
+The user script on all 100 claims, after references already cited in the
+tagged sentence stopped being offered (an editor saw those and still asked for
+a citation). "Found" means at least one lead whose evidence states the claim's
+fact; "or partly" also counts one that states part of it.
 
-| Stage | Claims with any lead | Claims with a good lead | Top lead good | Precision |
+| Method | Found | Found or partly | Claims with any lead | Precision of leads |
 | --- | --- | --- | --- | --- |
-| Same article | 13% | 7% | 54% | 53% (of 15) |
-| Sister wikis | 9% | 3% | 33% | 22% (of 27) |
-| Internet Archive | 24% | 5% | 17% | 10% (of 48) |
-| Any | 36% | 13% | 33% | 21% (of 90) |
+| Same article | 0% | 1% | 7% | 14% (of 7) |
+| Other language editions | 2% | 3% | 9% | 21% (of 28) |
+| Internet Archive | 0% | 5% | 24% | 10% (of 48) |
+| Any | 2% | 8% | 33% | 14% (of 83) |
 
-On the 46 claims where a book is a plausible source, the Archive stage gives a
-lead for a third of them, but only 2 of its 33 leads are good.
+On the 46 claims where a book is a plausible source: found 2%, found or
+partly 9%. The Archive stage offers a book for a third of them, but only 2 of
+its 33 books state even part of the claim.
+
+Before the same-sentence rule, same-article leads looked far better (53%
+precision): 7 of its 8 good leads were references already attached to the
+tagged sentence.
 
 Claim extraction: the user script reads the tagged sentence right for 89 of
 100 claims (the CLI's wikitext extractor, 74). The misses: a tag mid-sentence

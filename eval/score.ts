@@ -122,6 +122,26 @@ function main(): void {
     ["book-plausible", results.filter((r) => gold[r.id]?.bookPlausible)],
     ["not book-plausible", results.filter((r) => gold[r.id] && !gold[r.id].bookPlausible)],
   ];
+  // The headline: per method, how often it finds a source for the claim.
+  // "Found" = at least one lead whose evidence states the claim's fact;
+  // "found or partly" also counts a lead that states part of it.
+  console.log("\nsource found, per method (share of claims)");
+  console.log("  method              all claims            book-plausible        not book-plausible");
+  console.log("                      found  or partly      found  or partly      found  or partly");
+  for (const origin of [...ORIGINS, "any" as const]) {
+    const cells = groups.map(([, rs]) => {
+      const has = (ok: Set<Verdict>) =>
+        rs.filter((r) =>
+          leadsOf(r).some((l) => (origin === "any" || l.origin === origin) && ok.has(labelOf(r, l)?.verdict as Verdict)),
+        ).length;
+      return `${pct(has(new Set(["supports"])), rs.length)}   ${pct(has(GOOD), rs.length)}     `;
+    });
+    console.log(`  ${origin.padEnd(18)}  ${cells.join("    ")}`);
+  }
+  console.log(
+    `  claims:               ${groups.map(([, rs]) => String(rs.length).padStart(3)).join("                   ")}`,
+  );
+
   for (const [label, rs] of groups) {
     if (rs.length === 0) continue;
     console.log(`\n${label} (${rs.length} claims)`);

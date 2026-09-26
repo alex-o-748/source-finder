@@ -239,6 +239,10 @@
     "ia:globalwarmingver00masl_0": {
       "verdict": "topic",
       "why": "Mentions the novel's term 'Hypernino'."
+    },
+    "auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech": {
+      "verdict": "unrelated",
+      "why": "it.wiki sentence: Robinson calls himself a hiker, not a mountaineer; the anchors matched the paragraph, not this sentence."
     }
   },
   "Lance Fung Gallery@1200606096#1353": {

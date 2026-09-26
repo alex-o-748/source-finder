@@ -296,6 +296,101 @@ export function paragraphRangeAt(wikitext: string, pos: number): Range {
   };
 }
 
+/** Stands in for markup that is not prose, so offsets survive masking. */
+const MASKED = "\u0000";
+
+/**
+ * The paragraph with every ref, template, comment and file link blanked out
+ * character for character: offsets still line up with the wikitext, and a
+ * full stop inside a citation or a caption never reads as a sentence end.
+ */
+function maskNonProse(text: string): string {
+  const out = text.split("");
+  const blank = (from: number, to: number) => {
+    for (let k = from; k < to && k < out.length; k++) out[k] = MASKED;
+  };
+  for (const m of text.matchAll(/<!--[\s\S]*?-->/g)) blank(m.index, m.index + m[0].length);
+  for (const m of text.matchAll(/<ref\b[^>]*\/>|<ref\b[^>]*>[\s\S]*?<\/ref\s*>/gi)) {
+    blank(m.index, m.index + m[0].length);
+  }
+  for (let i = 0; i < text.length - 1; i++) {
+    if (text[i] === "{" && text[i + 1] === "{") {
+      const end = templateEnd(text, i);
+      blank(i, end);
+      i = end - 1;
+    }
+  }
+  for (const m of text.matchAll(/\[\[(?:File|Image):[^\]]*(?:\[\[[^\]]*\]\][^\]]*)*\]\]/gi)) {
+    blank(m.index, m.index + m[0].length);
+  }
+  return out.join("");
+}
+
+/** True when the terminator at `i` of masked prose ends a sentence. */
+function endsSentence(masked: string, i: number): boolean {
+  const ch = masked[i];
+  if (HARD_TERMINATORS.includes(ch)) return true;
+  if (ch !== "." && ch !== "!" && ch !== "?") return false;
+  if (ch === "." && /\d/.test(masked[i - 1] ?? "") && /\d/.test(masked[i + 1] ?? "")) return false;
+  if (ch === "." && endsAbbreviation(masked, i)) return false;
+  let j = i + 1;
+  let spaced = false;
+  let cited = false;
+  while (j < masked.length && /[.!?"”’')\]\u0000\s]/.test(masked[j])) {
+    if (/\s/.test(masked[j])) spaced = true;
+    if (masked[j] === MASKED) cited = true;
+    j++;
+  }
+  if (j >= masked.length) return true;
+  // A reference after the full stop closes a cited sentence, whatever the
+  // next one starts with ("eMusement was…").
+  if (cited && spaced) return true;
+  return spaced && /[A-ZÀ-ÞА-ЯΑ-Ω(“"'\d[*]/.test(masked[j]);
+}
+
+/**
+ * The span of wikitext holding the sentence a {{citation needed}} tag is on,
+ * with the refs and tags attached to it. A tag that follows its sentence's
+ * full stop covers that sentence; a tag in mid-sentence covers the sentence
+ * it sits in, to its end.
+ *
+ * A reference inside this span is one an editor has already looked at and
+ * judged not enough, whether it comes before the tag or after it, so it is
+ * never offered back as the source for the claim.
+ */
+export function taggedSentenceRange(wikitext: string, tagStart: number, tagEnd: number): Range {
+  const para = paragraphRangeAt(wikitext, tagStart);
+  const masked = maskNonProse(wikitext.slice(para.start, para.end));
+  const ts = tagStart - para.start;
+  const te = tagEnd - para.start;
+
+  let k = ts - 1;
+  while (k >= 0 && (masked[k] === MASKED || /\s/.test(masked[k]))) k--;
+  let end = masked.length;
+  if (k >= 0 && (/[.!?]/.test(masked[k]) || HARD_TERMINATORS.includes(masked[k]))) {
+    end = k;
+  } else {
+    for (let i = te; i < masked.length; i++) {
+      if (endsSentence(masked, i)) {
+        end = i;
+        break;
+      }
+    }
+  }
+  let tail = Math.min(end + 1, masked.length);
+  while (tail < masked.length && /[\u0000\s"”’')\]]/.test(masked[tail])) tail++;
+
+  let start = 0;
+  for (let i = Math.min(k, end) - 1; i >= 0; i--) {
+    if (endsSentence(masked, i)) {
+      start = i + 1;
+      break;
+    }
+  }
+  while (start < ts && /[\u0000\s"”’')\]]/.test(masked[start])) start++;
+  return { start: para.start + start, end: para.start + tail };
+}
+
 /** Splits wikitext into blank-line-delimited paragraph ranges. */
 export function paragraphRanges(wikitext: string): Range[] {
   const out: Range[] = [];

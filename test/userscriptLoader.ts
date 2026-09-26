@@ -34,6 +34,7 @@ const EXPOSED = [
   "anchorScoreOf",
   "extractAllClaims",
   "loadWikiCorpus",
+  "taggedSentenceRange",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
