@@ -18,7 +18,12 @@
     "dev": "tsc --watch",
     "start": "node dist/cli/index.js",
     "test": "node --test --import tsx test/**/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval": "tsx eval/run.ts && tsx eval/score.ts",
+    "eval:run": "tsx eval/run.ts",
+    "eval:score": "tsx eval/score.ts",
+    "eval:record": "NODE_USE_ENV_PROXY=1 tsx eval/run.ts --record",
+    "eval:sample": "NODE_USE_ENV_PROXY=1 tsx eval/sample.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
@@ -26,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "linkedom": "^0.18.13",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   },

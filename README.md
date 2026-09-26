@@ -219,9 +219,15 @@ That is one to three searches and at most five metadata requests per claim. Each
 ```sh
 npm test                                  # everything
 npx tsx --test test/wikiSources.test.ts   # one file
+npm run eval                              # the free stages on 100 real {{cn}} claims
 ```
 
-Fixture-based and fully offline — no network, no API key. Coverage: the wikitext claim extractor, `<ref>` parsing (named refs, list-defined refs, identifiers, archive fallback), the relevance scoring, the two wiki-local passes end to end (including a cross-script Japanese fixture), and the user-script parity test. Add fixtures in `test/fixtures/` as edge cases appear.
+`npm run eval` measures what the tests cannot: the shipped user script, run
+over 100 real `{{citation needed}}` claims drawn from Category:All articles with
+unsourced statements, replayed offline from recorded responses in a few
+seconds, and scored against hand-checked answers. See `eval/README.md`.
+
+The unit tests are fixture-based and fully offline — no network, no API key. Coverage: the wikitext claim extractor, `<ref>` parsing (named refs, list-defined refs, identifiers, archive fallback), the relevance scoring, the two wiki-local passes end to end (including a cross-script Japanese fixture), and the user-script parity test. Add fixtures in `test/fixtures/` as edge cases appear.
 
 ## Status
 

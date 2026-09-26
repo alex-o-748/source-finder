@@ -11,3 +11,6 @@ src/server/generated/
 
 # Wrangler local state.
 .wrangler/
+
+# Evaluation runs other than the committed baseline.
+eval/results/latest*.json
