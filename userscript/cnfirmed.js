@@ -47,8 +47,12 @@
     claude: {
       name: 'Claude',
       keyStorage: 'cnfirmed-key-claude',
-      defaultModel: 'claude-sonnet-4-6',
+      defaultModel: 'claude-sonnet-5',
       modelOverride: 'cnfirmedModelClaude',
+      // web_search_20260209 filters result pages with code before the model
+      // reads them; web_search_20250305 hands them over as they are.
+      defaultSearchTool: 'web_search_20260209',
+      searchToolOverride: 'cnfirmedSearchToolClaude',
       run: callClaude
     },
     gemini: {
@@ -90,6 +94,11 @@
   function modelFor(providerId) {
     var p = PROVIDERS[providerId];
     return window[p.modelOverride] || p.defaultModel;
+  }
+
+  function searchToolFor(providerId) {
+    var p = PROVIDERS[providerId];
+    return window[p.searchToolOverride] || p.defaultSearchTool;
   }
 
   // ---- WP:RSP blocklist (in-script) -------------------------------------
@@ -2339,8 +2348,9 @@
   var IA_METADATA_URL = 'https://archive.org/metadata/';
   var IA_MAX_HITS = 50;
   var IA_MAX_QUERIES = 3;
+  var IA_MAX_PHRASE_QUERIES = 4;
   var IA_ENOUGH_HITS = 10;
-  var IA_MAX_CANDIDATES = 3;
+  var IA_MAX_CANDIDATES = 4;
   var IA_MIN_SCORE = 0.3;
   var IA_MIN_PASSAGE_CHARS = 40;
   // Anyone with a free account can borrow these; 'printdisabled' alone is for
@@ -2363,6 +2373,80 @@
     return out.filter(isYear).concat(out.filter(function (n) { return !isYear(n); }));
   }
 
+  // Where a key phrase breaks: function words, and common verbs and adverbs.
+  // Mirrors PHRASE_BREAKS in src/core/archiveSources.ts.
+  var IA_PHRASE_BREAKS = {};
+  ('a an the of in on at to by for from with as is was were be been being are it its this that these those ' +
+   'and or but not no nor so than then there their they he she his her him them who whom which what when where ' +
+   'while also has have had do does did can could would should may might will shall must into onto over under ' +
+   'after before during about between through up down out off such some any all each other more most many much ' +
+   'very only just even both either neither however although though because since if until unless whether ' +
+   'one two three four five six seven eight nine ten first second third including include includes ' +
+   'became become becomes took take takes taken went go goes gone made make makes led lead leads said say says ' +
+   'called known used using possesses possess possessed considered consider held hold holds given give gave ' +
+   'found find finds began begin begins started starts start came come comes saw seen see got get gets ' +
+   'presumably originally initially usually often later still around almost nearly approximately ' +
+   'contains contain contained included according reported confirmed refer refers referred')
+    .split(/\s+/).forEach(function (w) { IA_PHRASE_BREAKS[w] = true; });
+
+  // The claim's key phrases, most telling first. Mirrors keyPhrases in
+  // src/core/archiveSources.ts, which explains the rules.
+  function iaKeyPhrases(claim, subject) {
+    var subjectTokens = tokenSetOf(subject);
+    var tokens = String(claim).replace(/[\u2018\u2019\u201c\u201d]/g, "'")
+      .split(/(\s+|[,;:()."!?\u2013\u2014]+)/)
+      .filter(function (t) { return t.trim().length > 0; });
+    var runs = [];
+    var run = [];
+    var flush = function () { if (run.length) runs.push(run); run = []; };
+    tokens.forEach(function (t) {
+      if (/^[,;:()."!?\u2013\u2014]+$/.test(t) || IA_PHRASE_BREAKS[t.toLowerCase()] || /^'s$/i.test(t)) {
+        flush();
+        return;
+      }
+      var possessive = /'s$/i.test(t);
+      var w = t.replace(/^'+|'+$/g, '').replace(/'s$/i, '');
+      if (!w) return;
+      run.push(w);
+      if (possessive) flush();
+    });
+    flush();
+    var split = [];
+    runs.forEach(function (r) {
+      if (r.length <= 3 || r.every(function (w) { return /^\p{Lu}/u.test(w); })) {
+        split.push(r.slice(0, 4));
+      } else {
+        for (var i = 0; i + 1 < r.length; i++) split.push(r.slice(i, i + 2));
+      }
+    });
+    var score = function (p) {
+      var informative = p.filter(function (w) { return !subjectTokens[foldText(w)]; });
+      if (informative.length === 0) return -1;
+      var s = p.length * 2;
+      informative.forEach(function (w) {
+        if (/\d/.test(w)) s += 3;
+        else if (/^\p{Lu}/u.test(w)) s += 2;
+        else if (w.length >= 8) s += 1.5;
+        else if (w.length >= 5) s += 0.5;
+      });
+      return s;
+    };
+    var out = [];
+    split
+      .filter(function (p) { return p.join(' ').length >= 4; })
+      .map(function (p) { return { phrase: p.join(' '), score: score(p) }; })
+      .filter(function (x) { return x.score > 0; })
+      .sort(function (a, b) { return b.score - a.score; })
+      .forEach(function (x) { if (out.indexOf(x.phrase) === -1) out.push(x.phrase); });
+    return out;
+  }
+
+  function iaSubjectWords(subject) {
+    return wordsOf(subject).filter(function (w) {
+      return w.length >= 3 && !IA_PHRASE_BREAKS[w.toLowerCase()];
+    });
+  }
+
   function iaClaimTerms(claim, title) {
     var subject = iaSubjectOf(title);
     var subjectTokens = tokenSetOf(subject);
@@ -2379,7 +2463,9 @@
     return {
       subject: subject,
       numbers: iaRawNumbers(claim).slice(0, 3),
-      names: kept.slice(0, 2)
+      names: kept.slice(0, 2),
+      phrases: iaKeyPhrases(claim, subject).slice(0, 3),
+      subjectWords: iaSubjectWords(subject)
     };
   }
 
@@ -2387,6 +2473,9 @@
     return '"' + String(term).replace(/["\\]/g, ' ').trim() + '"';
   }
 
+  // Terms are joined by a space, which the endpoint reads as AND: between two
+  // terms an explicit AND is taken for the word "and", and each book's few
+  // passages are spent highlighting it.
   function buildArchiveQueries(terms) {
     var subject = iaPhrase(terms.subject);
     var numbers = terms.numbers.map(iaPhrase);
@@ -2397,7 +2486,23 @@
     [[subject].concat(numbers, names), [subject].concat(numbers), [subject, strongest]]
       .forEach(function (t) {
         if (t.length < 2) return;
-        var q = t.join(' AND ');
+        var q = t.join(' ');
+        if (out.indexOf(q) === -1) out.push(q);
+      });
+    return out;
+  }
+
+  // Queries from the claim's key phrases. Mirrors buildPhraseQueries.
+  function buildPhraseQueries(terms) {
+    var subject = terms.subjectWords.map(iaPhrase);
+    var phrases = terms.phrases.map(iaPhrase);
+    if (phrases.length === 0) return [];
+    var out = [];
+    [subject.concat(phrases.slice(0, 3)), subject.concat(phrases.slice(0, 2)),
+     subject.concat([phrases[0]]), phrases.length >= 2 ? phrases.slice(0, 2) : []]
+      .forEach(function (t) {
+        if (t.length === 0) return;
+        var q = t.join(' ');
         if (out.indexOf(q) === -1) out.push(q);
       });
     return out;
@@ -2445,6 +2550,7 @@
         year: year !== null ? year : iaYearOf(f.date),
         mediatype: iaFirst(f.mediatype),
         collections: iaAll(f.collection),
+        file: iaFirst(f.file_basename),
         highlights: iaAll(h.highlight && h.highlight.text).map(iaStripHighlight)
           .filter(function (t) { return t.length > 0; }),
         rank: rank,
@@ -2606,6 +2712,138 @@
     };
   }
 
+  // ---- Claim units: a second ranking, and reading whole books ----------------
+  // Mirrors claimUnits, unitsIn, rankByUnits, mergeRankings, streamText and
+  // bestWindow in src/core/archiveSources.ts, which explain the rules.
+
+  function iaClaimUnits(claim, subject, minWordLength, subjectUnit) {
+    var subjectTokens = tokenSetOf(subject);
+    var anchors = anchorsOf(claim);
+    var units = [];
+    iaKeyPhrases(claim, subject).map(foldText).forEach(function (k) {
+      if (k.indexOf(' ') !== -1) {
+        units.push({ key: k, strong: true, test: function (f) { return f.indexOf(k) !== -1; } });
+      }
+    });
+    var known = function (key) { return units.some(function (u) { return u.key === key; }); };
+    anchors.numbers.forEach(function (n) {
+      if (known(n)) return;
+      units.push({ key: n, strong: true, test: function (f, have) { return !!have[n] || f.indexOf(n) !== -1; } });
+    });
+    anchors.names.forEach(function (n) {
+      if (known(n) || n.split(' ').every(function (w) { return subjectTokens[w]; })) return;
+      units.push({ key: n, strong: true, test: function (f, have) {
+        return n.indexOf(' ') !== -1 ? f.indexOf(n) !== -1 : !!have[n];
+      } });
+    });
+    Object.keys(tokenSetOf(claim)).forEach(function (w) {
+      if (w.length < minWordLength || subjectTokens[w] || /\d/.test(w)) return;
+      if (known(w)) return;
+      units.push({ key: w, strong: false, test: function (f, have) { return !!have[w]; } });
+    });
+    var subjectWords = Object.keys(subjectTokens);
+    if (subjectUnit && subjectWords.length > 0) {
+      units.push({ key: '[' + subject + ']', strong: false, test: function (f, have) {
+        return subjectWords.some(function (w) { return have[w]; });
+      } });
+    }
+    return units;
+  }
+
+  function iaUnitsIn(text, units) {
+    var f = foldText(text);
+    var have = tokenSetOf(text);
+    var hit = units.filter(function (u) { return u.test(f, have); });
+    return hit.filter(function (u) {
+      return !hit.some(function (o) {
+        return o !== u && o.key.indexOf(' ') !== -1 && o.key.split(' ').indexOf(u.key) !== -1;
+      });
+    });
+  }
+
+  function rankArchiveByUnits(hits, claim, title) {
+    var units = iaClaimUnits(claim, iaSubjectOf(title), 6, false);
+    var out = [];
+    hits.forEach(function (hit) {
+      var gate = archiveGate(hit);
+      if (!gate.ok) return;
+      var best = null;
+      hit.highlights.forEach(function (text) {
+        var matched = iaUnitsIn(text, units);
+        if (matched.length >= 2 && matched.some(function (u) { return u.strong; }) &&
+            (!best || matched.length > best.matched.length)) {
+          best = { text: text, matched: matched };
+        }
+      });
+      if (!best) return;
+      var score = Math.round((best.matched.length / units.length) * 100) / 100;
+      out.push({
+        hit: hit,
+        access: gate.access,
+        passages: [{ text: best.text, score: score, matched: best.matched.map(function (u) { return u.key; }) }],
+        score: score
+      });
+    });
+    return out
+      .map(function (s, i) { return { s: s, i: i }; })
+      .sort(function (a, b) {
+        return b.s.passages[0].matched.length - a.s.passages[0].matched.length || a.i - b.i;
+      })
+      .slice(0, 3)
+      .map(function (x) { return x.s; });
+  }
+
+  function mergeArchiveRankings(first, second) {
+    var out = [];
+    for (var i = 0; i < Math.max(first.length, second.length); i++) {
+      [first[i], second[i]].forEach(function (s) {
+        if (s && !out.some(function (kept) { return iaSameWork(kept.hit, s.hit); })) out.push(s);
+      });
+    }
+    return out;
+  }
+
+  function iaStreamText(html) {
+    var m = /<pre[^>]*>([\s\S]*?)<\/pre>/.exec(html);
+    if (!m) return null;
+    return m[1]
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+      .replace(/-\s*\n\s*/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function iaBestWindow(text, claim, title) {
+    var units = iaClaimUnits(claim, iaSubjectOf(title), 5, true);
+    var most = units.reduce(function (n, u) { return n + (u.strong ? 2 : 1); }, 0);
+    var best = null;
+    var runOpen = false;
+    for (var i = 0; i < text.length; i += 150) {
+      var matched = iaUnitsIn(text.slice(i, i + 450), units);
+      var strong = matched.filter(function (u) { return u.strong; }).length;
+      var score = strong === 0 ? 0 : strong * 2 + (matched.length - strong);
+      if (score >= 4 && (!best || score > best.score)) {
+        best = { starts: [i], score: score, matched: matched.map(function (u) { return u.key; }) };
+        runOpen = true;
+      } else if (best && runOpen && score === best.score) {
+        best.starts.push(i);
+      } else {
+        runOpen = false;
+      }
+    }
+    if (!best) return null;
+    var start = best.starts[Math.floor((best.starts.length - 1) / 2)];
+    var window_ = text.slice(start, start + 450);
+    if (start > 0) window_ = '…' + window_.replace(/^\S*\s+/, '');
+    if (start + 450 < text.length) window_ = window_.replace(/\s+\S*$/, '') + '…';
+    return {
+      text: window_,
+      score: Math.round((best.score / most) * 100) / 100,
+      matched: best.matched.filter(function (k) { return k.charAt(0) !== '['; })
+    };
+  }
+
   function iaCleanCreator(creator) {
     return String(creator).replace(/,?\s*\(?\d{4}\s*-\s*(\d{4})?\)?\.?\s*$/, '').trim();
   }
@@ -2652,22 +2890,24 @@
       hit.year,
       hit.creator && iaCleanCreator(hit.creator)
     ].filter(Boolean).join(', ');
+    var evidence = {
+      origin: 'internet-archive',
+      identifier: hit.identifier,
+      year: hit.year,
+      access: s.access,
+      passages: s.passages.map(function (p) { return p.text; }),
+      score: s.score,
+      matchedAnchors: matched,
+      query: hit.query,
+      viewerUrl: iaViewerUrl(hit.identifier, terms)
+    };
+    if (s.fullText) evidence.fullText = true;
     return {
       url: iaDetailsUrl(hit.identifier),
       title: hit.title,
       relevance: byline + ' — matched ' + (matched.join(', ') || 'claim wording'),
       snippet: best.text,
-      evidence: {
-        origin: 'internet-archive',
-        identifier: hit.identifier,
-        year: hit.year,
-        access: s.access,
-        passages: s.passages.map(function (p) { return p.text; }),
-        score: s.score,
-        matchedAnchors: matched,
-        query: hit.query,
-        viewerUrl: iaViewerUrl(hit.identifier, terms)
-      },
+      evidence: evidence,
       citation: formatArchiveCitation(hit, s.access, details)
     };
   }
@@ -2685,91 +2925,183 @@
     });
   }
 
-  // The full-text queries for a claim; empty when it has no number or name to
-  // search on, and then the Archive stage is not offered at all.
+  // An open book's whole OCR text. archive.org does not send a CORS header on
+  // this page yet, so a browser refuses to hand it over: off unless
+  // window.cnfirmedArchiveFullText is set (true, or a proxy URL prefix to use
+  // in place of https://archive.org/stream/).
+  var IA_FULL_TEXT = window.cnfirmedArchiveFullText || false;
+  var IA_FULL_TEXT_BOOKS = 5;
+  var IA_FULL_TEXT_LEADS = 2;
+
+  function iaStreamUrl(identifier, file) {
+    var base = typeof IA_FULL_TEXT === 'string' ? IA_FULL_TEXT : 'https://archive.org/stream/';
+    return base + encodeURIComponent(identifier) + '/' + encodeURIComponent(file) + '_djvu.txt';
+  }
+
+  function iaFetchText(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error('Internet Archive: HTTP ' + res.status);
+      return res.text();
+    });
+  }
+
+  // The full-text queries for a claim: from its numbers and names, and from
+  // its key phrases. Empty when it has neither, and then the Archive stage is
+  // not offered at all.
   function archiveTermsFor(index) {
     var ctx = claimContexts[index];
     if (!ctx || !ctx.claim) return null;
     return iaClaimTerms(ctx.claim, mw.config.get('wgTitle') || pageTitle);
   }
 
-  function archiveQueriesFor(index) {
+  function archiveQueryFamiliesFor(index) {
     var terms = archiveTermsFor(index);
-    return terms ? buildArchiveQueries(terms).slice(0, IA_MAX_QUERIES) : [];
+    if (!terms) return [[], []];
+    return [
+      buildArchiveQueries(terms).slice(0, IA_MAX_QUERIES),
+      buildPhraseQueries(terms).slice(0, IA_MAX_PHRASE_QUERIES)
+    ];
+  }
+
+  function archiveQueriesFor(index) {
+    var f = archiveQueryFamiliesFor(index);
+    return f[0].concat(f[1]);
   }
 
   function findArchiveCandidates(index) {
     var ctx = claimContexts[index];
     var title = mw.config.get('wgTitle') || pageTitle;
     var terms = archiveTermsFor(index);
-    var queries = archiveQueriesFor(index);
     var funnel = {
       queries: [], hits: 0, available: 0, borrowable: 0, rejected: {},
-      matched: 0, passages: { seen: 0, dropped: {}, bestBelow: null },
+      matched: 0, byUnits: 0, passages: { seen: 0, dropped: {}, bestBelow: null },
       lookedUp: 0, candidates: 0, errors: []
     };
-    var hits = [];
-    var seen = {};
 
-    function search(query) {
-      return iaFetchJson(iaSearchUrl(query))
-        .catch(function (err) {
-          funnel.errors.push('search failed: ' + err.message);
-          return null;
-        })
-        .then(function (response) {
-          (response ? parseArchiveHits(response, query) : []).forEach(function (hit) {
-            if (seen[hit.identifier]) return;
-            seen[hit.identifier] = true;
-            hit.rank = hits.length;
-            hits.push(hit);
-          });
+    // The two families side by side, each strictest first until it has enough
+    // distinct books of its own.
+    function searchFamily(queries) {
+      var used = [];
+      var found = [];
+      var seen = {};
+      var chain = Promise.resolve();
+      queries.forEach(function (query) {
+        chain = chain.then(function () {
+          if (found.length >= IA_ENOUGH_HITS) return;
+          used.push(query);
+          return iaFetchJson(iaSearchUrl(query))
+            .catch(function (err) {
+              funnel.errors.push('search failed: ' + err.message);
+              return null;
+            })
+            .then(function (response) {
+              (response ? parseArchiveHits(response, query) : []).forEach(function (hit) {
+                if (seen[hit.identifier]) return;
+                seen[hit.identifier] = true;
+                found.push(hit);
+              });
+            });
         });
+      });
+      return chain.then(function () { return { used: used, hits: found }; });
     }
 
-    var chain = Promise.resolve();
-    queries.forEach(function (query) {
-      chain = chain.then(function () {
-        if (hits.length >= IA_ENOUGH_HITS) return;
-        funnel.queries.push(query);
-        return search(query);
+    return Promise.all(archiveQueryFamiliesFor(index).map(searchFamily)).then(function (results) {
+      var hits = [];
+      var seen = {};
+      results.forEach(function (r) {
+        funnel.queries = funnel.queries.concat(r.used);
+        r.hits.forEach(function (hit) {
+          if (seen[hit.identifier]) return;
+          seen[hit.identifier] = true;
+          var copy = Object.assign({}, hit);
+          copy.rank = hits.length;
+          hits.push(copy);
+        });
       });
-    });
-
-    return chain.then(function () {
       funnel.hits = hits.length;
       var ranked = rankArchiveHits(hits, ctx.claim, title, IA_MIN_SCORE);
+      var byUnits = rankArchiveByUnits(hits, ctx.claim, title);
       funnel.available = ranked.available;
       funnel.borrowable = ranked.borrowable;
       funnel.rejected = ranked.rejected;
       funnel.matched = ranked.matched;
+      funnel.byUnits = byUnits.length;
       funnel.passages = ranked.passages;
 
-      var shortlist = ranked.ranked.slice(0, IA_MAX_CANDIDATES + 2);
-      funnel.lookedUp = shortlist.length;
-      var candidates = [];
-      return shortlist.reduce(function (p, s) {
-        return p.then(function () {
-          if (candidates.length >= IA_MAX_CANDIDATES) return;
-          return iaFetchJson(IA_METADATA_URL + encodeURIComponent(s.hit.identifier))
-            .then(function (md) {
-              var details = archiveDetailsOf(md);
-              var gate = archiveDetailsGate(details, s.access);
-              if (!gate.ok) {
-                funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
-                return;
-              }
-              candidates.push(toArchiveCandidate(s, details, terms));
-            }, function (err) {
-              funnel.errors.push('metadata ' + s.hit.identifier + ': ' + err.message);
-              candidates.push(toArchiveCandidate(s, null, terms));
+      var shortlist = mergeArchiveRankings(ranked.ranked, byUnits).slice(0, IA_MAX_CANDIDATES + 2);
+      var extras = [];
+      var read = IA_FULL_TEXT ? readWholeBooks(hits, shortlist, extras, ctx.claim, title, funnel)
+        : Promise.resolve();
+      return read.then(function () {
+        funnel.lookedUp = shortlist.length + extras.length;
+        var candidates = [];
+        function lookUp(list, cap) {
+          var added = 0;
+          return list.reduce(function (p, s) {
+            return p.then(function () {
+              if (added >= cap) return;
+              return iaFetchJson(IA_METADATA_URL + encodeURIComponent(s.hit.identifier))
+                .then(function (md) {
+                  var details = archiveDetailsOf(md);
+                  var gate = archiveDetailsGate(details, s.access);
+                  if (!gate.ok) {
+                    funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
+                    return;
+                  }
+                  candidates.push(toArchiveCandidate(s, details, terms));
+                  added++;
+                }, function (err) {
+                  funnel.errors.push('metadata ' + s.hit.identifier + ': ' + err.message);
+                  candidates.push(toArchiveCandidate(s, null, terms));
+                  added++;
+                });
             });
-        });
-      }, Promise.resolve()).then(function () {
-        funnel.candidates = candidates.length;
-        return { candidates: candidates, funnel: funnel };
+          }, Promise.resolve());
+        }
+        return lookUp(shortlist, IA_MAX_CANDIDATES)
+          .then(function () { return lookUp(extras, IA_FULL_TEXT_LEADS); })
+          .then(function () {
+            funnel.candidates = candidates.length;
+            return { candidates: candidates, funnel: funnel };
+          });
       });
     });
+  }
+
+  // Mirrors readWholeBooks in src/core/archiveSources.ts.
+  function readWholeBooks(hits, shortlist, extras, claim, title, funnel) {
+    var others = [];
+    hits.forEach(function (h) {
+      var gate = archiveGate(h);
+      if (!gate.ok || gate.access !== 'open') return;
+      if (shortlist.some(function (s) { return iaSameWork(s.hit, h); })) return;
+      if (others.some(function (o) { return iaSameWork(o.hit, h); })) return;
+      others.push({ hit: h, access: 'open', passages: [], score: 0 });
+    });
+    var toRead = shortlist.filter(function (s) { return s.access === 'open'; }).concat(others)
+      .slice(0, IA_FULL_TEXT_BOOKS);
+    funnel.fullText = { read: 0, windows: 0 };
+    return toRead.reduce(function (p, s) {
+      return p.then(function () {
+        return iaFetchText(iaStreamUrl(s.hit.identifier, s.hit.file || s.hit.identifier))
+          .then(iaStreamText, function (err) {
+            funnel.errors.push('text ' + s.hit.identifier + ': ' + err.message);
+            return null;
+          })
+          .then(function (text) {
+            if (!text) return;
+            funnel.fullText.read++;
+            var w = iaBestWindow(text, claim, title);
+            if (!w) return;
+            funnel.fullText.windows++;
+            s.passages.unshift(w);
+            s.score = Math.max(s.score, w.score);
+            s.fullText = true;
+            if (shortlist.indexOf(s) === -1) extras.push(s);
+          });
+      });
+    }, Promise.resolve());
   }
 
   function archiveFunnelLine(f) {
@@ -2777,7 +3109,10 @@
     return f.queries.length + ' quer' + (f.queries.length === 1 ? 'y' : 'ies') + ' → ' +
       f.hits + ' books → ' + f.available + ' readable (' + f.borrowable + ' to borrow)' +
       (rejected.length ? ' (dropped: ' + rejected.join(', ') + ')' : '') +
-      ' → ' + f.matched + ' with a matching passage → ' + f.candidates + ' lead(s)';
+      ' → ' + f.matched + ' with a matching passage, ' + f.byUnits + ' by claim phrases' +
+      (f.fullText ? ' → ' + f.fullText.read + ' whole text(s) read, ' + f.fullText.windows +
+        ' with a passage' : '') +
+      ' → ' + f.candidates + ' lead(s)';
   }
 
   // Why passages did or did not count. Mirrors passageSummary in
@@ -2858,36 +3193,51 @@
       'Article: ' + pageTitle.replace(/_/g, ' ');
   }
 
+  // A long server-side search turn can stop with pause_turn; it is resumed by
+  // sending the partial assistant turn back, a few times at most.
+  var CLAUDE_MAX_CONTINUATIONS = 3;
+
   function callClaude(ctx, apiKey) {
-    var body = {
-      model: modelFor('claude'),
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      tools: [
-        { type: 'web_search_20250305', name: 'web_search', max_uses: 6 }
-      ],
-      messages: [{ role: 'user', content: buildUserMessage(ctx) }]
-    };
-    return fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      return res.text().then(function (t) {
-        if (!res.ok) throw new Error('Claude API ' + res.status + ': ' + truncate(t, 200));
-        var data = JSON.parse(t);
-        var text = (data.content || [])
-          .filter(function (b) { return b && b.type === 'text'; })
-          .map(function (b) { return b.text; })
-          .join('\n');
-        return parseSuggestions(text);
+    var userMessage = { role: 'user', content: buildUserMessage(ctx) };
+    var blocks = [];
+
+    function request(messages, continuations) {
+      var body = {
+        model: modelFor('claude'),
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        tools: [
+          { type: searchToolFor('claude'), name: 'web_search', max_uses: 6 }
+        ],
+        messages: messages
+      };
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(body)
+      }).then(function (res) {
+        return res.text().then(function (t) {
+          if (!res.ok) throw new Error('Claude API ' + res.status + ': ' + truncate(t, 200));
+          var data = JSON.parse(t);
+          blocks = blocks.concat(data.content || []);
+          if (data.stop_reason === 'pause_turn' && continuations < CLAUDE_MAX_CONTINUATIONS) {
+            return request([userMessage, { role: 'assistant', content: blocks }],
+              continuations + 1);
+          }
+          return parseSuggestions(blocks
+            .filter(function (b) { return b && b.type === 'text'; })
+            .map(function (b) { return b.text; })
+            .join('\n'));
+        });
       });
-    });
+    }
+
+    return request([userMessage], 0);
   }
 
   function callGemini(ctx, apiKey) {
@@ -3341,10 +3691,13 @@
       $row.append($('<span class="cnfirmed-note">')
         .text(' — borrow with a free archive.org account'));
     }
-    $row.append($('<div class="cnfirmed-quote">').text('…' + c.snippet + '…'));
+    // A passage from the whole text is already cut with "…".
+    var snippet = c.evidence.fullText ? c.snippet : '…' + c.snippet + '…';
+    $row.append($('<div class="cnfirmed-quote">').text(snippet));
     if (c.evidence.matchedAnchors.length) {
       $row.append($('<div class="cnfirmed-note">')
-        .text('matched: ' + c.evidence.matchedAnchors.join(', ')));
+        .text('matched: ' + c.evidence.matchedAnchors.join(', ') +
+          (c.evidence.fullText ? ' (in the book\'s full text)' : '')));
     }
     $row.append($('<div class="cnfirmed-note">').text(
       'Check the passage in the book, and add |page= to the citation. ' +

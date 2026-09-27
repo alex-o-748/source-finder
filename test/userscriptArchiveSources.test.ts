@@ -9,10 +9,16 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
+  bestWindow,
   buildArchiveQueries,
+  buildPhraseQueries,
   claimTerms,
+  keyPhrases,
+  mergeRankings,
   parseSearchHits,
   rankArchiveHits,
+  rankByUnits,
+  streamText,
   toArchiveCandidate,
 } from "../src/core/archiveSources.js";
 import { SEARCH_URL, searchParams } from "../src/core/internetArchive.js";
@@ -33,18 +39,48 @@ const CLAIMS = [
   "The tower opened to visitors in 1889.",
   "The population of 616,093 was recorded in 1921 by Anna Berg.",
   "It was very popular with visitors.",
+  "Feodora's father died in 1814, while the otter civet's webbed feet suit its aquatic habitat.",
+  "The Greek name was chosen by Ptolemy II Philadelphus, who named it for his sister.",
 ];
 
 test("the user script builds the same queries as the core", () => {
   for (const claim of CLAIMS) {
-    const fromScript = script.buildArchiveQueries(script.iaClaimTerms(claim, TITLE));
-    const fromCore = buildArchiveQueries(claimTerms(claim, TITLE));
+    for (const title of [TITLE, "Princess_Feodora_of_Leiningen", "Siege of Ganja (1804)"]) {
+      const scriptTerms = script.iaClaimTerms(claim, title);
+      const coreTerms = claimTerms(claim, title);
+      assert.deepEqual(scriptTerms, coreTerms, claim);
+      assert.deepEqual(script.iaKeyPhrases(claim, title), keyPhrases(claim, title), claim);
+      assert.deepEqual(script.buildArchiveQueries(scriptTerms), buildArchiveQueries(coreTerms), claim);
+      assert.deepEqual(script.buildPhraseQueries(scriptTerms), buildPhraseQueries(coreTerms), claim);
+    }
+  }
+});
+
+test("the user script ranks by claim units, merges, and reads a whole text as the core does", () => {
+  const hits = () => parseSearchHits(SEARCH, "q");
+  const scriptHits = () => script.parseArchiveHits(SEARCH, "q");
+  for (const claim of CLAIMS) {
+    const fromScript = script.rankArchiveByUnits(scriptHits(), claim, TITLE);
+    const fromCore = rankByUnits(hits(), claim, TITLE);
     assert.deepEqual(fromScript, fromCore, claim);
+    assert.deepEqual(
+      script.mergeArchiveRankings(script.rankArchiveHits(scriptHits(), claim, TITLE, 0.3).ranked, fromScript),
+      mergeRankings(rankArchiveHits(hits(), claim, TITLE, 0.3).ranked, fromCore),
+      claim,
+    );
+  }
+  const page =
+    `<pre>${"filler words ".repeat(120)}The tower was com-\nplete in 1889, rising 300 metres, the work of ` +
+    `Gustave Eiffel &amp; his men. ${"more ".repeat(120)}</pre>`;
+  assert.equal(script.iaStreamText(page), streamText(page));
+  const text = streamText(page)!;
+  for (const claim of CLAIMS) {
+    assert.deepEqual(script.iaBestWindow(text, claim, TITLE), bestWindow(text, claim, TITLE), claim);
   }
 });
 
 test("the user script asks archive.org for the same search", () => {
-  const query = '"Eiffel Tower" AND "1889"';
+  const query = '"Eiffel Tower" "1889"';
   assert.equal(
     script.iaSearchUrl(query),
     `${SEARCH_URL}?${searchParams({ query, size: 50 })}`
@@ -112,7 +148,56 @@ test("the user script's live flow matches the core's", async () => {
       ["eiffeltowerdescr00tiss", "undatedpamphlet", "eiffeltower0000pezz"],
     );
     const userQuery = (url: string) => new URL(url).searchParams.get("user_query") ?? "";
-    assert.equal(userQuery(requested[0]), '"Eiffel Tower" AND "1889" AND "300" AND "gustave eiffel"');
+    assert.equal(userQuery(requested[0]), '"Eiffel Tower" "1889" "300" "gustave eiffel"');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("with the switch on, the user script reads whole texts as the core does", async () => {
+  const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
+  const eiffel = loadUserScript(
+    { wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" },
+    { window: { cnfirmedArchiveFullText: true } },
+  );
+  const claim = CLAIMS[1];
+  eiffel.setClaimContexts([{ claim, context: claim, section: null, links: [] }]);
+  const page = (id: string) =>
+    id === "annuaire1912"
+      ? `<pre>${"autres choses ".repeat(80)}In 1889 the tower rose 300 metres, built by Gustave Eiffel. ${"suite ".repeat(80)}</pre>`
+      : "<pre>rien</pre>";
+  const requested: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    requested.push(String(url));
+    if (String(url).includes("/metadata/")) return Response.json({ metadata: {} });
+    if (String(url).includes("/stream/")) {
+      return new Response(page(decodeURIComponent(String(url).split("/stream/")[1].split("/")[0])));
+    }
+    return Response.json(SEARCH);
+  }) as typeof fetch;
+  try {
+    const fromScript = await eiffel.findArchiveCandidates(0);
+    const scriptRequests = requested.splice(0);
+    const fromCore = await findArchiveCandidates(
+      { claim, context: claim, section: null, offset: 0, tag: "{{cn}}" },
+      "Eiffel Tower",
+      {
+        fullText: true,
+        client: {
+          fullTextSearch: async () => SEARCH,
+          metadata: async () => ({ metadata: {} }),
+          streamPage: async (id) => page(id),
+        },
+      },
+    );
+    assert.deepEqual(fromScript.candidates, fromCore.candidates);
+    assert.deepEqual(fromScript.funnel, fromCore.funnel);
+    assert.ok(fromScript.funnel.fullText.windows >= 1);
+    assert.ok(
+      scriptRequests.some((u) => u === "https://archive.org/stream/annuaire1912/annuaire1912_djvu.txt"),
+      "the book's own text file, on archive.org",
+    );
   } finally {
     globalThis.fetch = realFetch;
   }

@@ -8,6 +8,8 @@ interface ArchiveArgs {
   maxClaims?: number;
   /** Save every raw Archive response here, as fixtures. */
   record?: string;
+  /** Read the whole text of open books for a longer passage. */
+  fullText?: boolean;
   json: boolean;
 }
 
@@ -19,7 +21,9 @@ function funnelLine(f: ArchiveFunnel): string {
     `${f.queries.length} quer${f.queries.length === 1 ? "y" : "ies"} → ` +
     `${f.hits} books → ${f.available} readable (${f.borrowable} to borrow)` +
     (rejected ? ` (dropped: ${rejected})` : "") +
-    ` → ${f.matched} with a matching passage → ${f.candidates} lead(s)`
+    ` → ${f.matched} with a matching passage, ${f.byUnits} by claim phrases` +
+    (f.fullText ? ` → ${f.fullText.read} whole text(s) read, ${f.fullText.windows} with a passage` : "") +
+    ` → ${f.candidates} lead(s)`
   );
 }
 
@@ -36,6 +40,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
   const run = await findArticleArchiveSources(args.urlOrTitle, {
     maxClaims: args.maxClaims,
     client,
+    fullText: args.fullText,
     onProgress: args.json
       ? undefined
       : (done, total) => process.stderr.write(`\r  searched ${done}/${total}`),
@@ -60,7 +65,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     console.log(`## [${i + 1}] ${r.claim.section ?? "(no section)"}`);
     console.log(`    claim:  ${r.claim.claim}`);
     if (r.funnel.queries.length === 0) {
-      console.log("    (no number or name to search for)");
+      console.log("    (nothing to search for)");
       console.log();
       return;
     }
@@ -70,7 +75,8 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     for (const e of r.funnel.errors) console.log(`    ! ${e}`);
     r.candidates.forEach((c, j) => {
       const access = c.evidence.access === "borrow" ? ", borrow" : "";
-      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}${access})`);
+      const whole = c.evidence.fullText ? ", whole text" : "";
+      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}${access}${whole})`);
       console.log(`       ${c.evidence.viewerUrl}`);
       console.log(`       ${c.relevance}`);
       for (const p of c.evidence.passages.slice(0, 2)) console.log(`       "${p}"`);

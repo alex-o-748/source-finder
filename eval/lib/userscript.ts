@@ -36,9 +36,14 @@ export interface ScriptArticle {
   corpus: Json;
   findWiki(index: number): Json[];
   findArchive(index: number): Promise<{ candidates: Json[]; funnel: Json }>;
+  /** The paid stage: one Claude call with web search, as the script makes it. */
+  findWeb(index: number, apiKey: string): Promise<Json[]>;
 }
 
-export async function loadScriptArticle(c: Pick<EvalClaim, "lang" | "title" | "revid">): Promise<ScriptArticle> {
+export async function loadScriptArticle(
+  c: Pick<EvalClaim, "lang" | "title" | "revid">,
+  window: Record<string, unknown> = {},
+): Promise<ScriptArticle> {
   const res = await fetch(renderUrl(c.lang, c.revid));
   if (!res.ok) throw new Error(`rendered page: HTTP ${res.status}`);
   const html = await res.text();
@@ -52,7 +57,7 @@ export async function loadScriptArticle(c: Pick<EvalClaim, "lang" | "title" | "r
       wgTitle: c.title,
       wgCurRevisionId: c.revid,
     },
-    { document },
+    { document, window },
   );
   const sups = Array.from(document.querySelectorAll("sup.Template-Fact"));
   script.setCnSups(sups);
@@ -67,6 +72,7 @@ export async function loadScriptArticle(c: Pick<EvalClaim, "lang" | "title" | "r
     corpus,
     findWiki: (index) => script.findWikiCandidates(corpus, index),
     findArchive: (index) => script.findArchiveCandidates(index),
+    findWeb: (index, apiKey) => script.callClaude(script.getClaimContexts()[index], apiKey),
   };
 }
 

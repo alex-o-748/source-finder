@@ -24,6 +24,12 @@ const EXPOSED = [
   "refToSource",
   "iaClaimTerms",
   "buildArchiveQueries",
+  "buildPhraseQueries",
+  "iaKeyPhrases",
+  "rankArchiveByUnits",
+  "mergeArchiveRankings",
+  "iaStreamText",
+  "iaBestWindow",
   "parseArchiveHits",
   "rankArchiveHits",
   "toArchiveCandidate",
@@ -35,6 +41,7 @@ const EXPOSED = [
   "extractAllClaims",
   "loadWikiCorpus",
   "taggedSentenceRange",
+  "callClaude",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,6 +57,8 @@ export type UserScriptModule = Record<string, (...args: any[]) => any> & {
  */
 export interface UserScriptEnv {
   document?: unknown;
+  /** Globals on `window`, such as the script's model overrides or `cnfirmedArchiveFullText`. */
+  window?: Record<string, unknown>;
 }
 
 export function loadUserScript(
@@ -103,7 +112,7 @@ export function loadUserScript(
 
   return factory(
     mw,
-    {},
+    { ...env.window },
     env.document ?? { addEventListener() {}, querySelectorAll: () => [] },
     localStorage,
     jquery,

@@ -1,0 +1,392 @@
+[
+  {
+    "id": "Silvae@1345841665#7076",
+    "stratum": "history",
+    "bookLeaning": true,
+    "title": "Silvae",
+    "claim": "A Roman relief depicting a funeral feast",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [
+      {
+        "key": "ia:silvaetranslated00statuoft",
+        "origin": "internet-archive",
+        "title": "Silvae. Translated with introd. and notes; by D.A. Slater",
+        "url": "https://archive.org/details/silvaetranslated00statuoft",
+        "score": 0.72,
+        "matchedAnchors": [
+          "roman"
+        ],
+        "evidence": [
+          "The Muses and the Nymphs are the fairies of Greek and Roman literature. And if Statius"
+        ],
+        "where": "1908, open"
+      },
+      {
+        "key": "ia:silvaestatius01statgoog",
+        "origin": "internet-archive",
+        "title": "The Silvae of Statius",
+        "url": "https://archive.org/details/silvaestatius01statgoog",
+        "score": 0.72,
+        "matchedAnchors": [
+          "roman"
+        ],
+        "evidence": [
+          "enlightenment. The Muses and the Nymphs are the fairies of Greek and Roman literature. And if Statius peopled"
+        ],
+        "where": "1908, open"
+      },
+      {
+        "key": "ia:L206NStatiusIIISilvaeThebald14",
+        "origin": "internet-archive",
+        "title": "L 206 N Statius I & II Silvae Thebald 1 4",
+        "url": "https://archive.org/details/L206NStatiusIIISilvaeThebald14",
+        "score": 0.72,
+        "matchedAnchors": [
+          "roman"
+        ],
+        "evidence": [
+          "style, and antiquities ; he also instructed his pupils in augury and the various rites of the Roman state",
+          "observation in the Roman Cireus, as, for example, in the boxing and wrestling matches and the discus-throwing"
+        ],
+        "where": "n.d., open"
+      }
+    ],
+    "archiveFunnel": {
+      "queries": [
+        "\"Silvae\" AND \"roman\""
+      ],
+      "hits": 49,
+      "available": 49,
+      "borrowable": 17,
+      "rejected": {
+        "access restricted": 1
+      },
+      "matched": 10,
+      "lookedUp": 5,
+      "candidates": 3,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position",
+    "web": [
+      {
+        "key": "archaeologicalmuseum.jhu.edu/exhibitions/current-exhibitions/archaeology-of-daily-life/private-pleasures/marble-relief-of-three-diners",
+        "origin": "web",
+        "title": "Marble Relief of Three Diners – Johns Hopkins Archaeological Museum",
+        "url": "https://archaeologicalmuseum.jhu.edu/exhibitions/current-exhibitions/archaeology-of-daily-life/private-pleasures/marble-relief-of-three-diners",
+        "score": 0.52,
+        "matchedAnchors": [],
+        "evidence": [
+          "The page confirms that 'banquet scenes did not become a popular decorative motif in Roman funerary art until the first century C.E.' and discusses a Roman marble relief fragment depicting diners in a funerary context, but does not connect this to Statius's Silvae specifically."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 52, reliability medium"
+      },
+      {
+        "key": "ancient-origins.net/history-ancient-traditions/roman-funerals-021976",
+        "origin": "web",
+        "title": "Mimes, Paid Grievers, and Masks: The Insane Theatrics of Ancient Roman Funerals – Ancient Origins",
+        "url": "https://www.ancient-origins.net/history-ancient-traditions/roman-funerals-021976",
+        "score": 0.5,
+        "matchedAnchors": [],
+        "evidence": [
+          "Mentions a 'grave relief showing the deceased and his widow in a funeral feast where they are depicted in a godlike manner. Roman marble work, 1st century AD.' This supports the existence of such reliefs but does not connect to Silvae Book 2."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 50, reliability low"
+      },
+      {
+        "key": "commons.wikimedia.org/wiki/category:ancient_roman_funerary_reliefs",
+        "origin": "web",
+        "title": "Category: Ancient Roman funerary reliefs – Wikimedia Commons",
+        "url": "https://commons.wikimedia.org/wiki/Category:Ancient_Roman_funerary_reliefs",
+        "score": 0.45,
+        "matchedAnchors": [],
+        "evidence": [
+          "Lists a file titled 'Funeral feast Asklepios.JPG' among ancient Roman funerary reliefs, confirming such artifacts exist, but provides no scholarly description or connection to the Silvae Wikipedia article context."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 45, reliability low"
+      }
+    ]
+  },
+  {
+    "id": "A-Imdugud@1358747319#1777",
+    "stratum": "historical-biography",
+    "bookLeaning": true,
+    "title": "A-Imdugud",
+    "claim": "A-Imdugud (𒀀𒀭𒅎𒂂",
+    "claimChanged": true,
+    "wiki": [
+      {
+        "key": "books.google.com/books?id=yzbu9bairfkc&pg=pa183",
+        "origin": "same-article",
+        "title": "Orientalia: Vol. 73",
+        "url": "https://books.google.com/books?id=YZbu9bAiRfkC&pg=PA183",
+        "score": 0.388,
+        "matchedAnchors": [],
+        "evidence": [
+          "A-Imdugud ( A D IM.DUGUD MUŠEN , named after God Imdugud, also read Aja-Anzu; ),"
+        ],
+        "where": "en:A-Imdugud"
+      }
+    ],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position",
+    "web": [
+      {
+        "key": "penn.museum/sites/expedition/what-do-we-know-about-the-people-buried-in-the-royal-cemetery",
+        "origin": "web",
+        "title": "What Do We Know About the People Buried in the Royal Cemetery? – Expedition Magazine (Penn Museum)",
+        "url": "https://www.penn.museum/sites/expedition/what-do-we-know-about-the-people-buried-in-the-royal-cemetery/",
+        "score": 0.6,
+        "matchedAnchors": [],
+        "evidence": [
+          "The article (by J. Reade, the likely source cited as 'JR94' in the Wikipedia article) places RT.1236 first in the stratigraphic sequence of royal tombs, directly implying it is the earliest. However, it does not explicitly call it 'the largest' tomb structure, and the relevant passage discusses relative chronological sequence rather than physical size."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 60, reliability high"
+      },
+      {
+        "key": "madainproject.com/royal_cemetery_at_ur",
+        "origin": "web",
+        "title": "Royal Cemetery at Ur – Madain Project",
+        "url": "https://madainproject.com/royal_cemetery_at_ur",
+        "score": 0.72,
+        "matchedAnchors": [],
+        "evidence": [
+          "Directly states that tomb PG 1236 \"is regarded as the largest and probably the earliest of the royal structures, dated to circa 2600 BCE\" and links it to A-Imdugud via an inscribed seal. Fully matches the claim."
+        ],
+        "where": "model: SUPPORTED 72, reliability medium"
+      },
+      {
+        "key": "en.wikipedia.org/wiki/ur-pabilsag",
+        "origin": "web",
+        "title": "Ur-Pabilsag – Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Ur-Pabilsag",
+        "score": 0.55,
+        "matchedAnchors": [],
+        "evidence": [
+          "States that A-Imdugud is \"known from grave PG 1236, which is the largest and probably the earliest tomb structure at the Royal Cemetery at Ur,\" corroborating the claim word-for-word, and cites a 1994 source tagged 'JR94' (likely Julian Reade 1994)."
+        ],
+        "where": "model: SUPPORTED 55, reliability low"
+      }
+    ]
+  },
+  {
+    "id": "Bellsmyre@1359003853#1408",
+    "stratum": "architecture",
+    "bookLeaning": true,
+    "title": "Bellsmyre",
+    "claim": "Much of the remaining publicly owned housing under landlord Scottish Homes was transferred to the Bellsmyre Housing Association in 1992.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "no counterpart article on the larger language editions"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Bellsmyre\" AND \"1992\" AND \"bellsmyre housing association\" AND \"scottish homes\"",
+        "\"Bellsmyre\" AND \"1992\""
+      ],
+      "hits": 50,
+      "available": 50,
+      "borrowable": 41,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position",
+    "web": [
+      {
+        "key": "bellsmyrehousing.org.uk",
+        "origin": "web",
+        "title": "Bellsmyre Housing Association – Sustainable Homes | Flexible Services & Vibrant Communities",
+        "url": "https://www.bellsmyrehousing.org.uk/",
+        "score": 0.85,
+        "matchedAnchors": [],
+        "evidence": [
+          "\"Bellsmyre Housing Association was founded in September 1992 with an initial housing stock of 150 properties following a stock transfer from Scottish Homes.\" Directly confirms the 1992 date and the Scottish Homes stock transfer, though it notes only 150 initial properties rather than characterising the transfer as 'much of the remaining' stock."
+        ],
+        "where": "model: SUPPORTED 85, reliability medium"
+      },
+      {
+        "key": "westdun.wixsite.com/sspipeline/bellsmyre-housing",
+        "origin": "web",
+        "title": "Bellsmyre Housing – West Dunbartonshire SSP Pipeline",
+        "url": "https://westdun.wixsite.com/sspipeline/bellsmyre-housing",
+        "score": 0.75,
+        "matchedAnchors": [],
+        "evidence": [
+          "\"Bellsmyre Housing Association was founded in September 1992 with an initial housing stock of 150 properties following a stock transfer from Scottish Homes.\" Corroborates the 1992 transfer from Scottish Homes, apparently mirroring the association's own text."
+        ],
+        "where": "model: SUPPORTED 75, reliability low"
+      },
+      {
+        "key": "sourcenews.scot/housing-association-no-longer-represents-the-people-says-former-committee-member",
+        "origin": "web",
+        "title": "Housing association 'no longer represents the people' says former committee member – Source",
+        "url": "https://sourcenews.scot/housing-association-no-longer-represents-the-people-says-former-committee-member/",
+        "score": 0.55,
+        "matchedAnchors": [],
+        "evidence": [
+          "The article notes that BHA celebrated its 25th anniversary in September 2017 (consistent with a 1992 founding) and references Scottish Homes' involvement in the transfer, but does not explicitly state the year 1992 or characterise the scale of the transfer."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 55, reliability medium"
+      }
+    ]
+  },
+  {
+    "id": "Al-Fatat SC@1322980387#1256",
+    "stratum": "sports",
+    "bookLeaning": false,
+    "title": "Al-Fatat SC",
+    "claim": "It fields teams in several sports, and it was one of the founding members of the Kuwaiti Women's League football tournament in 2017.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [
+      "1 {{cn}}-family tag(s) found in wikitext but 2 rendered on page — same-article matching falls back to section-only"
+    ],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Al-Fatat SC\" AND \"2017\" AND \"kuwaiti women's league\"",
+        "\"Al-Fatat SC\" AND \"2017\""
+      ],
+      "hits": 0,
+      "available": 0,
+      "borrowable": 0,
+      "rejected": {},
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "text overlap 1.00",
+    "web": [
+      {
+        "key": "twitter.com/kuwaitfa/status/917707559678742528",
+        "origin": "web",
+        "title": "Kuwait FA on Twitter – انطلاق دوري كرة القدم النسائية الأربعاء #KuwaitFA",
+        "url": "https://twitter.com/KuwaitFA/status/917707559678742528",
+        "score": 0.55,
+        "matchedAnchors": [],
+        "evidence": [
+          "This is the sole primary source cited by the Kuwaiti Women's League Wikipedia article for the league's 2017 founding. It is a Kuwait FA official tweet announcing the start of the women's football league in October 2017. It may list participating clubs (potentially including Al-Fatat), but as a social media post it cannot be fully evaluated for exact wording without direct access, and Twitter/X posts have limited stability as citations."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 55, reliability medium"
+      },
+      {
+        "key": "en.wikipedia.org/wiki/kuwaiti_women%27s_league",
+        "origin": "web",
+        "title": "Kuwaiti Women's League – Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Kuwaiti_Women%27s_League",
+        "score": 0.5,
+        "matchedAnchors": [],
+        "evidence": [
+          "The Wikipedia article on the Kuwaiti Women's League lists Al-Fatat SC among the clubs in the league and states it was founded in 2017, implying Al-Fatat was a founding participant. However, it does not use the phrase 'founding member' explicitly, and Wikipedia itself is not a valid WP:RS source."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 50, reliability low"
+      },
+      {
+        "key": "inside.fifa.com/news/success-against-all-odds-in-kuwait",
+        "origin": "web",
+        "title": "Success Against All Odds in Kuwait – FIFA Inside",
+        "url": "https://inside.fifa.com/news/success-against-all-odds-in-kuwait",
+        "score": 0.45,
+        "matchedAnchors": [],
+        "evidence": [
+          "This FIFA article confirms Al Fatat Club's participation in Kuwait's women's football league and mentions their championship win, but it focuses on the futsal league and does not explicitly state that Al-Fatat was a founding member of the Kuwaiti Women's League in 2017."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 45, reliability high"
+      }
+    ]
+  },
+  {
+    "id": "Knytt Underground@1363780905#7377",
+    "stratum": "games-internet",
+    "bookLeaning": false,
+    "title": "Knytt Underground",
+    "claim": "Underground was Nifflas' biggest project at the time of its release, encompassing the biggest world and the most characters, sub-quests and secrets of any of his games thus far.",
+    "claimChanged": true,
+    "wiki": [],
+    "wikiWarnings": [],
+    "archive": [],
+    "archiveFunnel": {
+      "queries": [
+        "\"Knytt Underground\" AND \"nifflas'\""
+      ],
+      "hits": 10,
+      "available": 9,
+      "borrowable": 1,
+      "rejected": {
+        "not a text": 1
+      },
+      "matched": 0,
+      "lookedUp": 0,
+      "candidates": 0,
+      "errors": []
+    },
+    "errors": [],
+    "engine": "userscript",
+    "located": "position",
+    "web": [
+      {
+        "key": "engadget.com/2012-07-27-knytt-goes-underground-emerges-on-ps3-vita-and-more-this-year.html",
+        "origin": "web",
+        "title": "Knytt goes Underground, emerges on PS3, Vita, and more this year – Engadget",
+        "url": "https://www.engadget.com/2012-07-27-knytt-goes-underground-emerges-on-ps3-vita-and-more-this-year.html",
+        "score": 0.65,
+        "matchedAnchors": [],
+        "evidence": [
+          "Contains a direct quote from Nifflas: \"Knytt Underground is the biggest game I've ever developed,\" and notes it allows for \"the biggest game I ever developed.\" This supports the 'biggest project' portion of the claim in Nifflas' own words at announcement time, but does not specifically enumerate 'biggest world,' 'most characters,' 'sub-quests,' or 'secrets' as the article's claim does."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 65, reliability high"
+      },
+      {
+        "key": "nifflas.fandom.com/wiki/knytt_underground",
+        "origin": "web",
+        "title": "Knytt Underground | Nicklas Nygren Wiki | Fandom",
+        "url": "https://nifflas.fandom.com/wiki/Knytt_Underground",
+        "score": 0.55,
+        "matchedAnchors": [],
+        "evidence": [
+          "The Fandom wiki reproduces the claim verbatim: \"Underground was Nifflas' biggest project at the time of its release, encompassing the biggest world and the most characters, sub-quests and secrets of any of his games thus far.\" However, it appears to be user-generated content without a cited primary source for this specific statement."
+        ],
+        "where": "model: SUPPORTED 55, reliability low"
+      },
+      {
+        "key": "bobsurlaw.blogspot.com/2013/06/review-knytt-underground-2012-ps3.html",
+        "origin": "web",
+        "title": "Wobble Reviews – Review: Knytt Underground (2012, PS3)",
+        "url": "https://bobsurlaw.blogspot.com/2013/06/review-knytt-underground-2012-ps3.html",
+        "score": 0.52,
+        "matchedAnchors": [],
+        "evidence": [
+          "States \"Underground is far larger than Nifflas' previous Knytt games and also the first to focus on story in a significant way,\" supporting the 'biggest world' aspect, but does not address most characters, sub-quests, or secrets specifically."
+        ],
+        "where": "model: PARTIALLY SUPPORTED 52, reliability low"
+      }
+    ]
+  }
+]

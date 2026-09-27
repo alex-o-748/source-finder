@@ -49,7 +49,7 @@ function readJson<T>(file: string, fallback: T): T {
   return existsSync(path) ? (JSON.parse(readFileSync(path, "utf8")) as T) : fallback;
 }
 
-const ORIGINS: Lead["origin"][] = ["same-article", "sister-wiki", "internet-archive"];
+const ORIGINS: Lead["origin"][] = ["same-article", "sister-wiki", "internet-archive", "web"];
 const GOOD = new Set<Verdict>(["supports", "partial"]);
 
 function words(s: string): string[] {
@@ -87,7 +87,7 @@ function main(): void {
   const gold = readJson<Record<string, Gold>>("gold.json", {});
   const labels = readJson<Record<string, Record<string, Label>>>("labels.json", {});
   const labelOf = (r: ClaimResult, l: Lead): Label | undefined => labels[r.id]?.[l.key];
-  const leadsOf = (r: ClaimResult): Lead[] => [...r.wiki, ...r.archive];
+  const leadsOf = (r: ClaimResult): Lead[] => [...r.wiki, ...r.archive, ...(r.web ?? [])];
 
   if (process.argv.includes("--unlabelled")) {
     for (const r of results) {

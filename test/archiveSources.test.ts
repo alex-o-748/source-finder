@@ -5,7 +5,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
   accessGate,
+  bestWindow,
   buildArchiveQueries,
+  buildPhraseQueries,
+  keyPhrases,
+  mergeRankings,
+  rankByUnits,
+  streamText,
   claimTerms,
   detailsGate,
   editionKey,
@@ -53,9 +59,9 @@ test("claimTerms: numbers as written with years first, names beyond the subject"
 
 test("buildArchiveQueries: strictest first, and nothing for a claim with no anchors", () => {
   assert.deepEqual(buildArchiveQueries(claimTerms(CLAIM_TEXT, TITLE)), [
-    '"Eiffel Tower" AND "1889" AND "300" AND "gustave eiffel"',
-    '"Eiffel Tower" AND "1889" AND "300"',
-    '"Eiffel Tower" AND "1889"',
+    '"Eiffel Tower" "1889" "300" "gustave eiffel"',
+    '"Eiffel Tower" "1889" "300"',
+    '"Eiffel Tower" "1889"',
   ]);
   assert.deepEqual(buildArchiveQueries(claimTerms("It was very tall and quite famous", TITLE)), []);
 });
@@ -281,6 +287,9 @@ function fakeClient(
   return { client, searches, lookups };
 }
 
+/** The number-and-name queries alone, as the stage ran before key phrases. */
+const ANCHORS_ONLY = (client: ArchiveClient) => ({ client, enoughHits: 5, maxPhraseQueries: 0, maxCandidates: 3 });
+
 test("findArchiveCandidates: the whole funnel, with counts", async () => {
   const { client, searches, lookups } = fakeClient([SEARCH], {
     eiffeltowerdescr00tiss: { metadata: { publisher: "Paris : Masson" } },
@@ -291,10 +300,10 @@ test("findArchiveCandidates: the whole funnel, with counts", async () => {
       metadata: { publisher: "Weigl", isbn: ["9781590367254"], "access-restricted-item": "true" },
     },
   });
-  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, enoughHits: 5 });
+  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, ANCHORS_ONLY(client));
 
   assert.equal(r.funnel.queries.length, 1, "ten books was enough");
-  assert.equal(searches[0].query, '"Eiffel Tower" AND "1889" AND "300" AND "gustave eiffel"');
+  assert.equal(searches[0].query, '"Eiffel Tower" "1889" "300" "gustave eiffel"');
   assert.equal(r.funnel.hits, 10);
   assert.equal(r.funnel.available, 9);
   assert.equal(r.funnel.borrowable, 2);
@@ -339,7 +348,7 @@ test("findArchiveCandidates: the whole funnel, with counts", async () => {
 
 test("findArchiveCandidates reports a failed search and keeps loosening the query", async () => {
   const { client, searches } = fakeClient([new Error("HTTP 503")]);
-  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client });
+  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, maxPhraseQueries: 0 });
   assert.equal(searches.length, 3, "kept loosening while short of books");
   assert.deepEqual(r.funnel.errors, ["search failed: HTTP 503"]);
   assert.equal(r.candidates.length, 0);
@@ -347,7 +356,7 @@ test("findArchiveCandidates reports a failed search and keeps loosening the quer
 
 test("findArchiveCandidates keeps a lead whose metadata lookup fails, without a publisher", async () => {
   const { client } = fakeClient([SEARCH]);
-  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, { client, enoughHits: 5 });
+  const r = await findArchiveCandidates(claimOf(CLAIM_TEXT), TITLE, ANCHORS_ONLY(client));
   assert.equal(r.candidates.length, 3);
   assert.ok(r.candidates.every((c) => !c.citation.ref.includes("publisher=")));
   assert.equal(r.funnel.errors.length, 3);
@@ -355,7 +364,134 @@ test("findArchiveCandidates keeps a lead whose metadata lookup fails, without a 
 
 test("findArchiveCandidates makes no request for a claim with nothing to search for", async () => {
   const { client, searches } = fakeClient([]);
-  const r = await findArchiveCandidates(claimOf("It was very popular with visitors."), TITLE, { client });
+  const r = await findArchiveCandidates(claimOf("It was one of them."), TITLE, { client });
   assert.equal(r.candidates.length, 0);
   assert.equal(searches.length, 0);
+});
+
+// --- key phrases, the unit ranking, and whole texts ---------------------------
+
+test("keyPhrases: noun groups, a possessive ends its run, verbs break it", () => {
+  assert.deepEqual(keyPhrases("Feodora's father died in 1814.", "Princess Feodora of Leiningen"), [
+    "1814",
+    "father died",
+  ]);
+  assert.deepEqual(
+    keyPhrases(
+      "The otter civet possesses webbed feet, which is an adaptation to its aquatic habitat.",
+      "Otter civet",
+    ),
+    ["aquatic habitat", "webbed feet", "adaptation"],
+    "'otter civet' is only the subject; 'possesses' breaks the run",
+  );
+  assert.equal(
+    keyPhrases("The Greek name was chosen by Ptolemy II Philadelphus, who named it.", "Khirbet Kerak")[0],
+    "Ptolemy II Philadelphus",
+    "a run of capitalised words is a name, kept whole",
+  );
+  assert.deepEqual(keyPhrases("It was one of them.", TITLE), []);
+});
+
+test("buildPhraseQueries: the subject's words with phrases, strictest first, then phrases alone", () => {
+  assert.deepEqual(buildPhraseQueries(claimTerms("The acini secrete digestive enzymes.", "Endocrine system")), [
+    '"Endocrine" "system" "secrete digestive" "digestive enzymes" "acini secrete"',
+    '"Endocrine" "system" "secrete digestive" "digestive enzymes"',
+    '"Endocrine" "system" "secrete digestive"',
+    '"secrete digestive" "digestive enzymes"',
+  ]);
+  assert.deepEqual(buildArchiveQueries(claimTerms("The acini secrete digestive enzymes.", "Endocrine system")), [],
+    "no number or name: only the phrase queries");
+});
+
+test("rankByUnits: two claim units in a passage, one strong, need not name the subject", () => {
+  const hit = (identifier: string, highlights: string[]) => ({
+    identifier, title: identifier, creator: null, year: null, mediatype: "texts",
+    collections: [], file: null, highlights, rank: 0, query: "q",
+  });
+  const claim = "Feodora's father died in 1814.";
+  const title = "Princess Feodora of Leiningen";
+  const ranked = rankByUnits(
+    [
+      hit("almanac", ["Princess Marie Antonia (b 19 Dec 1814; m 7 June 1833)"]),
+      hit("queen", ["the young girl, whose father died in 1814, lived with her brother"]),
+      hit("words", ["his father died young"]),
+    ],
+    claim,
+    title,
+  );
+  assert.deepEqual(ranked.map((s) => s.hit.identifier), ["queen"]);
+  assert.deepEqual(ranked[0].passages[0].matched, ["father died", "1814"]);
+  // The passage score's gates drop it: it names none of Princess, Feodora or Leiningen.
+  assert.equal(rankArchiveHits(ranked.map((s) => s.hit), claim, title, 0.3).ranked.length, 0);
+});
+
+test("mergeRankings takes the two rankings in turn, one book per work", () => {
+  const s = (identifier: string) => ({
+    hit: { identifier, title: identifier, creator: null, year: null, mediatype: "texts", collections: [], file: null, highlights: [], rank: 0, query: "q" },
+    access: "open" as const, passages: [], score: 1,
+  });
+  assert.deepEqual(
+    mergeRankings([s("a"), s("b"), s("c")], [s("x"), s("a"), s("y")]).map((r) => r.hit.identifier),
+    ["a", "x", "b", "c", "y"],
+  );
+});
+
+test("streamText and bestWindow: the passage from a whole book, centred, cut at words", () => {
+  const filler = (w: string, n: number) => `${w} `.repeat(n);
+  const text = streamText(
+    `<html><pre>${filler("filler", 150)}The tower was com-\nplete in 1889, rising 300 metres, ` +
+      `the work of Gustave Eiffel &amp; his engineers. ${filler("more", 150)}</pre></html>`,
+  )!;
+  assert.ok(text.includes("complete in 1889"), "a word broken at a line end is joined");
+  assert.ok(text.includes("Eiffel & his"), "entities decoded");
+  const w = bestWindow(text, CLAIM_TEXT, TITLE)!;
+  assert.deepEqual(w.matched, ["gustave eiffel", "1889", "300", "metres"]);
+  const at = w.text.indexOf("The tower was complete");
+  assert.ok(at > 100 && at < 250, `centred, not at an edge (at ${at})`);
+  assert.ok(w.text.startsWith("…") && w.text.endsWith("…"));
+  assert.equal(bestWindow(filler("nothing", 200), CLAIM_TEXT, TITLE), null);
+});
+
+test("findArchiveCandidates: phrase queries run beside the anchor ones, and whole texts add a lead", async () => {
+  const searches: string[] = [];
+  const pages: string[] = [];
+  const hit = (identifier: string, text: string, collection: string[] = []) => ({
+    fields: { identifier, title: identifier, mediatype: "texts", collection, file_basename: `${identifier}-vol2` },
+    highlight: { text: [text] },
+  });
+  const client: ArchiveClient = {
+    async fullTextSearch({ query }) {
+      searches.push(query);
+      const hits = query.includes("father died")
+        ? [hit("queenbook", "the Prince of Leiningen, whose father died in 1814, had two children", ["inlibrary"])]
+        : [hit("memoirs", "Leiningen is a German princely house of some note, older than most"), hit("genealogy", "Princess Feodora of Leiningen 1814")];
+      return { response: { body: { hits: { hits } } } };
+    },
+    async metadata() {
+      return { metadata: {} };
+    },
+    async streamPage(identifier, file) {
+      pages.push(`${identifier}/${file}`);
+      return identifier === "memoirs"
+        ? `<pre>${"other matters here. ".repeat(60)}Her father, the Prince of Leiningen, died in 1814 and left Feodora. ${"and so on. ".repeat(60)}</pre>`
+        : "<pre>nothing to see</pre>";
+    },
+  };
+  const claim = claimOf("Feodora's father died in 1814.");
+  const r = await findArchiveCandidates(claim, "Princess Feodora of Leiningen", { client, fullText: true });
+
+  assert.deepEqual(r.funnel.queries, [
+    '"Princess Feodora of Leiningen" "1814"',
+    '"Princess" "Feodora" "Leiningen" "1814" "father died"',
+    '"Princess" "Feodora" "Leiningen" "1814"',
+    '"1814" "father died"',
+  ]);
+  assert.deepEqual(pages, ["memoirs/memoirs-vol2", "genealogy/genealogy-vol2"], "open books only, the matched volume");
+  assert.deepEqual(r.funnel.fullText, { read: 2, windows: 1 });
+  const ids = r.candidates.map((c) => c.evidence.identifier);
+  assert.ok(ids.includes("queenbook"), "found by its claim phrases alone");
+  const memoirs = r.candidates.find((c) => c.evidence.identifier === "memoirs")!;
+  assert.ok(memoirs, "a book whose highlights said nothing becomes a lead through its whole text");
+  assert.equal(memoirs.evidence.fullText, true);
+  assert.ok(memoirs.snippet.includes("died in 1814 and left Feodora"));
 });

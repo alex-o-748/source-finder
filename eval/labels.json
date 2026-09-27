@@ -11,6 +11,18 @@
     "ia:L206NStatiusIIISilvaeThebald14": {
       "verdict": "unrelated",
       "why": "Passages about the Silvae matched only on 'Roman'."
+    },
+    "ia:bbooKK": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:statiusstat01statuoft": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in.ernet.dli.2015.54366": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Iranian peoples@1371323076#78171": {
@@ -37,24 +49,112 @@
     "ia:AvestanLiteratureHintzeA": {
       "verdict": "unrelated",
       "why": "Author biography; matched 'old'."
+    },
+    "ia:history-of-civilizations-of-central-asia-volume-2": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:dli.pahar.3672": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:HistoryOfCivilizationsOfCentralAsiaTheDevelopmentOfSedentaryAnd": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:history-of-civilizations-of-central-asia-v.-2-kashmir-treasure": {
+      "verdict": "topic",
+      "why": "Old Persian dialects in the Iranian branch; not what this table cell is a branch of."
+    },
+    "ia:history-of-civilizations-of-central-asia-volume-2#text": {
+      "verdict": "topic",
+      "why": "Old Iranian languages; not what this table cell is a branch of."
+    },
+    "ia:dli.pahar.3672#text": {
+      "verdict": "topic",
+      "why": "Old Iranian languages; not what this table cell is a branch of."
+    },
+    "ia:HistoryOfCivilizationsOfCentralAsiaTheDevelopmentOfSedentaryAnd#text": {
+      "verdict": "topic",
+      "why": "Old Iranian peoples; not what this table cell is a branch of."
+    },
+    "ia:history-of-civilizations-of-central-asia-v.-2-kashmir-treasure#text": {
+      "verdict": "topic",
+      "why": "Old Iranian languages; not what this table cell is a branch of."
     }
   },
   "Siege of Ganja (1804)@1370741420#4836": {
     "iranicaonline.org/articles/golestan-treaty": {
       "verdict": "supports",
       "why": "The fa.wiki sentence is a translation of the claim, cited to Encyclopaedia Iranica."
+    },
+    "ia:bournoutian-1998-russians-armenians-1797-1889": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:hasan-jalaliants-2013-artsakh-english": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:bournoutian-1998-russians-armenians-1797-1889#text": {
+      "verdict": "supports",
+      "why": "'Following the murder of Paul, Tsar Alexander revived his grandmother's policy and began Russia's fourth and final attempt to conquer the Caucasus', after Russia's commitment to Georgia."
+    },
+    "ia:hasan-jalaliants-2013-artsakh-english#text": {
+      "verdict": "topic",
+      "why": "Georgia's annexation in 1801 in passing; not Alexander's policy toward the khanates."
+    },
+    "ia:1-christoph-baumer-the-history-of-central-asia-4-volume-set-2018-i.-b.-tauris-libgen.li_202609#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Royal Marine Police@1368542794#3076": {
     "ia:navylist1938": {
       "verdict": "unrelated",
       "why": "Navy List promotion dates that happen to include 1934."
+    },
+    "ia:harbourvessels0000unse": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:navylistmar1939grea": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:ordersnavalservice-v14": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:appendixnavylist1943dec": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:navylistmar1939grea#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:ordersnavalservice-v14#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:appendixnavylist1943dec#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:brasseysnavalshipping1935#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:appendixnavylist1942#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Naval Submarine Base New London@1371669909#4014": {
     "ia:DTIC_ADA031433": {
-      "verdict": "topic",
-      "why": "Address listings for the base in Groton; nothing on why New London is in its name."
+      "verdict": "unrelated",
+      "why": "Now only a reference to a Groton planning report."
     },
     "ia:sim_federal-register-find_1990-05-30_55_104": {
       "verdict": "topic",
@@ -63,6 +163,30 @@
     "ia:sim_federal-register-find_1998-07-31_63_147": {
       "verdict": "topic",
       "why": "Address listings for the base in Groton; nothing on why New London is in its name."
+    },
+    "ia:ed9c40331ca9a7383a8b74cf6322c2c59896e7c9.23": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:gov.gpo.fdsys.CHRG-108shrg88089": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:navalsubmarineba0000bish": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:ed9c40331ca9a7383a8b74cf6322c2c59896e7c9.23#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:DTIC_ADA031433#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:gov.gpo.fdsys.CHRG-108shrg88089#text": {
+      "verdict": "topic",
+      "why": "Navy family housing in the town of Groton; not why the base is named for New London."
     }
   },
   "USS Shasta (AE-33)@1376634405#10149": {
@@ -81,6 +205,26 @@
     "ia:sim_armed-forces-journal_1946-07-13_83_46": {
       "verdict": "unrelated",
       "why": "Other ships and other gulfs; matched a single word."
+    },
+    "ia:alum-news-199103": {
+      "verdict": "topic",
+      "why": "The ship in the Persian Gulf in 1991, not a Gulf of Alaska storm."
+    },
+    "ia:moveablefleetboa0000geor": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:allhands9339unit": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:DTIC_ADA329236": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:allhands9339unit#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "BMP-1@1371674680#37323": {
@@ -115,6 +259,30 @@
     "ia:armor-of-the-afghanistan-war": {
       "verdict": "topic",
       "why": "BMP columns in Afghanistan; nothing on ammunition stowage."
+    },
+    "ia:bradley-vs.-b.-m.-p-operation-desert-storm-1991": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in-0534-vehicle-recognition-threat-armor-edition-d": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:1986-jan-feb": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:cc13_images": {
+      "verdict": "topic",
+      "why": "BMP-1 and BMP-2 crew positions; nothing on where ammunition is stored."
+    },
+    "ia:in-0534-vehicle-recognition-threat-armor-edition-d#text": {
+      "verdict": "topic",
+      "why": "The BMP-1 and BMP-2 troop compartments; nothing on ammunition storage."
+    },
+    "ia:1986-jan-feb#text": {
+      "verdict": "topic",
+      "why": "Armour of the BMP-1 and BMP-2; nothing on ammunition storage."
     }
   },
   "Junkers Ju 52@1374490506#15921": {
@@ -149,6 +317,34 @@
     "ia:Luft_3": {
       "verdict": "topic",
       "why": "Numbers of Ju 52s and gliders at Crete."
+    },
+    "ia:orbis-war-machine-003-armed-combat-helicopters": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:airlifthistoryof0000wrag": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:war-machine-collection": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:junkersju52luftw0000jess": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:orbis-war-machine-003-armed-combat-helicopters#text": {
+      "verdict": "partial",
+      "why": "Up to six DFS 230s towed by a single Ju 52/3m, 'the usual number was two or three': it towed two, but 'up to two' is contradicted."
+    },
+    "ia:war-machine-collection#text": {
+      "verdict": "partial",
+      "why": "Up to six DFS 230s towed by a single Ju 52/3m, 'the usual number was two or three': it towed two, but 'up to two' is contradicted."
+    },
+    "ia:flugzeug-classic-2010-nr.-1#text": {
+      "verdict": "topic",
+      "why": "Magazine contents: the DFS 230 and a Ju 52 in separate articles."
     }
   },
   "Walter HWK 109-509@1357930638#10451": {
@@ -167,6 +363,38 @@
     "walterwerke.co.uk/museum/sworth.htm": {
       "verdict": "topic",
       "why": "Cited for a different museum in the same list."
+    },
+    "ia:secret-projects-military-space-technology-secret-projects-bill-rose": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:hitlers-and-hirohitos-kamikaze-flying-bombs-the-axis-manned-suicide-attack-aircraft-of-world-war-ii": {
+      "verdict": "topic",
+      "why": "Museums holding the aircraft; not the National Museum of Flight."
+    },
+    "ia:secret-projects-military-space-technology_compress": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:rocketplanes-to-space": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:secret-projects-military-space-technology-secret-projects-bill-rose#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:hitlers-and-hirohitos-kamikaze-flying-bombs-the-axis-manned-suicide-attack-aircraft-of-world-war-ii#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:secret-projects-military-space-technology_compress#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:rocketplanes-to-space#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "A-Imdugud@1358747319#1777": {
@@ -187,12 +415,64 @@
     "ia:jewishencycloped0009isid": {
       "verdict": "unrelated",
       "why": "About a different man (Dunash) in Seville."
+    },
+    "ia:les-juifs-du-maghreb-et-dal-andalus": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:fr103andalus09": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:roth-norman-j-the-bible-and-jews-in-medieval-spain-2021": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:les-juifs-du-maghreb-et-dal-andalus#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:fr103andalus09#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:roth-norman-j-the-bible-and-jews-in-medieval-spain-2021#text": {
+      "verdict": "topic",
+      "why": "Judeo-Arabic Bible translations in Spain; not this work."
+    },
+    "ia:JewishEncyclopediaDescriptiveRecordHistoryReligionLiteratureCustoms#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Cathedral of Évora@1373206424#3475": {
     "ia:newcatholicencyc08thom": {
       "verdict": "partial",
       "why": "A pupil studying at Évora cathedral with Manuel Mendes: one composer's link, not the list."
+    },
+    "ia:W7-BRM-274": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:historyofmusic0000ruiv": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:bwb_P9-ECZ-456": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:historyofmusic0000ruiv#text": {
+      "verdict": "partial",
+      "why": "Manuel Mendes at the Évora cathedral and his pupils Duarte Lobo and Filipe de Magalhães; Mateus de Aranda not named."
+    },
+    "ia:BibliografiaICOM#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:fx-schurhammer1#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Vipakasutra@1242493963#775": {
@@ -203,12 +483,40 @@
     "ia:in.ernet.dli.2015.282839": {
       "verdict": "unrelated",
       "why": "Matched '10' from a list numbering."
+    },
+    "ia:u-08-u-09-u-10-u-11-u-12-2_202210": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:dli.ernet.237058": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in.ernet.dli.2015.62068": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
     }
   },
   "Mari Iijima@1371035676#4445": {
     "web.archive.org/web/20190214041848/http://www.jpfolks.com/musicawards/2006/winners/song.htm": {
       "verdict": "topic",
       "why": "Cited for a different award in 2006."
+    },
+    "ia:animeclassicszet0000camp": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:internationalwho0000unse_q1k1": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:FromGamers-November-2002#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:genki-life-magazine-38-winter-2020#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Kim Stanley Robinson@1374486108#9680": {
@@ -243,18 +551,62 @@
     "auslit.net/2010/09/16/kim-stanley-robinson-guest-of-honour-speech": {
       "verdict": "unrelated",
       "why": "it.wiki sentence: Robinson calls himself a hiker, not a mountaineer; the anchors matched the paragraph, not this sentence."
+    },
+    "ia:LocusV54n02200502IfcIbcBcKilroyAutolycus0152": {
+      "verdict": "supports",
+      "why": "Locus: Forty Signs of Rain, 'first in a trilogy concerning global warming', 'a passionately involved piece of ecological' fiction."
+    },
+    "ia:magazine-of-fantasy-science-fiction-1951-2008": {
+      "verdict": "partial",
+      "why": "F&SF review: the novel 'centers on the preeminent environmental' issue; global warming not named in the passage."
+    },
+    "ia:Fantasy_Science_Fiction_v107n0405_2004-1011_N633_DaisyChainsaw": {
+      "verdict": "partial",
+      "why": "F&SF review: the novel 'centers on the preeminent environmental' issue; global warming not named in the passage."
+    },
+    "ia:LocusV54n02200502IfcIbcBcKilroyAutolycus0152#text": {
+      "verdict": "supports",
+      "why": "Locus: Forty Signs of Rain 'is a passionately involved piece of ecological activism dressed up as a technothriller' about 'the impact of global warming'."
+    },
+    "ia:magazine-of-fantasy-science-fiction-1951-2008#text": {
+      "verdict": "supports",
+      "why": "F&SF: the novel 'centers on the preeminent environmental issue of our times — global warming'."
     }
   },
   "Lance Fung Gallery@1200606096#1353": {
     "ia:artinamerica91math": {
       "verdict": "partial",
       "why": "The gallery represents Richard Humann: one of the five artists."
+    },
+    "ia:bwb_Y0-BVF-491": {
+      "verdict": "partial",
+      "why": "Art in America lists Humann, Hutchinson, Matta-Clark and Paik among the gallery's artists; not 'permanent artists of the first five years'."
+    },
+    "ia:art-in-america-annual-1994#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Black Country Urban Forest@1336709937#1340": {
     "ia:countrysidechara0005unse": {
       "verdict": "unrelated",
       "why": "Medieval forest clearance."
+    },
+    "ia:sim_country-life_1949-07-01_106_2737": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:thisdayinillinoi0000ruet": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:insearchofandalu0000wawn": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:the-cultural-landscape-books#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Zhangjiajie National Forest Park@1376163968#3963": {
@@ -267,6 +619,34 @@
     "ia:appletonsannual50unkngoog": {
       "verdict": "unrelated",
       "why": "A binary star's period; matched '22'."
+    },
+    "ia:s3appletonsannu06newyuoft": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:radiantenergyits00larkrich": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:s3appletonsannu06newyuoft#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:radiantenergyits00larkrich#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:appletonsannual50unkngoog#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:copernicusintern03dubluoft#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:americanephemer20offigoog#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Cenomanian@1362029724#3853": {
@@ -281,12 +661,68 @@
     "ia:chalkproceedings0000inst": {
       "verdict": "unrelated",
       "why": "95% carbonate content."
+    },
+    "ia:bulletin-american-museum-natural-history-195-001-191": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:oceansofkansasna0000ever": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:adele-h-pentland-a-review-of-the-jurassic-and": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:newsuperfamilyt82tyle": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:bulletin-american-museum-natural-history-195-001-191#text": {
+      "verdict": "topic",
+      "why": "The Cenomanian as ca. 95 million years; not when the Upper Cenomanian starts."
+    },
+    "ia:adele-h-pentland-a-review-of-the-jurassic-and#text": {
+      "verdict": "partial",
+      "why": "The upper Cenomanian Sannine Limestone dated ~95 mya: consistent, not the stage's start."
+    },
+    "ia:newsuperfamilyt82tyle#text": {
+      "verdict": "topic",
+      "why": "The Lower Cenomanian dated about 95 MYA."
     }
   },
   "Tyson Miller@1373361987#9190": {
     "mlbtraderumors.com/2022/11/brewers-claim-tyson-miller-from-rangers.html": {
       "verdict": "unrelated",
       "why": "ja.wiki sentence on a November 2022 waiver claim."
+    },
+    "ia:iowa-baseball-2014-media-guide-c": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:strib-08-16-2023": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:world-series-2021-game-program-astros-vs-braves-c": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:2025-chicago-cubs-media-guide_202512": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:strib-08-16-2023#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:world-series-2021-game-program-astros-vs-braves-c#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:2025-chicago-cubs-media-guide_202512#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Popular Problems@1351791401#1453": {
@@ -301,6 +737,38 @@
     "ia:usa-set-6b0e19ea-rolling-stone-08fda6": {
       "verdict": "unrelated",
       "why": "A Rolling Stone chart page."
+    },
+    "ia:cohen-as-bespoke-mens-death-priest": {
+      "verdict": "topic",
+      "why": "A bibliography entry for the album, 2014; not its place in the discography or release dates."
+    },
+    "ia:LesInrocks2No.72-LeonardCohen2016": {
+      "verdict": "partial",
+      "why": "Cohen presented the new album Popular Problems on 16 September 2014; not the release dates."
+    },
+    "ia:researchers-beware-wikipedia-entries-about-high-control-groups-are-not-very-trustworthy": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:jazz-dergisi-sayi-76": {
+      "verdict": "topic",
+      "why": "A review of Popular Problems (2014); not its release dates."
+    },
+    "ia:cohen-as-bespoke-mens-death-priest#text": {
+      "verdict": "topic",
+      "why": "A bibliography entry for the album; not its release dates."
+    },
+    "ia:LesInrocks2No.72-LeonardCohen2016#text": {
+      "verdict": "topic",
+      "why": "A Cohen timeline mentioning the album; not its release dates."
+    },
+    "ia:researchers-beware-wikipedia-entries-about-high-control-groups-are-not-very-trustworthy#text": {
+      "verdict": "topic",
+      "why": "A copy of Wikipedia (WP:CIRCULAR): the album in 2014, not the release dates."
+    },
+    "ia:jazz-dergisi-sayi-76#text": {
+      "verdict": "topic",
+      "why": "A list of 2014 albums including it; not its release dates."
     }
   },
   "Clinton Sparks@1371326718#746": {
@@ -315,36 +783,184 @@
     "linkedin.com/in/clinton-sparks-158096b7": {
       "verdict": "supports",
       "why": "ar.wiki sentence: born 18 September 1979 (LinkedIn is not a reliable source)."
+    },
+    "ia:sim_guernsey-breeders-journal_1950-09-01_80_1": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:The_Austin_Chronicle-2014-03-07": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:screechowl1974mayn": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_boston-phoenix_april-15-21-2005_34_15": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_guernsey-breeders-journal_1950-09-01_80_1#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:The_Austin_Chronicle-2014-03-07#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:screechowl1974mayn#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_boston-phoenix_april-15-21-2005_34_15#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Hossein Abedini@1256675326#3377": {
     "ia:unita_2005-08-19": {
       "verdict": "unrelated",
       "why": "A TV listing."
+    },
+    "ia:GAT_2002030701": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:vueweekly344": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:seemagazine446": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:GAT_2002030701#text": {
+      "verdict": "topic",
+      "why": "A review of Baran, Abedini's film; nothing on the Fajr festival."
+    },
+    "ia:vueweekly344#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:unita_2005-08-19#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Goodrich Quality Theaters@1373115973#4818": {
     "ia:2004harrisindian00fran": {
       "verdict": "unrelated",
       "why": "A 2004 directory; matched '25'."
+    },
+    "ia:per_new-york-dramatic-mirror_dramatic-mirror-of-motion-pictures-and-the-stag_1917-08-18_77_2017": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:lfx-v-17": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:moving34chal": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:isbn_9781928936732": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:per_new-york-dramatic-mirror_dramatic-mirror-of-motion-pictures-and-the-stag_1917-08-18_77_2017#text": {
+      "verdict": "topic",
+      "why": "1917 theatres charging under 25 cents; not the 1930s average."
+    },
+    "ia:lfx-v-17#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:moving34chal#text": {
+      "verdict": "topic",
+      "why": "The 1917 ticket tax; not the 1930s average price."
     }
   },
   "Mercedes Moné@1376796620#216276": {
     "fightful.com/wrestling/mercedes-mone-comments-divorce-sarath-ton": {
       "verdict": "partial",
       "why": "Cited for the July 2024 filing, not the finalisation."
+    },
+    "ia:pro-wrestling-illustrated-may-2025": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:magazines-2023-publications-index": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:tv-satellite-week-24-august-2024": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:pro-wrestling-illustrated-may-2025#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:magazines-2023-publications-index#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:tv-satellite-week-24-august-2024#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:pro-wrestling-illustrated-june-2025#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Metal Skin@1362856159#6848": {
     "ia:oxfordcompaniont0000unse_h5j6": {
-      "verdict": "topic",
-      "why": "A Film Critics Circle award to Nadine Garner, not Young and Mendelsohn."
+      "verdict": "unrelated",
+      "why": "Now a passage on New York and LA critics' awards, not the Australian prize."
+    },
+    "ia:isbn_9781241049034": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:metro1dp#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Guido Henkel@1355143432#5492": {
     "web.archive.org/web/20080517001305/http://rpgvaultarchive.ign.com/features/mini/emusement.shtml": {
       "verdict": "unknown",
       "why": "Interview about eMusement cited for his joining it; may cover the SquareSoft project."
+    },
+    "ia:evolveeventprogr2004unse": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:high-score-6-hse-6-final-300-sec": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:game-developer-may-2003": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:evolveeventprogr2004unse#text": {
+      "verdict": "partial",
+      "why": "Henkel as VP of Product Development at eMusement, 'a now-defunct start up' working on an MMORPG for Squaresoft; not the year or the six months."
+    },
+    "ia:high-score-6-hse-6-final-300-sec#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:game-developer-may-2003#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:computer-games-issue-127-june-2001#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Brian Kernighan@1371976733#7302": {
@@ -363,6 +979,38 @@
     "ia:gawk-effective-awk-programming-a-users-guide-for-gnu-awk-edition-5.4": {
       "verdict": "topic",
       "why": "Mentions the Software Tools book; not the BASIC edition."
+    },
+    "ia:manualzilla-id-5645491": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:AUUGN_V05_1": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:login_february-1981": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:evolution-of-unix": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:manualzilla-id-5645491#text": {
+      "verdict": "topic",
+      "why": "Kernighan as co-author of Software Tools; not the series' spread or BASIC."
+    },
+    "ia:AUUGN_V05_1#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:login_february-1981#text": {
+      "verdict": "partial",
+      "why": "Software Tools: 'A textbook about building good software' tools like UNIX's: the spread of Unix thinking, not BASIC."
+    },
+    "ia:evolution-of-unix#text": {
+      "verdict": "topic",
+      "why": "Software Tools as a source on Unix history; not its influence."
     }
   },
   "Rail shooter@1365330287#5172": {
@@ -379,6 +1027,26 @@
     "ia:gamer-games-iv": {
       "verdict": "partial",
       "why": "'Presented again in 2015 as a PS4 release': the second half of the claim."
+    },
+    "ia:magazines_201704": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:nhp-jugal-kishore": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:magazines_201704#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:nhp-jugal-kishore#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:eparlib.nic.in.65848#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Viva (Bolivia)@1359623532#498": {
@@ -393,18 +1061,90 @@
     "ia:rareernestbrawle0000unse": {
       "verdict": "unrelated",
       "why": "'Viva' and 'Cruz' in unrelated books (the claim read was the wrong tag)."
+    },
+    "ia:leo-7499": {
+      "verdict": "topic",
+      "why": "A Santa Cruz de la Sierra newspaper on VIVA; not where the company is based."
+    },
+    "ia:leo-10873-edictos": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:losmercedariosen03barr": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:eldeber-20695-clasificados": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:leo-7499#text": {
+      "verdict": "topic",
+      "why": "A Santa Cruz de la Sierra newspaper on VIVA; not where the company is based."
+    },
+    "ia:leo-10873-edictos#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:losmercedariosen03barr#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:eldeber-20695-clasificados#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Belstaff@1369795595#5996": {
     "telegraph.co.uk/fashion/people/david-beckham-on-acting-in-belstaff-outlaws-film": {
       "verdict": "supports",
       "why": "The Telegraph is cited at the end of this same sentence."
+    },
+    "ia:InStyle_Men_Winter_2015": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:InStyle_Men_Winter_2015#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:on_track_off_road_117#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:US.NN.FIT.SC.362.1.1.260.20140818#text": {
+      "verdict": "topic",
+      "why": "A Belstaff event with David Beckham in 2014; not the Outlaws film."
     }
   },
   "Democracy in Mexico@1369756707#49059": {
     "ia:democracymarkets0000unse": {
       "verdict": "unrelated",
       "why": "About Chile's Supreme Court."
+    },
+    "ia:democracyinmexic0000unse": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:mexicos-new-politics-the-pan-and-democratic-change-david-a-shirk-2004": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:foreign-affairs-1922-2001": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:nationalsecurity0000gear": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:mexicos-new-politics-the-pan-and-democratic-change-david-a-shirk-2004#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:foreign-affairs-1922-2001#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Belgium–Luxembourg relations@1360654760#8370": {
@@ -423,6 +1163,18 @@
     "benelux.int/de/info-buerger/benelux-union/ueber-uns/geschichte": {
       "verdict": "unrelated",
       "why": "de.wiki sentence on recognition of degrees."
+    },
+    "ia:jprs-report_fbis-sup-afr-90-195": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:oapen-20.500.12657-45631#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:peace-handbooks-v5-netherlands#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
     }
   },
   "Okhrana@1370650714#4928": {
@@ -441,6 +1193,974 @@
     "ia:russiaintransiti0000wrig": {
       "verdict": "topic",
       "why": "Glossary entry for the Okhrana."
+    },
+    "ia:cia-reports_prex-317ok-2": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:otherbolsheviksl00will": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:cia-reports_prex-317ok-2#text": {
+      "verdict": "partial",
+      "why": "Bloody Sunday as the Okhrana's 'most notorious' blunder, led by an Okhrana agent; not the communists' blame."
+    }
+  },
+  "Khirbet Kerak@1368547483#14129": {
+    "ia:biblerecentarcha0000keny_x1j1": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:archaeologicalen0000nege": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:sim_bulletin-of-the-american-schools-of-oriental-research_1925-10_19#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:Bedrosian2019EAMCRCA#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Takaharu Mitsui@1366505112#345": {
+    "ia:sim_japan-times_nippon-times_1943-02-08_15756": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1955-11-28_28_38": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in.ernet.dli.2015.105044": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1957-02-25_29_51": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1955-11-28_28_38#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1957-02-25_29_51#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Didius Julianus@1370266531#1728": {
+    "ia:fallofromanempir00whit": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:samuelbronstonsf0000harr": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:2014Nac79": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:citiesinsand0000aubr": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:2014Nac79#text": {
+      "verdict": "topic",
+      "why": "Didius Julianus's capture and death; not his reign as a turning point."
+    },
+    "ia:roman-imperial-chronology#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:journal-ancient-medieval#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Abigail May Alcott Nieriker@1373256207#9938": {
+    "ia:famouscuriouscem0000mari": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:sim_american-historical-association-annual-report_1928_supplement#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:libraryofcongres0000vari_n9i1#text": {
+      "verdict": "topic",
+      "why": "The Alcott family's papers; nothing on May staying in Europe."
+    }
+  },
+  "Muazzez Sultan@1370515564#2311": {
+    "ia:encyclopedia-of-the-ottoman-empire": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:ArabicEnglsihDictionary": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:encyclopedia-of-the-ottoman-empire#text": {
+      "verdict": "topic",
+      "why": "Ibrahim's reign and death; nothing on Muazzez."
+    },
+    "ia:ArabicEnglsihDictionary#text": {
+      "verdict": "topic",
+      "why": "Ibrahim's reign and death; nothing on Muazzez."
+    },
+    "ia:the-imperial-harem-women-and-sovereignty-in-the-ottoman-empire-1993-pdf#text": {
+      "verdict": "topic",
+      "why": "Ibrahim's son's concubines; nothing on Muazzez."
+    }
+  },
+  "Princess Feodora of Leiningen@1373372849#2645": {
+    "ia:dli.ministry.02539": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:illustratedqueen0000stra": {
+      "verdict": "supports",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:dli.ernet.51562": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:memoirsbaronsto01stocgoog": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:dli.ministry.02539#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:memoirsbaronsto01stocgoog#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "September 1954@1348095199#6345": {
+    "ia:NPCM19550621": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:sim_japan-times_1956-08-20_20665": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:meteorological-and-geoastrophysical-abstracts_1954-11_5_11": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:NPCM19550621#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_japan-times_1956-08-20_20665#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:meteorological-and-geoastrophysical-abstracts_1954-11_5_11#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_current-geographical-publications_1954-12_17_10#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_survey-of-current-business_1954-12_34_12#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Bosnian–Ragusan war of 1403–1404@1370606015#1063": {
+    "ia:croats-serbs": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:emir-o.-filipovic-the-most-nobleand-royal-houseof-kotromanic.-constructing-dynas": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:opera-snapshot-2025-03-29-065116-www.fojnica.de": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:armorial-general-precede-dun-dictionnaire-des-termes-du-blason": {
+      "verdict": "partial",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:croats-serbs#text": {
+      "verdict": "partial",
+      "why": "Dubrovnik (Ragusa) 'under the protection of the kingdom of Hungary and Croatia (1358-1526)': the alliance, not the war."
+    },
+    "ia:emir-o.-filipovic-the-most-nobleand-royal-houseof-kotromanic.-constructing-dynas#text": {
+      "verdict": "partial",
+      "why": "King Ostoja's war against Ragusa, and Ragusa sending envoys to King Sigismund of Hungary; the alliance is implied, not stated."
+    },
+    "ia:opera-snapshot-2025-03-29-065116-www.fojnica.de#text": {
+      "verdict": "partial",
+      "why": "King Ostoja's war against Ragusa, and Ragusa sending envoys to King Sigismund of Hungary; the alliance is implied, not stated."
+    },
+    "ia:armorial-general-precede-dun-dictionnaire-des-termes-du-blason#text": {
+      "verdict": "partial",
+      "why": "King Ostoja's war against Ragusa, and Ragusa sending envoys to King Sigismund of Hungary; the alliance is implied, not stated."
+    }
+  },
+  "Afuzhiluo@1337056068#3140": {
+    "ia:syriac-music": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:syriac-music#text": {
+      "verdict": "topic",
+      "why": "Rouran and Hephthalite expansion; not Karashahr or Qiongqi."
+    },
+    "ia:sogdian-traders-a-history#text": {
+      "verdict": "topic",
+      "why": "The Rouran and the Gaoju; not the Hephthalites at Karashahr."
+    },
+    "ia:sogdian-traders-a-history-handbook-of-oriental-studies-handbook-of-oriental-studies_compress#text": {
+      "verdict": "topic",
+      "why": "Afuzhiluo's envoy to the Wei; not the Hephthalites at Karashahr."
+    }
+  },
+  "Transcendental Meditation movement@1374321389#44979": {
+    "ia:qNmH_ayurveda-shiksha-a-text-book-of-ayurveda-vil-1-sec-1-historical-back-ground-edit": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:wFoe_a-text-book-of-ayurveda-vol-1-section-1-historical-background-ed-by-dr-a-lakshmi": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:isbn_9781428894051": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:qNmH_ayurveda-shiksha-a-text-book-of-ayurveda-vil-1-sec-1-historical-back-ground-edit#text": {
+      "verdict": "topic",
+      "why": "A president of the All India Ayurvedic Congress; nothing on the Maharishi's system."
+    },
+    "ia:wFoe_a-text-book-of-ayurveda-vol-1-section-1-historical-background-ed-by-dr-a-lakshmi#text": {
+      "verdict": "topic",
+      "why": "A president of the All India Ayurvedic Congress; nothing on the Maharishi's system."
+    }
+  },
+  "Jelena Skerlić Ćorović@1371735455#3111": {
+    "ia:magritte00gimf": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:grupa-autora-zabiljezene-zene-i-javni-zivot-u-bi-h-u-20-v.": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:brownalumnimonth141brow": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:grupa-autora-zabiljezene-zene-i-javni-zivot-u-bi-h-u-20-v.#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:brownalumnimonth141brow#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:francuska_knjizevnost_19_i_20_vijeka_knjiga_i_1939#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:ljubljanskizvon41ljubuoft#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Erasmus Darwin House@1344721583#4434": {
+    "ia:jenny-uglow-the-lunar-men-the-inventors-of-the-modern-world-1730-1810": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:darwin0000pear": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:amazingscientist0000coll": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:jenny-uglow-the-lunar-men-the-inventors-of-the-modern-world-1730-1810#text": {
+      "verdict": "partial",
+      "why": "Darwin added 'a new front facing west across the road', with Venetian windows; the bridge and terrace are not in the passage."
+    }
+  },
+  "Fort Buford Stage Road@1373286591#872": {
+    "ia:osprey-fortress-044-american-coastal-defenses-1885-1950": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:collectionsofsta07stat": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:soldierdoctorofo00kimb": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in.ernet.dli.2015.169426": {
+      "verdict": "topic",
+      "why": "Fort Buford, Dakota Territory, but nothing on the stage road."
+    },
+    "ia:osprey-fortress-044-american-coastal-defenses-1885-1950#text": {
+      "verdict": "topic",
+      "why": "A map of Dakota Territory forts; nothing on the road."
+    },
+    "ia:collectionsofsta07stat#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:soldierdoctorofo00kimb#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:in.ernet.dli.2015.169426#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Otter civet@1371730282#2216": {
+    "ia:worldencyclopedi0000marc": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in.ernet.dli.2015.238497": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:the-encyclopedia-of-animals-a-complete-visual-guide": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:animalgeographyf00newbuoft": {
+      "verdict": "unrelated",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:in.ernet.dli.2015.238497#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:animalgeographyf00newbuoft#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Endocrine system@1356929510#9852": {
+    "ia:mammalianaliment0000madg": {
+      "verdict": "supports",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:cytology-histology-b-1#text": {
+      "verdict": "supports",
+      "why": "'Pancreas — Exocrine: Acini secrete digestive enzymes.'"
+    },
+    "ia:ray-optics-optical-instruements#text": {
+      "verdict": "supports",
+      "why": "'pancreatic acini secrete digestive enzymes.'"
+    }
+  },
+  "Diagonal band of Broca@1220886502#2424": {
+    "ia:the-anatomy-of-the-nervous-system-3-b-its-development-and-function": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:anatomyofnervous0000unse_o5l1": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:bwb_S0-CEK-253": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:bwb_S0-CEK-395": {
+      "verdict": "topic",
+      "why": "A figure legend naming the diagonal band and subcallosal gyrus; not what connects to what."
+    },
+    "ia:the-anatomy-of-the-nervous-system-3-b-its-development-and-function#text": {
+      "verdict": "topic",
+      "why": "The medial olfactory stria to the subcallosal gyrus and septal area; not the diagonal band."
+    },
+    "ia:bwb_S0-CEK-395#text": {
+      "verdict": "topic",
+      "why": "A figure legend naming the diagonal band and subcallosal gyrus; not what connects to what."
+    }
+  },
+  "Nitroxinil@1352698310#3075": {
+    "ia:helminthological-abstracts_1997_66_index": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:veterinary-bulletin_1990_60_index": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:VeterinaryPharmacologyAndTherapeutics": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:veterinary-bulletin_1992_62_index": {
+      "verdict": "topic",
+      "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:helminthological-abstracts_1997_66_index#text": {
+      "verdict": "topic",
+      "why": "An index entry: nitroxinil against Haemonchus in South Africa; not resistance to benzimidazoles."
+    },
+    "ia:VeterinaryPharmacologyAndTherapeutics#text": {
+      "verdict": "topic",
+      "why": "Benzimidazole-resistant Haemonchus contortus; nothing on nitroxynil."
+    }
+  },
+  "MS Ilos@1368787865#9100": {
+    "ia:thor-comics-collection-2026": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:BNA-DIG-AWEMAINTA-2010-01-16": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:dxld2009-086": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:thor-comics-collection-2026#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:BNA-DIG-AWEMAINTA-2010-01-16#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:dxld2009-086#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Three Gemstones@1336833166#3911": {
+    "ia:pearlsnaturalcul0000farn": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:debala-mitra": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:abehayatshapingc0000azad": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:debala-mitra#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Luigi Caburlotto@1310536546#3903": {
+    "ia:6179039-Drug-Documents-Dr-Gerber": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:2017DOIBudgetReqGovRecs": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:6179039-Drug-Documents-Dr-Gerber#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:2017DOIBudgetReqGovRecs#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Diana L. Eck@1376718403#5475": {
+    "ia:changingwaysemin0002unse": {
+      "verdict": "topic",
+      "why": "A National Council of Churches statement on interfaith relations, not Eck's work."
+    },
+    "ia:wcccurrentdialogue041": {
+      "verdict": "topic",
+      "why": "Cites Eck alongside the World Council of Churches; not her work with it."
+    },
+    "ia:sourcebookforcom0000unse": {
+      "verdict": "partial",
+      "why": "Eck as Moderator of the World Council of Churches' sub-unit on dialogue: her WCC interfaith work, not the NCC."
+    },
+    "ia:wcccurrentdialogue041#text": {
+      "verdict": "topic",
+      "why": "The WCC's office on interreligious relations; not Eck."
+    },
+    "ia:wcccurrentdialogue023#text": {
+      "verdict": "topic",
+      "why": "The WCC's interfaith relations; not Eck."
+    },
+    "ia:sim_christian-century_january-december-2001_118_index#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Fear and Trembling (novel)@1373905722#6796": {
+    "ia:the-oxford-handbook-of-the-history-of-terrorism": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:bwb_W7-CMV-267": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:the-oxford-handbook-of-the-history-of-terrorism#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:ad1000livingonbr0000rich#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Genny Lim@1371387863#3125": {
+    "ia:womenartistsofam0000unse": {
+      "verdict": "topic",
+      "why": "A Bay Guardian Goldie in an artist's awards; not clearly Lim's, nor the Songline grants."
+    }
+  },
+  "Bellsmyre@1359003853#1408": {
+    "ia:homebuilders0000unse": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:stirlingcentrals0000giff": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:scotlandhighland0000unse": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:gazetteer-and-summary-of-french-pottery-in-scotland-c-1150-c-1650#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:FinancialTimes1984UKEnglish#text": {
+      "verdict": "topic",
+      "why": "Modernisation of houses in Bellsmyre in 1984; not the 1992 transfer."
+    }
+  },
+  "Cromlix House@1366407855#7121": {
+    "ia:hachetteguidetog00hach": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:scottishbirdsv42nscota#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "California Club@1376314187#10999": {
+    "ia:bonhams.-california-western-art.-catalogue-nov-2025.": {
+      "verdict": "topic",
+      "why": "An auction lot by Brandriff; nothing on the California Club."
+    },
+    "ia:californiaimpres0000gerd": {
+      "verdict": "topic",
+      "why": "Wendt and Lauritz as California Impressionists; nothing on the club's collection."
+    },
+    "ia:bonhams.-california-western-art.-catalogue-nov-2025.#text": {
+      "verdict": "topic",
+      "why": "An artists' index naming Bischoff and Brandriff; nothing on the California Club."
+    },
+    "ia:santa-ana-daily-evening-register-1919-06-02#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Lankaran-Astara Economic Region@1373625035#8298": {
+    "ia:micro_IA40243303_2081": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:papersproceeding0000inte_b8f9": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:micro_IA40243311_3192": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:micro_IA40243303_2081#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:micro_IA40243311_3192#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:micro_IA40243308_2615#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "National Freeway 1@1368145753#3238": {
+    "ia:fodors05australi2005smit": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:oapen-20.500.12657-57597": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:garrettcountydee00garr_4": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:taipei0000marc": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:oapen-20.500.12657-57597#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:garrettcountydee00garr_4#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:scm7964-1-180#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:mccl_10.1016_j.landurbplan.2017.08.001#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Pavenham Osier Beds@1353566902#1741": {
+    "ia:wheretowatchbird0000clew_f7y9": {
+      "verdict": "topic",
+      "why": "A birdwatching guide to the county; nothing on the site's footpaths in the passage."
+    }
+  },
+  "BWF World Ranking@1376221205#3792": {
+    "ia:thehindu-newspaper-all-editions-07-10-2025": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:thehindu-newspaper-all-editions-07-10-2025#text": {
+      "verdict": "topic",
+      "why": "Kim Won-ho and Seo Seung-jae as world champions; not their ranking points."
+    },
+    "ia:salar-newspaper-all-editions-29-10-2024#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:timesofindia-newspaper-all-editions-12-04-2026#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Scott Becker@1376671906#4090": {
+    "ia:air-force-football-2024-media-guide": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:air-force-football-2025-media-guide-2025-07-11-a-b": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Denis Kang@1340706510#7295": {
+    "ia:andhwisbska": {
+      "verdict": "partial",
+      "why": "UFC 97: 'lost via unanimous decision to Denis Kang' — the win, not the months out."
+    },
+    "ia:pdfy-C0G2c0Sdny-mxA-1": {
+      "verdict": "partial",
+      "why": "UFC 97: 'lost via unanimous decision to Denis Kang' — the win, not the months out."
+    },
+    "ia:the-ring-magazine": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:pro-wrestling-mma-strategy-guides": {
+      "verdict": "topic",
+      "why": "A later loss by Kang; not the unanimous-decision win."
+    },
+    "ia:andhwisbska#text": {
+      "verdict": "partial",
+      "why": "UFC 97: 'lost via unanimous decision to Denis Kang' — the win, not the months out."
+    },
+    "ia:pdfy-C0G2c0Sdny-mxA-1#text": {
+      "verdict": "partial",
+      "why": "UFC 97: 'lost via unanimous decision to Denis Kang' — the win, not the months out."
+    },
+    "ia:the-ring-magazine#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:pro-wrestling-mma-strategy-guides#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Deepak Jain (cricketer)@1366672876#1810": {
+    "ia:nldn_india-today-international-edition-jan-feb-1991-delhi-living-room-media-india-pvt.-ltd.": {
+      "verdict": "topic",
+      "why": "Shivaji Park Youngsters as a club; nothing on Jain."
+    },
+    "ia:dli.bengal.10689.11904": {
+      "verdict": "topic",
+      "why": "Shivaji Park Youngsters as a club; nothing on Jain."
+    },
+    "ia:india.history.resource.14254": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:nldn_india-today-international-edition-jan-feb-1991-delhi-living-room-media-india-pvt.-ltd.#text": {
+      "verdict": "topic",
+      "why": "Shivaji Park Youngsters as a club; nothing on Jain."
+    },
+    "ia:dli.bengal.10689.11904#text": {
+      "verdict": "topic",
+      "why": "Shivaji Park Youngsters as a club; nothing on Jain."
+    },
+    "ia:india.history.resource.14254#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:in.gazette.maharashtra.2018-05-28.Extra-Ordinary_CENTRAL-SECTION_Part-4-C#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:in.gazette.maharashtra.2024-11-07.Ordinary_PUNE-DIVISION_Part-two-Change-In-Name-#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Santiago Carreras@1351998562#2570": {
+    "ia:tv-satellite-week-28-january-2023": {
+      "verdict": "partial",
+      "why": "'Gloucester's fly-half Santiago Carreras': one of the three positions."
+    },
+    "ia:sportbibliografh0000spor": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:internationaldic0000cudd_m2x2": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Al Hodge (rock musician)@1375828388#2605": {
+    "ia:historyoftelevis0000gold": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:tvdigest-philadelphia-1951-09-29": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:internationalwho0003unse": {
+      "verdict": "topic",
+      "why": "Someone's TV appearances throughout Europe; not clearly Hodge's."
+    },
+    "ia:tvdigest-philadelphia-1951-09-29#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Need You Tonight@1353697445#17649": {
+    "ia:isbn_9781471139857": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:13820000070_4563000070_INTERNETARCHIVE-COMMUNITYTEXTS-PROJECTS": {
+      "verdict": "topic",
+      "why": "A Rogue Traders track list; not the single's release."
+    },
+    "ia:cannock-chronicle-2014-12-04": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:13820000070_4563000070_INTERNETARCHIVE-COMMUNITYTEXTS-PROJECTS#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:cannock-chronicle-2014-12-04#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:radio-song-playlists-philippines-archive#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Michael J. Kohut@1357063490#1962": {
+    "ia:85yearsofoscar0000osbo": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:BNA-DIG-ARUBATODAY-2010-04-19": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:BNA-DIG-ARUBATODAY-2010-04-19#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:per_washington-post_1932-05-22_20429#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:marc-21-katalogavimo-vadovas#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Leitch Review@1195865435#6462": {
+    "ia:skillsforgrowthn0000grea": {
+      "verdict": "topic",
+      "why": "The Leitch Report on the benefits of skills, not the debate over learning for its own sake."
+    },
+    "ia:ERIC_ED502525": {
+      "verdict": "topic",
+      "why": "The implications of the Leitch report; not the learning-for-learning's-sake debate."
+    }
+  },
+  "Sanjiv Kumar (Jharkhand politician)@1355594348#589": {
+    "ia:annualregister190232hods": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:micro_IA1176911_0441#text": {
+      "verdict": "topic",
+      "why": "The Jharkhand Mukti Morcha; nothing on Kumar."
+    },
+    "ia:eparlib.nic.in.1339#text": {
+      "verdict": "topic",
+      "why": "The Jharkhand Mukti Morcha; nothing on Kumar."
+    }
+  },
+  "2010 Yeonpyeongdo bombardment@1376755701#61635": {
+    "ia:09BARCELONA32": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:nicolassarkozy0000abra": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:neweuropejuly2007": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:09BARCELONA32#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:neweuropejuly2007#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:videos-on-my-youtube-subscriptions-july-2025-#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:24.10.14-cverc-cn-volt-typhoon-is-us-3#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Unlimit Health@1359608601#3624": {
+    "ia:pubmed-PMC4117437": {
+      "verdict": "topic",
+      "why": "Neglected tropical diseases, not the SCI's founding partnership in 2006."
+    },
+    "ia:pubmed-PMC4153915": {
+      "verdict": "topic",
+      "why": "Integrated control of NTDs, not the SCI's founding partnership."
+    },
+    "ia:R42931ProgressinCombatingNeglectedTropicalDiseasesNTDsUSandGlobalEffortsfromFY2006toFY2015-crs": {
+      "verdict": "topic",
+      "why": "US efforts on NTDs, not the SCI's founding partnership."
+    },
+    "ia:pubmed-PMC4117437#text": {
+      "verdict": "topic",
+      "why": "Neglected tropical diseases; not the SCI's founding partnership."
+    },
+    "ia:pubmed-PMC4153915#text": {
+      "verdict": "topic",
+      "why": "Integrated control of NTDs; not the SCI's founding partnership."
+    },
+    "ia:R42931ProgressinCombatingNeglectedTropicalDiseasesNTDsUSandGlobalEffortsfromFY2006toFY2015-crs#text": {
+      "verdict": "topic",
+      "why": "US efforts on NTDs; not the SCI's founding partnership."
+    },
+    "ia:edg-ng-2001#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:nasa_open_access_october_codes_PMC4537107#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Eileen Ascroft@1353902884#2491": {
+    "ia:NPCM19580206#text": {
+      "verdict": "topic",
+      "why": "Names Ascroft among fashionable women of 1958; nothing on the book."
+    },
+    "ia:GOLSMITHSHANDOUTS#text": {
+      "verdict": "topic",
+      "why": "The Mirror's readership in 1938; nothing on Ascroft's book."
+    }
+  },
+  "Baalshamin@1362034634#6870": {
+    "ia:aziz-al-azmeh-the-emergence-of-islam-in-late-antiquity-allah-and-his-people#text": {
+      "verdict": "topic",
+      "why": "Zeus Olympios as an epithet; not Baalshamin in Syriac writers."
+    },
+    "ia:aziz-al-azmeh-works-#text": {
+      "verdict": "topic",
+      "why": "Zeus Olympios as an epithet; not Baalshamin in Syriac writers."
+    }
+  },
+  "Methyl isobutyl ketone@1353925244#7532": {
+    "ia:cftri.1079organicchemistry0000paul_k7m5#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:1925128#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Kill Trend Suicide@1350659220#1260": {
+    "ia:stain_14#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:hitparadermagazi50unse_42#text": {
+      "verdict": "unrelated",
+      "why": "Matched on common words, dates or numbers; not about the claim."
+    }
+  },
+  "Active Duty (web site)@1376123405#2439": {
+    "ia:best-gay-erotica#text": {
+      "verdict": "topic",
+      "why": "Dink Flamingo of ActiveDuty.com; not Dirty Bird Pictures."
     }
   }
 }

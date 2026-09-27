@@ -91,6 +91,7 @@ program
   .argument("<url-or-title>", "Wikipedia URL or bare article title")
   .option("--max-claims <n>", "cap the number of claims processed", parseIntArg)
   .option("--record <dir>", "save every raw Internet Archive response to <dir>, as fixtures")
+  .option("--full-text", "read the whole text of open books for a longer passage (slower)", false)
   .option("--json", "emit machine-readable JSON", false)
   .description(
     "Free stage only: look for books on the Internet Archive — open or borrowable — whose text carries each claim. No model, no API key.",
@@ -98,7 +99,7 @@ program
   .action(
     async (
       urlOrTitle: string,
-      opts: { maxClaims?: number; record?: string; json: boolean },
+      opts: { maxClaims?: number; record?: string; fullText: boolean; json: boolean },
     ) => {
       await archiveCommand({ urlOrTitle, ...opts });
     },
