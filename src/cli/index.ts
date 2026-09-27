@@ -111,7 +111,7 @@ program
   .requiredOption("--source <url>", "candidate source URL")
   .option("--json", "emit machine-readable JSON", false)
   .description(
-    "Ask Claude whether a specific source substantiates a specific claim.",
+    "Ask the Verify API whether a specific source substantiates a specific claim (no API key needed).",
   )
   .action(async (opts: { claim: string; source: string; json: boolean }) => {
     await verifyCommand(opts);

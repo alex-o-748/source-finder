@@ -16,10 +16,10 @@
  *   npx tsx eval/run.ts --full-text        # also read open books' whole text (recorded to
  *                                          # eval/cassettes-fulltext/, not committed)
  *   npx tsx eval/run.ts --check --name check
- *                                          # also check the Archive leads' passages with Claude,
- *                                          # as the user script does when a key is set
+ *                                          # also check the Archive leads' passages with the
+ *                                          # Verify API, as the user script does
  *
- * The web search and the check need CNFIRMED_ANTHROPIC_API_KEY only to record:
+ * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record (the check needs no key):
  * replaying a recorded call needs no key. The key travels in a header, and headers are
  * never written to disk.
  *
@@ -61,7 +61,7 @@ if (engine !== "userscript" && engine !== "core") throw new Error(`unknown engin
 
 const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
 const web = process.argv.includes("--web");
-/** Check the Archive leads with the model, as the user script does when a key is set. */
+/** Check the Archive leads with the Verify API, as the user script does. */
 const check = process.argv.includes("--check");
 /** Read the whole text of open books too (option off in the shipped script until archive.org allows it). */
 const fullText = process.argv.includes("--full-text");
@@ -78,7 +78,7 @@ const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
 if ((web || check) && engine !== "userscript") {
   throw new Error("--web and --check run the user script's model calls only");
 }
-if ((web || check) && record && !apiKey) {
+if (web && record && !apiKey) {
   throw new Error("recording a model call needs CNFIRMED_ANTHROPIC_API_KEY in the environment");
 }
 
@@ -234,7 +234,7 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
     for (const e of archive.funnel.errors) result.errors.push(`archive: ${e}`);
     if (check && archive.candidates.length) {
       try {
-        const verdicts = await page.checkArchive(index, archive.candidates, apiKey || "replay-needs-no-key");
+        const verdicts = await page.checkArchive(index, archive.candidates);
         result.archive.forEach((lead, k) => {
           lead.check = verdicts[k] ? { verdict: verdicts[k].verdict, reason: verdicts[k].reason } : null;
         });

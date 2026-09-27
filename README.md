@@ -11,8 +11,8 @@ Results are returned ranked, each with a ready-to-paste Wikipedia cite template.
 
 This repo ships two things:
 
-- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all; the web search talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. No backend, no proxy.
-- A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal against the Anthropic API.
+- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all; the web search talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. The one backend it calls is the Verify API, which checks Internet Archive passages against the claim and needs no key.
+- A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal. Web search uses the Anthropic API; checking a candidate against the claim uses the [Verify API](#the-verifier-is-separable-cli).
 
 ## Why
 
@@ -22,7 +22,7 @@ And a lot of the time nobody needs to search at all. A tagged sentence often sit
 
 ## User script (recommended)
 
-The user script is the primary way to use CNfirmed. It runs entirely on the Wikipedia page — no server, no Cloudflare Worker, no allowlist.
+The user script is the primary way to use CNfirmed. It runs on the Wikipedia page — no server of its own, no Cloudflare Worker, no allowlist. The only service it calls besides the model provider is the Verify API, for the Internet Archive check.
 
 The wiki-local stage works with no API key at all. For the web search you provide a key for Claude, Gemini, or OpenAI; it's kept in your browser's `localStorage` and only sent to the provider you chose.
 
@@ -78,7 +78,7 @@ These are *leads, not verdicts*: a human editor cited that source for a sentence
 
 ## Node CLI
 
-A standalone command-line tool against the Anthropic API. Useful for batch runs or scripting; the user script doesn't depend on it.
+A standalone command-line tool. Useful for batch runs or scripting; the user script doesn't depend on it. The web search runs against the Anthropic API; every candidate is then checked by the Verify API, which needs no key.
 
 ### Install
 
@@ -92,8 +92,11 @@ Set your API key:
 ```sh
 export ANTHROPIC_API_KEY=sk-ant-...
 # optional:
-export CNFIRMED_MODEL=claude-sonnet-5
+export CNFIRMED_MODEL=claude-sonnet-5          # web search model
+export CNFIRMED_VERIFY_URL=http://localhost:8080  # Verify API base (default: https://citation-verifier.toolforge.org)
 ```
+
+`verify` and `wiki` need no Anthropic key; `find` needs one only for the web search.
 
 ### Usage
 
@@ -113,7 +116,7 @@ node dist/cli/index.js archive "Eiffel Tower" --max-claims 5
 node dist/cli/index.js archive "Eiffel Tower" --record fixtures-out/  # save raw responses
 node dist/cli/index.js archive "Eiffel Tower" --full-text  # read open books' whole text too (slower)
 
-# Just the verifier — useful as its own service.
+# Just the verifier (the Verify API) — no API key needed.
 node dist/cli/index.js verify \
   --claim "The Eiffel Tower was 300 metres tall when first built." \
   --source "https://www.britannica.com/topic/Eiffel-Tower-Paris-France"
@@ -151,13 +154,13 @@ src/
     internetArchive.ts # Internet Archive client: full-text search, metadata, book text
     archiveSources.ts  # Internet Archive books whose text carries the claim (no model)
     findSources.ts     # stage 2 — Claude + web_search → candidate sources
-    verifySource.ts    # (claim, source) → verdict — separable
+    verifySource.ts    # (claim, source) → verdict, via the Verify API — separable
     formatCitation.ts  # source → {{cite web|...}} / {{cite news|...}}
     runArticle.ts      # orchestrator: stage 1, then stage 2 only if needed
     anthropic.ts       # shared client + prompt-caching helper
     prompts.ts         # disk-backed prompt loader
   cli/                 # thin Commander wrapper over core
-  prompts/             # verify_source.md, find_sources.md
+  prompts/             # find_sources.md
   policy/              # WP:RSP unreliable-source blocklist
 ```
 
@@ -165,14 +168,19 @@ The user script is intentionally standalone: it inlines its own prompt, blocklis
 
 ## The verifier is separable (CLI)
 
-`verifySource(claim, sourceUrl)` is exposed both as a library function and as the `cnfirmed verify` subcommand. It uses the prompt at `src/prompts/verify_source.md`. The function contract is stable.
+`verifySource(claim, sourceUrl)` is exposed both as a library function and as the `cnfirmed verify` subcommand. The function contract is stable.
 
-The verifier grades **two independent axes**:
+It does not call a model itself. It posts the claim and the source to the **Verify API** — `POST /v1/verify` from [alex-o-748/citation-checker-script](https://github.com/alex-o-748/citation-checker-script/blob/main/docs/verify-api.md), hosted at `https://citation-verifier.toolforge.org` (override with `CNFIRMED_VERIFY_URL`). That service runs the same benchmarked prompt, parser and quote check as the citation-checker userscript, so CNfirmed does not maintain a second verifier prompt. It fetches `source_url` itself; pass `{ sourceText }` to send text you already have as `source_content` instead.
 
-- **Substantiation** — `verdict ∈ {SUPPORTED, PARTIALLY SUPPORTED, NOT SUPPORTED, SOURCE UNAVAILABLE}`, `confidence 0-100`, `comments` (usually including the relevant quote). Pure reading comprehension: does the source actually state the specific claim?
-- **Reliability for this claim** — `reliability ∈ {high, medium, low, n/a}`, `reliabilityReason`. WP:RS judgment *for the kind of claim being made* (context-sensitive: BLP, medical, SPS-for-author-bio, primary-vs-secondary).
+What comes back:
 
-These are kept separate so callers can distinguish "doesn't say it" from "says it, but wrong kind of source". A suggestion with `verdict: "SUPPORTED"` and `reliability: "low"` is still surfaced — flagged — so a human editor can see the source does say it but needs a better one. A cite template and `<ref>` snippet are emitted for every candidate; the verdict, confidence, and reliability shown alongside are what a human editor uses to decide whether to paste it.
+- `verdict ∈ {SUPPORTED, PARTIALLY SUPPORTED, NOT SUPPORTED, SOURCE UNAVAILABLE}`, `confidence 0-100` (the API's `support_score`), `comments`.
+- `quote` — the API's `verified_text`: the part of the model's quote actually found in the source. The model's unverified quote is never passed on.
+- `reliability` is `"n/a"`: the Verify API grades substantiation only. Candidates are still screened against the WP:RSP blocklist before they reach the verifier, and judging reliability for the claim is left to the editor.
+
+The service allows 30 requests a minute across all callers. On a 429, `verifySource` waits out `Retry-After` (up to three times) rather than failing the candidate; a source the API cannot fetch (422) becomes a `SOURCE UNAVAILABLE` verdict.
+
+A cite template and `<ref>` snippet are emitted for every candidate; the verdict, confidence and quote shown alongside are what a human editor uses to decide whether to paste it.
 
 ## Sources already on Wikipedia (the free stage)
 
@@ -196,7 +204,7 @@ Deliberately out of scope: **Wikidata statements and their references.** This wa
 
 A second free stage, in both the user script (a **Search Internet Archive books** button in each claim's popover) and the CLI (`cnfirmed archive`). It looks for the claim in the OCR text of digitised books, with no model. A book counts if an editor can read the passage: an open one, or one in the lending library, which anyone with a free archive.org account can borrow.
 
-The search matches words, so on its own it cannot tell a passage that states the claim from one that only shares its words, and most do not state it (18% of its leads do, on the evaluation set). In the user script, when an API key is set, the passages it finds are then read by the model (step 6).
+The search matches words, so on its own it cannot tell a passage that states the claim from one that only shares its words, and most do not state it (18% of its leads do, on the evaluation set). In the user script, the passages it finds are then checked against the claim by the Verify API (step 6), which needs no key.
 
 1. **Search** — two families of full-text queries, run side by side, each strictest first until it has ten books:
    - *numbers and names*: the article's subject with every number and name in the claim, then with the numbers only, then with the strongest anchor;
@@ -211,9 +219,9 @@ The search matches words, so on its own it cannot tell a passage that states the
    The two rankings are taken in turn.
 4. **Dedupe and look up** — one book per work: the same main title and a creator sharing a name (scans spell creators differently; a different author under the same title is a different work). On a tie, an open book ranks above a borrowable one. Then item metadata for the four kept: publisher and ISBN for the citation, and whether the book has been withdrawn.
 5. **Whole text (CLI only for now)** — with `--full-text`, the CLI reads the whole OCR text of up to five open books (`archive.org/stream/{id}/{file}_djvu.txt`, the volume that matched) and shows the best ~450-character stretch — most claim units, centred — instead of the ~100-character highlights, adding up to two books whose highlights showed nothing. Lending-library texts are not public. The user script has the same code behind `window.cnfirmedArchiveFullText = true`, off by default: archive.org sends no CORS header on that page, so a browser refuses to hand the text to a script on a Wikipedia page. It can also be set to the URL prefix of a proxy that relays those pages.
-6. **Check (user script, with an API key)** — one short call to the provider and model chosen for the web search, with no tools: the claim, the article's title, the claim's paragraph for context, and each lead's passages. The model gives each book a verdict — *states the claim*, *states part of it*, *same subject, another fact*, *only shares words* — with the words that state it and a one-line reason, judged on the passages alone. The popover shows the first two and folds the others behind a button. It runs by itself after the search when a key is set; without one, the leads are shown marked *not checked*, with a button that asks for a key. The verdicts are the ones `eval/labels.json` uses, so `npx tsx eval/run.ts --check` measures the check against the hand labels. The CLI does not run it.
+6. **Check (user script, free)** — each lead's passages go to the Verify API (`POST /v1/verify` at `citation-verifier.toolforge.org`, the same claim-vs-source check `cnfirmed verify` uses) as the source text, with the claim: one call per book, one after another. Each book gets a verdict — *states the claim*, *states part of it*, *does not state it* — with a comment and, when the API located one, the words from the passage that back it (its `verified_text`), judged on the passages alone. The popover shows the first two and folds the rest behind a button. It runs by itself after the search; if it fails, the leads are shown marked *not checked*, with a button to try again. The service allows 30 requests a minute across all its callers, and a 429 is waited out. `npx tsx eval/run.ts --check` measures the check against the hand labels in `eval/labels.json`. The CLI does not run it. Set `window.cnfirmedVerifyUrl` before the script loads to use another host.
 
-That is two to seven searches (two families in parallel) and at most six metadata requests per claim, plus up to five whole texts with `--full-text`, and one model call to check the leads when a key is set. Each lead comes with its passages, the anchors they matched, a link that opens the book with the match searched, and a `{{cite book … |via=Internet Archive}}` — with `|url-access=registration` for a borrowable book, as InternetArchiveBot writes it. The page number is not known: the editor adds `|page=` after checking the passage. Old sources can be outdated or primary (WP:AGEMATTERS).
+That is two to seven searches (two families in parallel) and at most six metadata requests per claim, plus up to five whole texts with `--full-text`, and one Verify API call per lead to check them. Each lead comes with its passages, the anchors they matched, a link that opens the book with the match searched, and a `{{cite book … |via=Internet Archive}}` — with `|url-access=registration` for a borrowable book, as InternetArchiveBot writes it. The page number is not known: the editor adds `|page=` after checking the passage. Old sources can be outdated or primary (WP:AGEMATTERS).
 
 **Endpoints.** Only `https://archive.org` is on Wikipedia's CSP allowlist, so both front ends use the full-text search archive.org's own search page uses (`/services/search/beta/page_production/?service_backend=fts`) and `/metadata/{id}`; both were checked from a Wikipedia page. The `ia` package's `be-api.us.archive.org`, search-inside-the-book and OCR downloads are refused there, and are not used anywhere, so the CLI and the user script see the same data. The response shape is recorded in `test/fixtures/archive/`. Checked live: a space is AND; an exact `"phrase"` works and is highlighted as one passage; `identifier:x` and field ranges such as `year:[1800 TO 1930]` work. `AND` between two terms is read as the word "and"; `OR`, `NEAR` and proximity (`"a b"~20`, which reads `20` as a term) do not work. Each book comes back with at most five highlights of about 100 characters, each around one term.
 
@@ -225,7 +233,7 @@ That is two to seven searches (two families in parallel) and at most six metadat
 
 1. **Hard domain blocklist** — `src/policy/unreliable_sources.ts` for the CLI, mirrored inline in `userscript/cnfirmed.js`. Catches WP:RSP-deprecated outlets deterministically, and is applied to wiki-local candidates too (so a `wikipedia.org` URL cited on another wiki never comes back — WP:CIRCULAR).
 2. **Discovery-time prompt guidance** — `src/prompts/find_sources.md` (CLI) and the inlined system prompt (user script) steer the model toward WP:RS-compliant sources during search.
-3. **Verifier reliability axis** — the context-sensitive judgment the domain blocklist cannot express.
+3. **Verifier reliability axis** — the context-sensitive judgment the domain blocklist cannot express. The user script's web search still grades it; the CLI's verifier (the Verify API) does not, so there it is the editor's call.
 
 ## Testing
 

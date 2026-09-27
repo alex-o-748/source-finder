@@ -1,8 +1,8 @@
 /**
- * The user script's check of Internet Archive leads: one short model call that
- * reads each book's passages and says whether they state the claim. No network:
- * `fetch` is stubbed, and what is tested is the request the script sends and how
- * it reads the reply.
+ * The user script's check of Internet Archive leads: one Verify API call per
+ * book, sending its passages as the source. No network: `fetch` is stubbed,
+ * and what is tested is the requests the script sends and how it reads the
+ * replies.
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
@@ -13,7 +13,7 @@ const script = loadUserScript({ wgTitle: "Gothic Revival architecture", wgPageNa
 const CLAIM =
   "Gothic details even began to appear in working-class housing schemes subsidised by philanthropy, " +
   "though given the expense, less frequently than in the design of upper and middle-class housing.";
-const CTX = { claim: CLAIM, context: `The style spread widely. ${CLAIM} ${"More text. ".repeat(100)}`, section: null, links: [] };
+const CTX = { claim: CLAIM, context: `The style spread widely. ${CLAIM}`, section: null, links: [] };
 
 function lead(title: string, year: number | null, passages: string[]) {
   return { title, evidence: { year, passages } };
@@ -24,7 +24,8 @@ const LEADS = [
     "phenomenal price in 144 Working-class Housing in Nottingham those days. Middle-class housing also began to be",
   ]),
   lead("The movement for housing reform in Germany and France, 1840-1914", 1985, [
-    "design of working-class housing The early development of the design of working-class housing in England",
+    "design of working-class housing The early development of the design",
+    "of working-class housing in England",
   ]),
   lead("The Gothic revival", 1928, ["Gothic details appeared even in working-class housing paid for by philanthropists"]),
 ];
@@ -34,93 +35,107 @@ after(() => {
   globalThis.fetch = realFetch;
 });
 
-/** Replaces `fetch` for one call, and hands back what was sent. */
-function stubFetch(reply: string, status = 200): { body: () => Record<string, unknown>; url: () => string } {
-  let sent: { url: string; init: RequestInit } | null = null;
+type Reply = { status: number; body: unknown; headers?: Record<string, string> };
+
+/** Replaces `fetch` with one that answers from `replies` in order, and records what was sent. */
+function stubFetch(replies: Reply[]): { url: string; body: Record<string, unknown> }[] {
+  const sent: { url: string; body: Record<string, unknown> }[] = [];
   globalThis.fetch = (async (url: string, init: RequestInit) => {
-    sent = { url, init };
-    return new Response(reply, { status });
+    sent.push({ url, body: JSON.parse(String(init.body)) });
+    const r = replies.shift();
+    if (!r) throw new Error("unexpected request");
+    return new Response(JSON.stringify(r.body), { status: r.status, headers: r.headers });
   }) as typeof fetch;
+  return sent;
+}
+
+function api(verdict: string, extra: Record<string, unknown> = {}) {
   return {
-    body: () => JSON.parse(String(sent!.init.body)),
-    url: () => sent!.url,
+    status: 200,
+    body: {
+      verdict,
+      support_score: 50,
+      comments: `${verdict} because.`,
+      reason_type: null,
+      source_quote: null,
+      quote_status: "empty",
+      verified_text: null,
+      ...extra,
+    },
   };
 }
 
-function claudeReply(text: string): string {
-  return JSON.stringify({ content: [{ type: "text", text }], stop_reason: "end_turn" });
-}
-
-test("the check message names the article, the claim, a bounded context, and every book's passages", () => {
-  const message: string = script.archiveCheckMessage(CTX, LEADS);
-  assert.ok(message.startsWith(`Article: Gothic Revival architecture\nClaim: ${CLAIM}\nContext: `));
-  const context = message.split("\n").find((l: string) => l.startsWith("Context: "))!;
-  assert.equal(context.length, "Context: ".length + 800, "the paragraph is cut to 800 characters");
-  assert.ok(message.includes("\n\nBook 1: The history of working-class housing\n- phenomenal price"));
-  assert.ok(message.includes("\n\nBook 2: The movement for housing reform in Germany and France, 1840-1914 (1985)\n"));
-  assert.ok(message.includes("\n\nBook 3: The Gothic revival (1928)\n- Gothic details appeared"));
+test("a book's passages, one per line, are the source; the title and year are not", () => {
+  assert.equal(
+    script.archiveSourceContent(LEADS[1]),
+    "design of working-class housing The early development of the design\nof working-class housing in England",
+  );
 });
 
-test("the check is one plain Claude call with the user's model, and its verdicts line up with the books", async () => {
-  const sent = stubFetch(
-    claudeReply(
-      "```json\n" +
-        JSON.stringify({
-          books: [
-            { n: 1, verdict: "unrelated", quote: "", reason: "Nottingham housing prices; nothing on Gothic details." },
-            { n: 2, verdict: "Topic", quote: "", reason: "Working-class housing design; no Gothic." },
-            { n: 3, verdict: "supports", quote: "Gothic details appeared even in working-class housing", reason: "States it." },
-          ],
-        }) +
-        "\n```",
-    ),
-  );
-  const verdicts = await script.checkArchiveCandidates(CTX, LEADS, "claude", "sk-test");
-  assert.equal(sent.url(), "https://api.anthropic.com/v1/messages");
-  const body = sent.body();
-  assert.equal(body.model, "claude-sonnet-5");
-  assert.equal(body.tools, undefined, "no web search: the passages are all it reads");
-  assert.deepEqual(body.output_config, { effort: "low" });
-  assert.match(String(body.system), /Judge only what the passages say/);
+test("one Verify API call per book, with the claim and passages, and verdicts that line up", async () => {
+  const sent = stubFetch([
+    api("NOT SUPPORTED"),
+    api("PARTIALLY SUPPORTED"),
+    api("SUPPORTED", {
+      source_quote: "Gothic details appeared even in working-class housing!",
+      verified_text: "Gothic details appeared even in working-class housing",
+    }),
+  ]);
+  const verdicts = await script.checkArchiveCandidates(CTX, LEADS);
+  assert.equal(sent.length, 3);
+  for (const [k, s] of sent.entries()) {
+    assert.equal(s.url, "https://citation-verifier.toolforge.org/v1/verify");
+    assert.deepEqual(s.body, { claim: CLAIM, source_content: script.archiveSourceContent(LEADS[k]) });
+  }
   assert.deepEqual(
     verdicts.map((v: { verdict: string } | null) => v && v.verdict),
-    ["unrelated", "topic", "supports"],
+    ["unsupported", "partial", "supports"],
   );
-  assert.equal(verdicts[2].quote, "Gothic details appeared even in working-class housing");
+  assert.equal(verdicts[2].quote, "Gothic details appeared even in working-class housing", "verified_text, not source_quote");
+  assert.equal(verdicts[2].reason, "SUPPORTED because.");
 });
 
-test("a book the model skipped, numbered wrongly or gave an unknown verdict stays unchecked", () => {
-  const verdicts = script.parseArchiveVerdicts(
-    JSON.stringify({
-      books: [
-        { n: 1, verdict: "partial", quote: "x", reason: "y" },
-        { n: 1, verdict: "unrelated", quote: "", reason: "a second answer for book 1 is ignored" },
-        { n: 7, verdict: "supports", quote: "", reason: "no book 7" },
-        { n: 3, verdict: "maybe", quote: "", reason: "not a verdict" },
-      ],
-    }),
-    3,
+test("an unusable source (422) or an unknown verdict leaves that book unchecked", async () => {
+  stubFetch([
+    { status: 422, body: { error: "Source content is empty", stage: "source" } },
+    api("SOURCE UNAVAILABLE"),
+    api("MAYBE"),
+  ]);
+  assert.deepEqual(await script.checkArchiveCandidates(CTX, LEADS), [null, null, null]);
+});
+
+test("a provider failure fails the check, rather than a silent 'none state it'", async () => {
+  stubFetch([api("SUPPORTED"), { status: 502, body: { error: "upstream down", stage: "provider" } }]);
+  await assert.rejects(script.checkArchiveCandidates(CTX, LEADS), /Verify API 502: upstream down/);
+});
+
+test("a 429 is waited out for Retry-After, then retried", async () => {
+  const realSetTimeout = globalThis.setTimeout;
+  const waits: number[] = [];
+  globalThis.setTimeout = ((fn: () => void, ms: number) => {
+    waits.push(ms);
+    return realSetTimeout(fn, 0);
+  }) as typeof setTimeout;
+  try {
+    const sent = stubFetch([
+      { status: 429, body: { error: "Rate limit exceeded" }, headers: { "Retry-After": "4" } },
+      api("SUPPORTED"),
+    ]);
+    const verdicts = await script.checkArchiveCandidates(CTX, LEADS.slice(0, 1));
+    assert.equal(sent.length, 2);
+    assert.deepEqual(waits, [4000]);
+    assert.equal(verdicts[0].verdict, "supports");
+  } finally {
+    globalThis.setTimeout = realSetTimeout;
+  }
+});
+
+test("window.cnfirmedVerifyUrl points the check at another host", async () => {
+  const local = loadUserScript(
+    { wgTitle: "X", wgPageName: "X" },
+    { window: { cnfirmedVerifyUrl: "http://localhost:8080/" } },
   );
-  assert.deepEqual(verdicts, [{ verdict: "partial", quote: "x", reason: "y" }, null, null]);
-});
-
-test("a reply that is not the JSON asked for is an error, not a silent 'all unrelated'", async () => {
-  assert.throws(() => script.parseArchiveVerdicts("I could not read these passages.", 2), /not the JSON asked for/);
-  stubFetch(JSON.stringify({ type: "error", error: { message: "credit balance is too low" } }), 400);
-  await assert.rejects(script.checkArchiveCandidates(CTX, LEADS, "claude", "sk-test"), /Claude API 400/);
-});
-
-test("Gemini and OpenAI get the same prompt, without tools", async () => {
-  const reply = JSON.stringify({ books: [{ n: 1, verdict: "unrelated", quote: "", reason: "r" }] });
-  let sent = stubFetch(JSON.stringify({ candidates: [{ content: { parts: [{ text: reply }] } }] }));
-  let verdicts = await script.checkArchiveCandidates(CTX, LEADS.slice(0, 1), "gemini", "g-key");
-  assert.match(sent.url(), /models\/gemini-flash-latest:generateContent\?key=g-key$/);
-  assert.equal(sent.body().tools, undefined);
-  assert.equal(verdicts[0].verdict, "unrelated");
-
-  sent = stubFetch(JSON.stringify({ output_text: reply }));
-  verdicts = await script.checkArchiveCandidates(CTX, LEADS.slice(0, 1), "openai", "o-key");
-  assert.equal(sent.url(), "https://api.openai.com/v1/responses");
-  assert.equal(sent.body().tools, undefined);
-  assert.equal(verdicts[0].verdict, "unrelated");
+  const sent = stubFetch([api("SUPPORTED")]);
+  await local.checkArchiveCandidates(CTX, LEADS.slice(0, 1));
+  assert.equal(sent[0].url, "http://localhost:8080/v1/verify");
 });

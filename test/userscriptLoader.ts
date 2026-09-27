@@ -43,8 +43,8 @@ const EXPOSED = [
   "taggedSentenceRange",
   "callClaude",
   "checkArchiveCandidates",
-  "archiveCheckMessage",
-  "parseArchiveVerdicts",
+  "archiveSourceContent",
+  "toArchiveVerdict",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

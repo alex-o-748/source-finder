@@ -222,7 +222,7 @@ function scoreCheck(
   );
   console.log("\nArchive check (model) against the labels (rows: model, columns: label)");
   console.log(`  ${"".padEnd(10)}${[...verdicts, "unjudged"].map((v) => v.padStart(10)).join("")}`);
-  for (const m of ["supports", "partial", "topic", "unrelated", "none"]) {
+  for (const m of ["supports", "partial", "unsupported", "topic", "unrelated", "none"]) {
     const row = [...verdicts, "unjudged"].map((v) =>
       String(pairs.filter((p) => p.model === m && p.label === v).length).padStart(10),
     );
