@@ -149,6 +149,10 @@
     "ia:appendixnavylist1942#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:appendixnavylist1942": {
+      "verdict": "unrelated",
+      "why": "Pay accounts of a Division at Devonport barracks; not the police."
     }
   },
   "Naval Submarine Base New London@1371669909#4014": {
@@ -225,6 +229,14 @@
     "ia:allhands9339unit#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:DTIC_ADA267937": {
+      "verdict": "unrelated",
+      "why": "A list of ships' post office numbers."
+    },
+    "ia:orbis-war-machine-003-armed-combat-helicopters": {
+      "verdict": "unrelated",
+      "why": "Other oilers in the Persian Gulf and the Gulf of Mexico."
     }
   },
   "BMP-1@1371674680#37323": {
@@ -395,6 +407,14 @@
     "ia:rocketplanes-to-space#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:read-6317page-pdf-book-forgotten-creators-how-german-speaking-scientists-and-eng": {
+      "verdict": "unrelated",
+      "why": "First flights of other aircraft; matched 'flight'."
+    },
+    "ia:FC20241211": {
+      "verdict": "unrelated",
+      "why": "First flights of other aircraft; matched 'flight'."
     }
   },
   "A-Imdugud@1358747319#1777": {
@@ -473,6 +493,10 @@
     "ia:fx-schurhammer1#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:newcatholicencyc08cath": {
+      "verdict": "partial",
+      "why": "A pupil studying at Évora cathedral with Manuel Mendes: one composer's link, not the list."
     }
   },
   "Vipakasutra@1242493963#775": {
@@ -689,6 +713,10 @@
     "ia:newsuperfamilyt82tyle#text": {
       "verdict": "topic",
       "why": "The Lower Cenomanian dated about 95 MYA."
+    },
+    "ia:cretaceouscroco28sere": {
+      "verdict": "topic",
+      "why": "Beds of Cenomanian age, ca. 95 Mya; not when the Upper Cenomanian starts."
     }
   },
   "Tyson Miller@1373361987#9190": {
@@ -723,6 +751,14 @@
     "ia:2025-chicago-cubs-media-guide_202512#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:houston-astros-2014-media-guide": {
+      "verdict": "unrelated",
+      "why": "A different Miller, a coach."
+    },
+    "ia:isbn_9781599210278": {
+      "verdict": "unrelated",
+      "why": "A different Miller at a 1986 Astros game."
     }
   },
   "Popular Problems@1351791401#1453": {
@@ -769,6 +805,10 @@
     "ia:jazz-dergisi-sayi-76#text": {
       "verdict": "topic",
       "why": "A list of 2014 albums including it; not its release dates."
+    },
+    "ia:the-crown-v-32n-01-2014-september": {
+      "verdict": "topic",
+      "why": "The album in a September 2014 list; not its release dates."
     }
   },
   "Clinton Sparks@1371326718#746": {
@@ -815,6 +855,14 @@
     "ia:sim_boston-phoenix_april-15-21-2005_34_15#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:poundkesterfamil1904hunt": {
+      "verdict": "unrelated",
+      "why": "A 19th-century Sparks in a genealogy."
+    },
+    "ia:sim_billboard_1909-09-18_21_38": {
+      "verdict": "unrelated",
+      "why": "A 1909 issue dated September 18; matched the date."
     }
   },
   "Hossein Abedini@1256675326#3377": {
@@ -879,6 +927,14 @@
     "ia:moving34chal#text": {
       "verdict": "topic",
       "why": "The 1917 ticket tax; not the 1930s average price."
+    },
+    "ia:sim_billboard_1932-10-29_44_44": {
+      "verdict": "topic",
+      "why": "One theatre's 1932 price scale from 25 cents; not the national average."
+    },
+    "ia:north-adams-transcript-1898-12-17": {
+      "verdict": "unrelated",
+      "why": "Holiday goods at 25 cents, 1898."
     }
   },
   "Mercedes Moné@1376796620#216276": {
@@ -1011,6 +1067,10 @@
     "ia:evolution-of-unix#text": {
       "verdict": "topic",
       "why": "Software Tools as a source on Unix history; not its influence."
+    },
+    "ia:bitsavers_cdcmp32173olsDec82_3727528": {
+      "verdict": "topic",
+      "why": "Mentions the Software Tools book; not the BASIC edition."
     }
   },
   "Rail shooter@1365330287#5172": {
@@ -1093,6 +1153,10 @@
     "ia:eldeber-20695-clasificados#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:leo-7551": {
+      "verdict": "unrelated",
+      "why": "A Santa Cruz newspaper; nothing on the company's CEO."
     }
   },
   "Belstaff@1369795595#5996": {
@@ -1145,6 +1209,14 @@
     "ia:foreign-affairs-1922-2001#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:cu31924032449278": {
+      "verdict": "unrelated",
+      "why": "The US Supreme Court; matched 'supreme court'."
+    },
+    "ia:velvetcoupconsti00laza": {
+      "verdict": "unrelated",
+      "why": "The US Supreme Court; matched 'supreme court'."
     }
   },
   "Belgium–Luxembourg relations@1360654760#8370": {
@@ -1205,6 +1277,10 @@
     "ia:cia-reports_prex-317ok-2#text": {
       "verdict": "partial",
       "why": "Bloody Sunday as the Okhrana's 'most notorious' blunder, led by an Okhrana agent; not the communists' blame."
+    },
+    "ia:inwarsdarkshadow0000linc_g4e8": {
+      "verdict": "topic",
+      "why": "The Okhrana in February 1905; not Bloody Sunday."
     }
   },
   "Khirbet Kerak@1368547483#14129": {
@@ -1249,6 +1325,10 @@
     "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1957-02-25_29_51#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:sim_japan-times_1956-11-21_20757": {
+      "verdict": "topic",
+      "why": "Mitsui as vice-president of the Japanese-German Society; not philately."
     }
   },
   "Didius Julianus@1370266531#1728": {
@@ -1279,6 +1359,10 @@
     "ia:journal-ancient-medieval#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:2007NAC38": {
+      "verdict": "topic",
+      "why": "Didius Julianus bought the throne at auction; not his reign as a turning point."
     }
   },
   "Abigail May Alcott Nieriker@1373256207#9938": {
@@ -1293,6 +1377,10 @@
     "ia:libraryofcongres0000vari_n9i1#text": {
       "verdict": "topic",
       "why": "The Alcott family's papers; nothing on May staying in Europe."
+    },
+    "ia:georgesbraquelif0000zurc": {
+      "verdict": "topic",
+      "why": "A biography heading for Abigail May Alcott (Nieriker); not the 1871 events."
     }
   },
   "Muazzez Sultan@1370515564#2311": {
@@ -1449,6 +1537,18 @@
     "ia:wFoe_a-text-book-of-ayurveda-vol-1-section-1-historical-background-ed-by-dr-a-lakshmi#text": {
       "verdict": "topic",
       "why": "A president of the All India Ayurvedic Congress; nothing on the Maharishi's system."
+    },
+    "ia:international-ayurveda-congress-2017": {
+      "verdict": "topic",
+      "why": "Ayurveda and Transcendental Meditation at a 2017 congress; not the 1997 endorsement."
+    },
+    "ia:oapen-20.500.12657-52898": {
+      "verdict": "unrelated",
+      "why": "Another Ayurvedic revival movement; matched 'movement'."
+    },
+    "ia:in.ernet.dli.2015.264976": {
+      "verdict": "topic",
+      "why": "The All India Ayurvedic Conference in 1907; nothing on the Maharishi's system."
     }
   },
   "Jelena Skerlić Ćorović@1371735455#3111": {
@@ -1497,6 +1597,10 @@
     "ia:jenny-uglow-the-lunar-men-the-inventors-of-the-modern-world-1730-1810#text": {
       "verdict": "partial",
       "why": "Darwin added 'a new front facing west across the road', with Venetian windows; the bridge and terrace are not in the passage."
+    },
+    "ia:erasmusdarwin0000desm": {
+      "verdict": "topic",
+      "why": "The Darwins moving to a house in Derby in 1783; not the Lichfield alterations."
     }
   },
   "Fort Buford Stage Road@1373286591#872": {
@@ -1557,6 +1661,14 @@
     "ia:animalgeographyf00newbuoft#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:mammals_202310": {
+      "verdict": "unrelated",
+      "why": "The smallest otter's webbed feet; a different animal."
+    },
+    "ia:ssaki0000unse": {
+      "verdict": "unknown",
+      "why": "An otter-like animal with broad webbed feet and closable nostrils, perhaps the otter civet; the passage does not name it."
     }
   },
   "Endocrine system@1356929510#9852": {
@@ -1623,6 +1735,10 @@
     "ia:VeterinaryPharmacologyAndTherapeutics#text": {
       "verdict": "topic",
       "why": "Benzimidazole-resistant Haemonchus contortus; nothing on nitroxynil."
+    },
+    "ia:veterinaryformul0000unse": {
+      "verdict": "topic",
+      "why": "Nitroxinil's target worms, Haemonchus among them; not resistance to benzimidazoles."
     }
   },
   "MS Ilos@1368787865#9100": {
@@ -1711,6 +1827,10 @@
     "ia:sim_christian-century_january-december-2001_118_index#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:importanta-si-actualitatea-dialogului-interreligios-pentru-lumea-contemporan-ist": {
+      "verdict": "topic",
+      "why": "A footnote citing her essay; not her work with the councils."
     }
   },
   "Fear and Trembling (novel)@1373905722#6796": {
@@ -1845,6 +1965,10 @@
     "ia:mccl_10.1016_j.landurbplan.2017.08.001#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:spasinternationa00bain": {
+      "verdict": "unrelated",
+      "why": "Airport distances in a spa guide."
     }
   },
   "Pavenham Osier Beds@1353566902#1741": {
@@ -2005,6 +2129,10 @@
     "ia:radio-song-playlists-philippines-archive#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:PSW_Issue_014_2003_09_Next_Gaming_AU": {
+      "verdict": "unrelated",
+      "why": "A video game magazine; matched common words."
     }
   },
   "Michael J. Kohut@1357063490#1962": {
@@ -2115,6 +2243,14 @@
     "ia:nasa_open_access_october_codes_PMC4537107#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:isbn_9789290616030": {
+      "verdict": "topic",
+      "why": "The Global Network for NTDs in a list of acronyms; not the SCI as a founding partner."
+    },
+    "ia:pubmed-PMC3178873": {
+      "verdict": "unrelated",
+      "why": "A WHO department in an author affiliation."
     }
   },
   "Eileen Ascroft@1353902884#2491": {

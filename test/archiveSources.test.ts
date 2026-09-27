@@ -403,9 +403,9 @@ test("buildPhraseQueries: the subject's words with phrases, strictest first, the
     "no number or name: only the phrase queries");
 });
 
-test("rankByUnits: two claim units in a passage, one strong, need not name the subject", () => {
-  const hit = (identifier: string, highlights: string[]) => ({
-    identifier, title: identifier, creator: null, year: null, mediatype: "texts",
+test("rankByUnits: two claim units in a passage, one strong, and a mention of the subject", () => {
+  const hit = (identifier: string, highlights: string[], title = identifier) => ({
+    identifier, title, creator: null, year: null, mediatype: "texts",
     collections: [], file: null, highlights, rank: 0, query: "q",
   });
   const claim = "Feodora's father died in 1814.";
@@ -413,16 +413,47 @@ test("rankByUnits: two claim units in a passage, one strong, need not name the s
   const ranked = rankByUnits(
     [
       hit("almanac", ["Princess Marie Antonia (b 19 Dec 1814; m 7 June 1833)"]),
-      hit("queen", ["the young girl, whose father died in 1814, lived with her brother"]),
+      hit("prince", ["her mother was left a widow when the Prince of Leiningen, her father, died in 1814"]),
       hit("words", ["his father died young"]),
+      // The same two units, in a book that is not about her and a passage that does not name her.
+      hit("stranger", ["the young girl, whose father died in 1814, lived with her brother"]),
+      // …and in a book whose title is about her.
+      hit("memoir", ["the young girl, whose father died in 1814, lived with her brother"],
+        "Feodora, Princess of Leiningen: a memoir"),
     ],
     claim,
     title,
   );
-  assert.deepEqual(ranked.map((s) => s.hit.identifier), ["queen"]);
-  assert.deepEqual(ranked[0].passages[0].matched, ["father died", "1814"]);
-  // The passage score's gates drop it: it names none of Princess, Feodora or Leiningen.
-  assert.equal(rankArchiveHits(ranked.map((s) => s.hit), claim, title, 0.3).ranked.length, 0);
+  assert.deepEqual(ranked.map((s) => s.hit.identifier), ["prince", "memoir"]);
+  assert.deepEqual(ranked[0].passages[0].matched, ["1814", "father"]);
+  assert.deepEqual(ranked[1].passages[0].matched, ["father died", "1814"]);
+});
+
+test("rankByUnits: two phrases of the claim in a book that never names its subject are not a lead", () => {
+  const hit = (identifier: string, title: string, highlights: string[]) => ({
+    identifier, title, creator: null, year: null, mediatype: "texts",
+    collections: [], file: null, highlights, rank: 0, query: "q",
+  });
+  // The claim and the two books behind the leads in the user's screenshot.
+  const claim =
+    "Gothic details even began to appear in working-class housing schemes subsidised by philanthropy, " +
+    "though given the expense, less frequently than in the design of upper and middle-class housing.";
+  const ranked = rankByUnits(
+    [
+      hit("history", "The history of working-class housing", [
+        "phenomenal price in 144 Working-class Housing in Nottingham those days. Middle-class housing also began to be",
+      ]),
+      hit("reform", "The movement for housing reform in Germany and France, 1840-1914", [
+        "design of working-class housing The early development of the design of working-class housing in England",
+      ]),
+      hit("revival", "The Gothic revival", [
+        "Gothic details appeared even in working-class housing, where philanthropy paid for them",
+      ]),
+    ],
+    claim,
+    "Gothic Revival architecture",
+  );
+  assert.deepEqual(ranked.map((s) => s.hit.identifier), ["revival"]);
 });
 
 test("mergeRankings takes the two rankings in turn, one book per work", () => {

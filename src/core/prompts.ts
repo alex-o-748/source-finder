@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-type PromptName = "verify_source" | "find_sources";
+type PromptName = "find_sources";
 
 /**
  * Loads a prompt by name from the prompts directory on disk.

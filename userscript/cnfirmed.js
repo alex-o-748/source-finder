@@ -3,7 +3,9 @@
 /**
  * CNfirmed user script — finds and verifies sources for {{citation needed}}
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
- * the user's own API key (stored in localStorage).
+ * the user's own API key (stored in localStorage). Internet Archive passages
+ * are checked against the claim by the Verify API
+ * (https://citation-verifier.toolforge.org), which needs no key.
  *
  * Add to User:Yourname/common.js:
  *
@@ -2609,9 +2611,7 @@
   // scoreArchivePassage, but saying which gate a passage failed.
   function judgeArchivePassage(text, ctx, bookIsAboutSubject, datelineYear) {
     if (text.length < IA_MIN_PASSAGE_CHARS) return { reason: 'too short' };
-    var have = tokenSetOf(text);
-    if (!bookIsAboutSubject && ctx.subjectTokens.length > 0 &&
-        !ctx.subjectTokens.some(function (t) { return have[t]; })) {
+    if (!bookIsAboutSubject && !iaMentionsSubject(text, ctx.subjectTokens)) {
       return { reason: 'no subject' };
     }
     var query = datelineYear
@@ -2626,6 +2626,12 @@
     var cov = coverageOf(ctx.bag, text);
     var score = anchorCount(query) > 0 ? 0.6 * anchors.score + 0.4 * cov : cov;
     return { score: Math.round(score * 100) / 100, matched: anchors.matched };
+  }
+
+  function iaMentionsSubject(text, subjectTokens) {
+    if (subjectTokens.length === 0) return true;
+    var have = tokenSetOf(text);
+    return subjectTokens.some(function (t) { return have[t]; });
   }
 
   function iaTitleIsAbout(title, subjectTokens) {
@@ -2761,14 +2767,19 @@
     });
   }
 
+  // A passage must mention the subject, unless the book's title is about it.
   function rankArchiveByUnits(hits, claim, title) {
-    var units = iaClaimUnits(claim, iaSubjectOf(title), 6, false);
+    var subject = iaSubjectOf(title);
+    var subjectTokens = Object.keys(tokenSetOf(subject));
+    var units = iaClaimUnits(claim, subject, 6, false);
     var out = [];
     hits.forEach(function (hit) {
       var gate = archiveGate(hit);
       if (!gate.ok) return;
+      var about = iaTitleIsAbout(hit.title, subjectTokens);
       var best = null;
       hit.highlights.forEach(function (text) {
+        if (!about && !iaMentionsSubject(text, subjectTokens)) return;
         var matched = iaUnitsIn(text, units);
         if (matched.length >= 2 && matched.some(function (u) { return u.strong; }) &&
             (!best || matched.length > best.matched.length)) {
@@ -3152,6 +3163,9 @@
       archiveState[index] = { status: 'done', candidates: r.candidates, funnel: r.funnel };
       persistArchive();
       renderPanel(index);
+      // The passages are checked straight away: unchecked, most of them only
+      // share words with the claim.
+      if (r.candidates.length) return checkArchiveStage(index);
       return archiveState[index];
     }).catch(function (err) {
       console.error('[CNfirmed] Internet Archive search failed for claim', index, ':', err);
@@ -3178,10 +3192,129 @@
         var s = archiveState[k];
         if (s && s.status === 'done') {
           serialisable[k] = { status: 'done', candidates: s.candidates, funnel: s.funnel };
+          if (s.check && s.check.status === 'done') serialisable[k].check = s.check;
         }
       });
       localStorage.setItem(archiveCacheKey, JSON.stringify(serialisable));
     } catch (e) { /* ignore */ }
+  }
+
+  // ---- Checking the Archive passages against the claim ------------------
+  // The search matches words, and most passages that share a claim's words do
+  // not say what it says. Each lead's passages are sent to the Verify API
+  // (POST /v1/verify, alex-o-748/citation-checker-script's docs/verify-api.md),
+  // the same benchmarked claim-vs-source check the citation-checker userscript
+  // runs. It needs no key, so the check runs whenever the search finds leads.
+  // Override the host with window.cnfirmedVerifyUrl (e.g. a local server).
+
+  var VERIFY_API_BASE = String(window.cnfirmedVerifyUrl || 'https://citation-verifier.toolforge.org')
+    .replace(/\/+$/, '');
+  // The service's budget is 30 requests/minute across all callers; a 429 is
+  // waited out a few times rather than failing the check.
+  var VERIFY_MAX_RETRIES = 3;
+  var VERIFY_MAX_WAIT_S = 60;
+
+  // 'unsupported' is the Verify API's NOT SUPPORTED. The older 'topic' and
+  // 'unrelated' split came from the model prompt this replaced; they stay so
+  // checks cached before the switch still render.
+  var ARCHIVE_VERDICTS = ['supports', 'partial', 'unsupported', 'topic', 'unrelated'];
+  var VERIFY_TO_ARCHIVE = {
+    'SUPPORTED': 'supports',
+    'PARTIALLY SUPPORTED': 'partial',
+    'NOT SUPPORTED': 'unsupported'
+  };
+
+  // What the Verify API reads as the source: the book's passages, one per
+  // line. Title and year are left out so they are never taken as evidence.
+  function archiveSourceContent(candidate) {
+    return candidate.evidence.passages.join('\n');
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  // One Verify API call. Resolves to the API's JSON body, or null when the
+  // source is unusable (422); rejects on any other failure.
+  function callVerifyApi(claim, sourceContent, attempt) {
+    attempt = attempt || 0;
+    return fetch(VERIFY_API_BASE + '/v1/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ claim: claim, source_content: sourceContent })
+    }).then(function (res) {
+      if (res.status === 429 && attempt < VERIFY_MAX_RETRIES) {
+        var wait = Number(res.headers.get('Retry-After'));
+        wait = wait > 0 ? Math.min(wait, VERIFY_MAX_WAIT_S) : 10;
+        return sleep(wait * 1000).then(function () {
+          return callVerifyApi(claim, sourceContent, attempt + 1);
+        });
+      }
+      return res.text().then(function (t) {
+        var data;
+        try { data = JSON.parse(t); } catch (e) { data = null; }
+        if (res.ok && data) return data;
+        if (res.status === 422) return null;
+        throw new Error('Verify API ' + res.status + ': ' +
+          ((data && data.error) || truncate(t, 200)));
+      });
+    });
+  }
+
+  // The API's answer as a lead's verdict; null (unchecked) when it gave none
+  // this script knows, or judged the source unavailable.
+  function toArchiveVerdict(result) {
+    var verdict = result && VERIFY_TO_ARCHIVE[String(result.verdict || '').trim().toUpperCase()];
+    if (!verdict) return null;
+    return {
+      verdict: verdict,
+      // verified_text, never source_quote: only it is known to be in the passages.
+      quote: result.verified_text || '',
+      reason: result.comments || ''
+    };
+  }
+
+  // One call per lead, one after another, to go easy on the shared budget.
+  // A verdict per candidate, in order.
+  function checkArchiveCandidates(ctx, candidates) {
+    var out = [];
+    return candidates.reduce(function (chain, c) {
+      return chain.then(function () {
+        return callVerifyApi(ctx.claim, archiveSourceContent(c)).then(function (r) {
+          out.push(toArchiveVerdict(r));
+        });
+      });
+    }, Promise.resolve()).then(function () { return out; });
+  }
+
+  function archiveCheckWanted(verdict) {
+    return verdict === 'supports' || verdict === 'partial';
+  }
+
+  // Runs the check for a claim whose Archive search is done, and keeps the
+  // verdicts on its candidates.
+  function checkArchiveStage(index) {
+    var a = archiveState[index];
+    if (!a || a.status !== 'done' || !(a.candidates || []).length) return Promise.resolve(a);
+    if (a.checking) return a.checking;
+    a.check = { status: 'running' };
+    renderPanel(index);
+    a.checking = checkArchiveCandidates(claimContexts[index], a.candidates)
+      .then(function (verdicts) {
+        a.candidates.forEach(function (c, k) { c.check = verdicts[k]; });
+        a.check = { status: 'done', by: 'verify-api' };
+        console.log('[CNfirmed] Internet Archive claim', index, 'checked:',
+          verdicts.map(function (v) { return v ? v.verdict : 'none'; }).join(', '));
+      }, function (err) {
+        console.error('[CNfirmed] Internet Archive check failed for claim', index, ':', err);
+        a.check = { status: 'error', error: (err && err.message) || String(err) };
+      }).then(function () {
+        delete a.checking;
+        persistArchive();
+        renderPanel(index);
+        return a;
+      });
+    return a.checking;
   }
 
   // ---- Provider implementations -----------------------------------------
@@ -3653,8 +3786,9 @@
           .on('click', function () { runArchiveStage(i); })
       ));
       $section.append($('<div class="cnfirmed-note">').text(
-        'Full-text search of digitised books. Free, no API key. Experimental. ' +
-        'Some need a free archive.org account to borrow.'));
+        'Full-text search of digitised books. Free. Experimental. ' +
+        'Some need a free archive.org account to borrow. ' +
+        'The passages found are then checked against the claim with the Verify API, also free.'));
       $el.append($section);
       return;
     }
@@ -3665,15 +3799,82 @@
       $section.append($('<div class="cnfirmed-note">')
         .text('No book on the Internet Archive matches this claim.'));
     }
-    candidates.forEach(function (c) {
-      $section.append(renderArchiveCandidate(i, c));
-    });
+    renderArchiveCheckedInto($section, i, a, candidates);
     if (funnel && funnel.queries.length) {
       $section.append($('<div class="cnfirmed-note">').css('font-size', '0.75em')
         .attr('title', funnel.queries.join('\n'))
         .text(archiveFunnelLine(funnel)));
     }
     $el.append($section);
+  }
+
+  // The leads, as the check left them: the books it found stating the claim
+  // (or part of it) first, the others folded away. Unchecked, every lead is
+  // shown, with a plain warning and the button that checks them.
+  var ARCHIVE_VERDICT_LABELS = {
+    supports: { text: 'States the claim', status: 'SUPPORTED' },
+    partial: { text: 'States part of it', status: 'PARTIALLY SUPPORTED' },
+    unsupported: { text: 'Does not state it', status: 'NOT SUPPORTED' },
+    topic: { text: 'Same subject, another fact', status: 'NOT SUPPORTED' },
+    unrelated: { text: 'Only shares words', status: 'NOT SUPPORTED' }
+  };
+
+  function renderArchiveCheckedInto($section, i, a, candidates) {
+    if (candidates.length === 0) return;
+    var check = a.check || null;
+    // Checks cached from before the Verify API carry the provider they ran on.
+    var checker = check && check.provider && PROVIDERS[check.provider]
+      ? PROVIDERS[check.provider].name + (check.model ? ' (' + check.model + ')' : '')
+      : 'the Verify API';
+    if (!check || check.status !== 'done') {
+      if (check && check.status === 'running') {
+        $section.append($('<div class="cnfirmed-note">')
+          .text('Checking the passages against the claim with ' + checker + '…'));
+      } else {
+        if (check && check.status === 'error') {
+          $section.append($('<div class="cnfirmed-note">').css('color', '#b32424')
+            .text('Check failed: ' + check.error));
+        }
+        $section.append($('<div class="cnfirmed-note">').text(
+          'Not checked: these passages share words with the claim, but nothing has read ' +
+          'them for whether they state it. Most do not.'));
+        $section.append($('<div class="cnfirmed-toolbar">').append(
+          $('<button>').text('Check them with the Verify API')
+            .attr('title', 'Free: one Verify API call per book')
+            .on('click', function () { checkArchiveStage(i); })
+        ));
+      }
+      candidates.forEach(function (c) { $section.append(renderArchiveCandidate(i, c)); });
+      return;
+    }
+
+    var rank = function (c) {
+      var v = c.check && c.check.verdict;
+      return v === 'supports' ? 0 : v === 'partial' ? 1 : v ? 3 : 2;
+    };
+    var ordered = candidates.map(function (c, k) { return { c: c, k: k }; })
+      .sort(function (x, y) { return rank(x.c) - rank(y.c) || x.k - y.k; })
+      .map(function (x) { return x.c; });
+    // A book the model gave no verdict for stays in view, unchecked.
+    var shown = ordered.filter(function (c) { return !c.check || archiveCheckWanted(c.check.verdict); });
+    var folded = ordered.filter(function (c) { return c.check && !archiveCheckWanted(c.check.verdict); });
+    if (!shown.some(function (c) { return c.check; })) {
+      $section.append($('<div class="cnfirmed-note">').text(
+        'Checked with ' + checker + ': no passage found states the claim.'));
+    }
+    shown.forEach(function (c) { $section.append(renderArchiveCandidate(i, c)); });
+    if (folded.length) {
+      var $folded = $('<div>').hide();
+      folded.forEach(function (c) { $folded.append(renderArchiveCandidate(i, c)); });
+      $section.append($('<div class="cnfirmed-toolbar">').append(
+        $('<button>').text('Show ' + folded.length + ' more, judged not to state it')
+          .on('click', function () { $(this).parent().remove(); $folded.show(); })
+      ));
+      $section.append($folded);
+    }
+    $section.append($('<div class="cnfirmed-note">').text(
+      'Checked by ' + checker + ' on the passages alone. ' +
+      'Read the passage in the book before citing it.'));
   }
 
   function renderArchiveCandidate(i, c) {
@@ -3691,9 +3892,17 @@
       $row.append($('<span class="cnfirmed-note">')
         .text(' — borrow with a free archive.org account'));
     }
+    var label = c.check && ARCHIVE_VERDICT_LABELS[c.check.verdict];
+    if (label) {
+      $row.append(' ', $('<span class="cnfirmed-pill">').attr('data-status', label.status).text(label.text));
+    }
     // A passage from the whole text is already cut with "…".
     var snippet = c.evidence.fullText ? c.snippet : '…' + c.snippet + '…';
     $row.append($('<div class="cnfirmed-quote">').text(snippet));
+    if (c.check && (c.check.quote || c.check.reason)) {
+      $row.append($('<div class="cnfirmed-note">').text(
+        (c.check.quote ? '\u201c' + c.check.quote + '\u201d ' : '') + c.check.reason));
+    }
     if (c.evidence.matchedAnchors.length) {
       $row.append($('<div class="cnfirmed-note">')
         .text('matched: ' + c.evidence.matchedAnchors.join(', ') +

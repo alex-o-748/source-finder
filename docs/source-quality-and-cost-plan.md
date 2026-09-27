@@ -163,6 +163,17 @@ the books an article already cites (32 of the 46 book-plausible articles cite
 books; 36 of 84 of those were found readable on the Archive by title and
 author).
 
+Precision was the other problem: 14% of the stage's leads stated the claim,
+because matching words is not reading. Requiring the subject in the
+claim-unit ranking again took it to 18% with nothing lost. Beyond that the
+passages have to be read: with a key set, the user script now sends each
+claim's leads to the model in one short call and shows only the books it
+judges to state the claim or part of it. That is the verification step this
+plan anticipated, done on the passages rather than through `verifySource`
+(which fetches a URL, and a lending-library book cannot be fetched). It is
+scored against the hand labels by `eval/run.ts --check`, but not yet
+measured: the eval's key had no credit when it was built.
+
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and
 the section heading plus infobox type give topical scope and a cheap
