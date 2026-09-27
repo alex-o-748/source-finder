@@ -156,10 +156,13 @@ where modern secondary sources are, have no public text.
 
 ## Checking the Archive leads (`--check`)
 
-With a key set, the user script sends each claim's Archive leads to the model
-once, and shows only the books it judges to state the claim or part of it
-(README, "Books on the Internet Archive", step 6). Its verdicts are the ones
-`labels.json` uses, so it can be scored against them:
+The user script sends each Archive lead's passages to the Verify API
+(`POST /v1/verify` at `citation-verifier.toolforge.org`), one call per book,
+and shows only the books it judges to state the claim or part of it (README,
+"Books on the Internet Archive", step 6). Its SUPPORTED / PARTIALLY SUPPORTED
+map onto `labels.json`'s `supports` / `partial`; NOT SUPPORTED becomes
+`unsupported`, which covers both `topic` and `unrelated` (the API does not
+tell them apart). So what is kept can be scored against the labels:
 
 ```sh
 NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --check --name check
@@ -169,12 +172,12 @@ npx tsx eval/score.ts --run check
 `score.ts` then adds an "archive, checked" method (the leads the popover
 shows: kept by the model, or given no verdict) and a table of the model's
 verdicts against the labels, with the precision of what it keeps and how many
-of the good leads it keeps. Recording needs `CNFIRMED_ANTHROPIC_API_KEY`, like
-the web search; about 50 calls, one per claim with Archive leads.
+of the good leads it keeps. Recording needs no key, only network access to the
+Verify API; about 200 calls, one per lead, which at the service's 30
+requests/minute (shared with every other caller) takes several minutes.
 
-**Not measured yet.** When the check was built (September 2026), the key this
-set is recorded with had no credit, so there is no recording and no result.
-Until there is, what the check is worth is unknown.
+**Not measured yet.** Neither the earlier model check nor the Verify API check
+has been recorded, so what the check is worth is unknown.
 
 ## The web search (paid)
 
