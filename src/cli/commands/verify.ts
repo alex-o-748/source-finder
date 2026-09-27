@@ -19,4 +19,5 @@ export async function verifyCommand(args: VerifyArgs): Promise<void> {
   console.log(`Reliability:     ${verdict.reliability}`);
   console.log(`  why:           ${verdict.reliabilityReason}`);
   console.log(`Comments:        ${verdict.comments}`);
+  if (verdict.quote) console.log(`Quote:           ${verdict.quote}`);
 }

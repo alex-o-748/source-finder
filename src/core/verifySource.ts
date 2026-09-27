@@ -1,130 +1,139 @@
-import { cachedSystem, getClient, getModel } from "./anthropic.js";
-import { loadPrompt } from "./prompts.js";
-import type {
-  Reliability,
-  SubstantiationVerdict,
-  VerifyVerdict,
-} from "./types.js";
+import type { SubstantiationVerdict, VerifyVerdict } from "./types.js";
+
+/**
+ * The Verify API (`POST /v1/verify`, from alex-o-748/citation-checker-script)
+ * checks one claim against one source. It runs the same fetch, prompt, model,
+ * verdict parser and quote check as that project's userscript, CLI and batch
+ * pipeline, so CNfirmed's verdicts come from the one tuned verifier rather
+ * than a second prompt of its own. Override the base with CNFIRMED_VERIFY_URL
+ * (e.g. http://localhost:8080 for a local `npm start`).
+ */
+const DEFAULT_VERIFY_BASE = "https://citation-verifier.toolforge.org";
+
+/** The API's `source_content` limit; longer text is rejected with a 400. */
+const MAX_SOURCE_CONTENT_CHARS = 50_000;
+
+/**
+ * The service allows 10 requests/minute across all callers and answers 429
+ * with Retry-After. A whole-article run verifies candidates one after another,
+ * so it waits out the window a few times rather than failing the candidate.
+ */
+const MAX_RATE_LIMIT_RETRIES = 3;
+const MAX_RETRY_WAIT_SECONDS = 60;
 
 interface VerifyOptions {
   /**
-   * Pre-fetched source body. If omitted, verifySource will fetch the URL.
-   * Pass this when you already have the text (e.g. from a cache or another
-   * part of the pipeline) to avoid a redundant network round-trip.
+   * Pre-fetched source body. When given it is sent as `source_content` and
+   * the API does not fetch the URL. Otherwise the API fetches `sourceUrl`
+   * itself (through its source fetcher).
    */
   sourceText?: string;
-  /** Max characters of source text to pass to the model (defaults to 40_000). */
-  maxChars?: number;
+  /** Verify API base URL. Defaults to CNFIRMED_VERIFY_URL, then the public host. */
+  baseUrl?: string;
+  /** Injected for tests. */
+  fetch?: typeof fetch;
+  /** Injected for tests; waits between rate-limited attempts. */
+  sleep?: (ms: number) => Promise<void>;
 }
 
-/** Fetches `url` as text, with a timeout and a size cap. */
-async function fetchSource(url: string, maxChars: number): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "user-agent":
-          "CNfirmed/0.1 (+https://github.com/alex-o-748/source-finder)",
-        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "follow",
-    });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    }
-    const body = await res.text();
-    // Strip HTML tags and collapse whitespace. Naive but adequate for v1.
-    const stripped = body
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    return stripped.slice(0, maxChars);
-  } finally {
-    clearTimeout(timeout);
-  }
+/** The API's success body (snake_case, as it is on the wire). */
+interface VerifyApiResult {
+  verdict: string;
+  support_score: number | null;
+  comments: string | null;
+  reason_type: string | null;
+  source_quote: string | null;
+  quote_status: string | null;
+  verified_text: string | null;
 }
+
+export function verifyBaseUrl(explicit?: string): string {
+  const base = explicit || process.env.CNFIRMED_VERIFY_URL || DEFAULT_VERIFY_BASE;
+  return base.replace(/\/+$/, "");
+}
+
+const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Asks Claude whether `source` substantiates `claim`. Separable from the rest
- * of the pipeline so it can be used standalone (CLI subcommand, HTTP endpoint,
+ * Asks the Verify API whether `source` substantiates `claim`. Separable from
+ * the rest of the pipeline so it can be used standalone (CLI subcommand,
  * future MCP tool) without changes to the core.
+ *
+ * A source the API cannot fetch comes back as a SOURCE UNAVAILABLE verdict;
+ * any other failure (bad request, provider down, rate limit not lifting)
+ * throws.
  */
 export async function verifySource(
   claim: string,
   sourceUrl: string,
   options: VerifyOptions = {},
 ): Promise<VerifyVerdict> {
-  const maxChars = options.maxChars ?? 40_000;
-  const sourceText =
-    options.sourceText ?? (await fetchSource(sourceUrl, maxChars));
+  const doFetch = options.fetch ?? fetch;
+  const sleep = options.sleep ?? defaultSleep;
+  const endpoint = `${verifyBaseUrl(options.baseUrl)}/v1/verify`;
 
-  const system = cachedSystem(loadPrompt("verify_source"));
-  const userMessage = [
-    `Claim: ${claim}`,
-    ``,
-    `Source URL: ${sourceUrl}`,
-    ``,
-    `Source text (fetched, may be truncated):`,
-    sourceText,
-    ``,
-    `Respond with the JSON object described in the system prompt — grading both axes (substantiation verdict + reliability) independently.`,
-  ].join("\n");
-
-  const client = getClient();
-  const response = await client.messages.create({
-    model: getModel(),
-    max_tokens: 1024,
-    system,
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Verifier returned no text content");
+  const body: Record<string, string> = { claim };
+  if (options.sourceText?.trim()) {
+    body.source_content = options.sourceText.slice(0, MAX_SOURCE_CONTENT_CHARS);
+  } else {
+    body.source_url = sourceUrl;
   }
-  return parseVerdict(textBlock.text);
+
+  for (let attempt = 0; ; attempt++) {
+    const res = await doFetch(endpoint, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "CNfirmed/0.1 (+https://github.com/alex-o-748/source-finder)",
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 429 && attempt < MAX_RATE_LIMIT_RETRIES) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const seconds = retryAfter > 0 ? Math.min(retryAfter, MAX_RETRY_WAIT_SECONDS) : 10;
+      await sleep(seconds * 1000);
+      continue;
+    }
+
+    const payload = (await res.json().catch(() => null)) as
+      | (VerifyApiResult & { error?: string; stage?: string })
+      | null;
+
+    if (res.ok && payload) return toVerdict(payload);
+
+    const message = payload?.error || `${res.status} ${res.statusText}`;
+    // 422: the source could not be fetched or was empty — a verdict about the
+    // source, not a failure of the verifier.
+    if (res.status === 422) {
+      return {
+        verdict: "SOURCE UNAVAILABLE",
+        confidence: 0,
+        comments: message,
+        reliability: "n/a",
+        reliabilityReason: "source unavailable",
+      };
+    }
+    throw new Error(`Verify API ${res.status}: ${message}`);
+  }
 }
 
-/** Extracts the JSON verdict from Claude's response, tolerating prose wrappers. */
-function parseVerdict(raw: string): VerifyVerdict {
-  const jsonText = extractJsonObject(raw);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(jsonText);
-  } catch (err) {
-    throw new Error(
-      `Verifier response was not valid JSON: ${(err as Error).message}\n---\n${raw}`,
-    );
-  }
-  if (typeof parsed !== "object" || parsed === null) {
-    throw new Error(`Verifier response was not an object: ${raw}`);
-  }
-  const obj = parsed as Record<string, unknown>;
-  const verdict = normaliseVerdict(obj.verdict);
-  const rawConfidence =
-    typeof obj.confidence === "number" ? obj.confidence : 0;
-  // Clamp to [0, 100]; the prompt specifies a 0-100 scale.
-  const confidence = Math.max(0, Math.min(100, rawConfidence));
-  const comments = typeof obj.comments === "string" ? obj.comments : "";
-  // Accept either reliability_reason (per prompt spec) or reliabilityReason
-  // (camelCase), in case the model normalises the key.
-  const reliability = normaliseReliability(obj.reliability, verdict);
-  const reliabilityReason =
-    typeof obj.reliability_reason === "string"
-      ? obj.reliability_reason
-      : typeof obj.reliabilityReason === "string"
-        ? obj.reliabilityReason
-        : "";
+function toVerdict(r: VerifyApiResult): VerifyVerdict {
+  const verdict = normaliseVerdict(r.verdict);
+  const score = typeof r.support_score === "number" ? r.support_score : 0;
+  const quote = r.verified_text?.trim() || undefined;
   return {
     verdict,
-    confidence,
-    comments,
-    reliability,
-    reliabilityReason,
+    confidence: verdict === "SOURCE UNAVAILABLE" ? 0 : Math.max(0, Math.min(100, score)),
+    comments: r.comments ?? "",
+    // The API grades substantiation only; reliability is left to the
+    // candidate filters (the WP:RSP blocklist) and the editor.
+    reliability: "n/a",
+    reliabilityReason:
+      verdict === "SOURCE UNAVAILABLE" ? "source unavailable" : "not assessed by the Verify API",
+    // verified_text, never source_quote: only the former is known to be in
+    // the source.
+    ...(quote ? { quote } : {}),
   };
 }
 
@@ -139,50 +148,7 @@ function normaliseVerdict(raw: unknown): SubstantiationVerdict {
   ) {
     return v;
   }
-  // Tolerate minor variants (e.g. "PARTIAL", "UNSUPPORTED").
   if (v.startsWith("PARTIAL")) return "PARTIALLY SUPPORTED";
   if (v.includes("UNAVAILABLE")) return "SOURCE UNAVAILABLE";
-  if (v === "UNSUPPORTED") return "NOT SUPPORTED";
   return "NOT SUPPORTED";
-}
-
-function normaliseReliability(
-  raw: unknown,
-  verdict: SubstantiationVerdict,
-): Reliability {
-  if (raw === "high" || raw === "medium" || raw === "low" || raw === "n/a") {
-    return raw;
-  }
-  // If the source is unavailable, reliability is n/a by construction.
-  if (verdict === "SOURCE UNAVAILABLE") return "n/a";
-  // Default to "medium" when the model omits the field rather than failing
-  // hard — the caller can still decide based on substantiation.
-  return "medium";
-}
-
-/** Finds the first balanced {...} JSON object in a string. */
-function extractJsonObject(raw: string): string {
-  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const candidate = fenceMatch ? fenceMatch[1] : raw;
-  const first = candidate.indexOf("{");
-  if (first === -1) return candidate;
-  let depth = 0;
-  let inStr = false;
-  let esc = false;
-  for (let i = first; i < candidate.length; i++) {
-    const c = candidate[i];
-    if (inStr) {
-      if (esc) esc = false;
-      else if (c === "\\") esc = true;
-      else if (c === '"') inStr = false;
-      continue;
-    }
-    if (c === '"') inStr = true;
-    else if (c === "{") depth++;
-    else if (c === "}") {
-      depth--;
-      if (depth === 0) return candidate.slice(first, i + 1);
-    }
-  }
-  return candidate.slice(first);
 }

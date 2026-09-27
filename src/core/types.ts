@@ -150,7 +150,7 @@ export type SubstantiationVerdict =
   | "NOT SUPPORTED"
   | "SOURCE UNAVAILABLE";
 
-/** WP:RS reliability grade, or "n/a" when the source is unavailable. */
+/** WP:RS reliability grade, or "n/a" when not assessed or the source is unavailable. */
 export type Reliability = "high" | "medium" | "low" | "n/a";
 
 /** Verdict from the verifier on whether a source supports a claim. */
@@ -175,11 +175,15 @@ export interface VerifyVerdict {
    * source". A (SUPPORTED, "low") pair is still surfaced so a human editor
    * can see the source does say it but needs a better one.
    *
-   * "n/a" is used only when `verdict` is "SOURCE UNAVAILABLE".
+   * "n/a" when `verdict` is "SOURCE UNAVAILABLE", and whenever the verifier
+   * does not grade reliability — the Verify API (see verifySource.ts) grades
+   * substantiation only.
    */
   reliability: Reliability;
   /** Brief WP:RS-grounded rationale for the reliability grade. */
   reliabilityReason: string;
+  /** Passage from the source backing the verdict, verified to occur in it. */
+  quote?: string;
 }
 
 /** Formatted Wikipedia cite template output. */
