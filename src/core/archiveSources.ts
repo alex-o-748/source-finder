@@ -475,11 +475,7 @@ export function judgePassage(
 ): { score: number; matched: string[] } | { reason: PassageDropReason } {
   if (text.length < MIN_PASSAGE_CHARS) return { reason: "too short" };
   const have = tokenSet(text);
-  if (
-    !bookIsAboutSubject &&
-    ctx.subjectTokens.length > 0 &&
-    !ctx.subjectTokens.some((t) => have.has(t))
-  ) {
+  if (!bookIsAboutSubject && !mentionsSubject(text, ctx.subjectTokens)) {
     return { reason: "no subject" };
   }
   const query: Anchors = datelineYear
@@ -493,6 +489,13 @@ export function judgePassage(
   const hasAnchors = query.numbers.length + query.names.length > 0;
   const score = hasAnchors ? 0.6 * anchors.score + 0.4 * cov : cov;
   return { score: Math.round(score * 100) / 100, matched: anchors.matched };
+}
+
+/** The text has one of the subject's words, or the subject has none to look for. */
+export function mentionsSubject(text: string, subjectTokens: string[]): boolean {
+  if (subjectTokens.length === 0) return true;
+  const have = tokenSet(text);
+  return subjectTokens.some((t) => have.has(t));
 }
 
 /** The title carries every word of the subject: the whole book is about it. */
@@ -694,20 +697,32 @@ export function unitsIn(text: string, units: ClaimUnit[]): ClaimUnit[] {
 
 /**
  * Books ranked by the claim units in their best passage, in place of the
- * score's gates: a passage needs two units, one of them strong, and need not
- * name the subject or carry the claim's number. This is what finds "The acini
- * secrete several digestive enzymes" for a claim with neither, and a passage
- * that says "Prince of Leiningen" rather than "Feodora". Top three, most units
+ * score's other gates: a passage needs two units, one of them strong, and need
+ * not carry the claim's number. This is what finds "The acini secrete several
+ * digestive enzymes" for a claim with no number or name, and a passage that
+ * says "Prince of Leiningen" rather than "Feodora". Top three, most units
  * first, then search order.
+ *
+ * The passage must still mention one of the subject's words, unless the book's
+ * title is about the subject. Without that, two phrases of the claim are
+ * enough, and they are rarely about it: "working-class housing" and
+ * "middle-class housing" in a history of Nottingham housing, for a claim that
+ * Gothic details appeared in working-class housing. On the evaluation set, the
+ * leads this ranking found without the subject were 97 wrong in 103, and every
+ * claim they found something for also had a good lead that names the subject.
  */
 export function rankByUnits(hits: ArchiveHit[], claim: string, articleTitle: string): ScoredHit[] {
-  const units = claimUnits(claim, subjectOf(articleTitle), { minWordLength: 6, subjectUnit: false });
+  const subject = subjectOf(articleTitle);
+  const subjectTokens = [...tokenSet(subject)];
+  const units = claimUnits(claim, subject, { minWordLength: 6, subjectUnit: false });
   const out: ScoredHit[] = [];
   for (const hit of hits) {
     const gate = accessGate(hit);
     if (!gate.ok) continue;
+    const about = titleIsAbout(hit.title, subjectTokens);
     let best: { text: string; matched: ClaimUnit[] } | null = null;
     for (const text of hit.highlights) {
+      if (!about && !mentionsSubject(text, subjectTokens)) continue;
       const matched = unitsIn(text, units);
       if (matched.length >= 2 && matched.some((u) => u.strong) && (!best || matched.length > best.matched.length)) {
         best = { text, matched };

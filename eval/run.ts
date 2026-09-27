@@ -15,9 +15,12 @@
  *                                          # the web search with another model or search tool
  *   npx tsx eval/run.ts --full-text        # also read open books' whole text (recorded to
  *                                          # eval/cassettes-fulltext/, not committed)
+ *   npx tsx eval/run.ts --check --name check
+ *                                          # also check the Archive leads' passages with Claude,
+ *                                          # as the user script does when a key is set
  *
- * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record: replaying a
- * recorded call needs no key. The key travels in a header, and headers are
+ * The web search and the check need CNFIRMED_ANTHROPIC_API_KEY only to record:
+ * replaying a recorded call needs no key. The key travels in a header, and headers are
  * never written to disk.
  *
  * The default engine is the shipped user script, run over the rendered page as
@@ -58,6 +61,8 @@ if (engine !== "userscript" && engine !== "core") throw new Error(`unknown engin
 
 const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
 const web = process.argv.includes("--web");
+/** Check the Archive leads with the model, as the user script does when a key is set. */
+const check = process.argv.includes("--check");
 /** Read the whole text of open books too (option off in the shipped script until archive.org allows it). */
 const fullText = process.argv.includes("--full-text");
 const limit = arg("limit") ? Number(arg("limit")) : undefined;
@@ -70,9 +75,11 @@ if (arg("search-tool")) scriptWindow.cnfirmedSearchToolClaude = arg("search-tool
 if (fullText) scriptWindow.cnfirmedArchiveFullText = true;
 // Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
 const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
-if (web && engine !== "userscript") throw new Error("--web runs the user script's web search only");
-if (web && record && !apiKey) {
-  throw new Error("recording the web search needs CNFIRMED_ANTHROPIC_API_KEY in the environment");
+if ((web || check) && engine !== "userscript") {
+  throw new Error("--web and --check run the user script's model calls only");
+}
+if ((web || check) && record && !apiKey) {
+  throw new Error("recording a model call needs CNFIRMED_ANTHROPIC_API_KEY in the environment");
 }
 
 /** Model usage across the run, read off each Claude response (replayed or live). */
@@ -119,6 +126,8 @@ export interface Lead {
   evidence: string[];
   /** Where that evidence lives: `de:Eiffelturm`, or the book's year and access. */
   where: string;
+  /** Archive leads, with --check: the model's verdict on the passages, labelled like eval/labels.json. */
+  check?: { verdict: string; reason: string } | null;
 }
 
 export interface ClaimResult {
@@ -223,6 +232,16 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
     result.archiveFunnel = funnel;
     result.archive = archive.candidates.map(archiveLead);
     for (const e of archive.funnel.errors) result.errors.push(`archive: ${e}`);
+    if (check && archive.candidates.length) {
+      try {
+        const verdicts = await page.checkArchive(index, archive.candidates, apiKey || "replay-needs-no-key");
+        result.archive.forEach((lead, k) => {
+          lead.check = verdicts[k] ? { verdict: verdicts[k].verdict, reason: verdicts[k].reason } : null;
+        });
+      } catch (err) {
+        result.errors.push(`check: ${(err as Error).message}`);
+      }
+    }
   } catch (err) {
     result.errors.push(`archive: ${(err as Error).message}`);
   }

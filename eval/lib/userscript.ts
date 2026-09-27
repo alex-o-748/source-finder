@@ -38,6 +38,8 @@ export interface ScriptArticle {
   findArchive(index: number): Promise<{ candidates: Json[]; funnel: Json }>;
   /** The paid stage: one Claude call with web search, as the script makes it. */
   findWeb(index: number, apiKey: string): Promise<Json[]>;
+  /** One short Claude call judging the Archive leads' passages: a verdict per lead, or null. */
+  checkArchive(index: number, candidates: Json[], apiKey: string): Promise<Json[]>;
 }
 
 export async function loadScriptArticle(
@@ -73,6 +75,8 @@ export async function loadScriptArticle(
     findWiki: (index) => script.findWikiCandidates(corpus, index),
     findArchive: (index) => script.findArchiveCandidates(index),
     findWeb: (index, apiKey) => script.callClaude(script.getClaimContexts()[index], apiKey),
+    checkArchive: (index, candidates, apiKey) =>
+      script.checkArchiveCandidates(script.getClaimContexts()[index], candidates, "claude", apiKey),
   };
 }
 

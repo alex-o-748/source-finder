@@ -53,21 +53,25 @@
       // reads them; web_search_20250305 hands them over as they are.
       defaultSearchTool: 'web_search_20260209',
       searchToolOverride: 'cnfirmedSearchToolClaude',
-      run: callClaude
+      run: callClaude,
+      // One plain request, no tools: checks the Internet Archive passages.
+      complete: completeClaude
     },
     gemini: {
       name: 'Gemini',
       keyStorage: 'cnfirmed-key-gemini',
       defaultModel: 'gemini-flash-latest',
       modelOverride: 'cnfirmedModelGemini',
-      run: callGemini
+      run: callGemini,
+      complete: completeGemini
     },
     openai: {
       name: 'OpenAI',
       keyStorage: 'cnfirmed-key-openai',
       defaultModel: 'gpt-5-mini',
       modelOverride: 'cnfirmedModelOpenAI',
-      run: callOpenAI
+      run: callOpenAI,
+      complete: completeOpenAI
     }
   };
 
@@ -2609,9 +2613,7 @@
   // scoreArchivePassage, but saying which gate a passage failed.
   function judgeArchivePassage(text, ctx, bookIsAboutSubject, datelineYear) {
     if (text.length < IA_MIN_PASSAGE_CHARS) return { reason: 'too short' };
-    var have = tokenSetOf(text);
-    if (!bookIsAboutSubject && ctx.subjectTokens.length > 0 &&
-        !ctx.subjectTokens.some(function (t) { return have[t]; })) {
+    if (!bookIsAboutSubject && !iaMentionsSubject(text, ctx.subjectTokens)) {
       return { reason: 'no subject' };
     }
     var query = datelineYear
@@ -2626,6 +2628,12 @@
     var cov = coverageOf(ctx.bag, text);
     var score = anchorCount(query) > 0 ? 0.6 * anchors.score + 0.4 * cov : cov;
     return { score: Math.round(score * 100) / 100, matched: anchors.matched };
+  }
+
+  function iaMentionsSubject(text, subjectTokens) {
+    if (subjectTokens.length === 0) return true;
+    var have = tokenSetOf(text);
+    return subjectTokens.some(function (t) { return have[t]; });
   }
 
   function iaTitleIsAbout(title, subjectTokens) {
@@ -2761,14 +2769,19 @@
     });
   }
 
+  // A passage must mention the subject, unless the book's title is about it.
   function rankArchiveByUnits(hits, claim, title) {
-    var units = iaClaimUnits(claim, iaSubjectOf(title), 6, false);
+    var subject = iaSubjectOf(title);
+    var subjectTokens = Object.keys(tokenSetOf(subject));
+    var units = iaClaimUnits(claim, subject, 6, false);
     var out = [];
     hits.forEach(function (hit) {
       var gate = archiveGate(hit);
       if (!gate.ok) return;
+      var about = iaTitleIsAbout(hit.title, subjectTokens);
       var best = null;
       hit.highlights.forEach(function (text) {
+        if (!about && !iaMentionsSubject(text, subjectTokens)) return;
         var matched = iaUnitsIn(text, units);
         if (matched.length >= 2 && matched.some(function (u) { return u.strong; }) &&
             (!best || matched.length > best.matched.length)) {
@@ -3152,6 +3165,9 @@
       archiveState[index] = { status: 'done', candidates: r.candidates, funnel: r.funnel };
       persistArchive();
       renderPanel(index);
+      // With a key set, the passages are checked straight away: unchecked,
+      // most of them only share words with the claim.
+      if (r.candidates.length && getKey(getProvider())) return checkArchiveStage(index);
       return archiveState[index];
     }).catch(function (err) {
       console.error('[CNfirmed] Internet Archive search failed for claim', index, ':', err);
@@ -3178,10 +3194,127 @@
         var s = archiveState[k];
         if (s && s.status === 'done') {
           serialisable[k] = { status: 'done', candidates: s.candidates, funnel: s.funnel };
+          if (s.check && s.check.status === 'done') serialisable[k].check = s.check;
         }
       });
       localStorage.setItem(archiveCacheKey, JSON.stringify(serialisable));
     } catch (e) { /* ignore */ }
+  }
+
+  // ---- Checking the Archive passages against the claim ------------------
+  // The search matches words, and most passages that share a claim's words do
+  // not say what it says. With a key set, one short call to the chosen model
+  // reads every lead's passages and judges each book, with the verdicts the
+  // evaluation labels use (eval/labels.json), so the two can be compared.
+
+  var ARCHIVE_VERDICTS = ['supports', 'partial', 'topic', 'unrelated'];
+  var ARCHIVE_CONTEXT_CHARS = 800;
+
+  var ARCHIVE_CHECK_PROMPT = [
+    'You check whether passages from digitised books state a claim from a',
+    'Wikipedia article. The passages are search snippets from OCR text, often',
+    'about a hundred characters, cut mid-sentence, with OCR errors.',
+    '',
+    'For each numbered book, read its passages together and give one verdict:',
+    '- supports: a passage states the claim\'s specific fact. Paraphrase is fine.',
+    '- partial: a passage states part of the claim\'s fact (one of two facts;',
+    '  the year but not the place) about the same subject.',
+    '- topic: about the claim\'s subject, but it states a different fact.',
+    '- unrelated: not about the claim\'s subject. It only shares words, names',
+    '  or numbers with the claim: another person of the same name, another',
+    '  place, the same year for a different event.',
+    '',
+    'Judge only what the passages say. Do not use what you know about the',
+    'subject, and do not guess what the rest of the book says. The article',
+    'title and the context say what the claim is about ("it", "he"); they are',
+    'not evidence.',
+    '',
+    'Reply with JSON only, no prose and no Markdown fences:',
+    '{"books": [{"n": 1, "verdict": "unrelated", "quote": "", "reason": "..."}]}',
+    'with one entry per book. "quote" is the words that state the claim or part',
+    'of it, copied from the passage, or "" when none does. "reason" is one short',
+    'sentence an editor can check.'
+  ].join('\n');
+
+  function archiveCheckMessage(ctx, candidates) {
+    var lines = [
+      'Article: ' + (mw.config.get('wgTitle') || pageTitle.replace(/_/g, ' ')),
+      'Claim: ' + ctx.claim
+    ];
+    if (ctx.context && ctx.context !== ctx.claim) {
+      lines.push('Context: ' + truncate(ctx.context, ARCHIVE_CONTEXT_CHARS));
+    }
+    candidates.forEach(function (c, k) {
+      lines.push('', 'Book ' + (k + 1) + ': ' + c.title + (c.evidence.year ? ' (' + c.evidence.year + ')' : ''));
+      c.evidence.passages.forEach(function (p) { lines.push('- ' + p); });
+    });
+    return lines.join('\n');
+  }
+
+  // The model's reply, one verdict per candidate, in order; null where it gave
+  // none, so a book it skipped stays unchecked rather than judged.
+  function parseArchiveVerdicts(raw, count) {
+    var out = [];
+    for (var k = 0; k < count; k++) out.push(null);
+    var json = raw ? extractJsonObject(raw) : null;
+    var parsed = null;
+    try { parsed = json ? JSON.parse(json) : null; } catch (e) { parsed = null; }
+    if (!parsed || !Array.isArray(parsed.books)) {
+      throw new Error('the model\'s reply was not the JSON asked for');
+    }
+    parsed.books.forEach(function (b) {
+      var n = b && Number(b.n);
+      if (!(n >= 1 && n <= count) || out[n - 1]) return;
+      var verdict = typeof b.verdict === 'string' ? b.verdict.trim().toLowerCase() : '';
+      if (ARCHIVE_VERDICTS.indexOf(verdict) === -1) return;
+      out[n - 1] = {
+        verdict: verdict,
+        quote: typeof b.quote === 'string' ? b.quote : '',
+        reason: typeof b.reason === 'string' ? b.reason : ''
+      };
+    });
+    return out;
+  }
+
+  function checkArchiveCandidates(ctx, candidates, providerId, apiKey) {
+    return PROVIDERS[providerId]
+      .complete(ARCHIVE_CHECK_PROMPT, archiveCheckMessage(ctx, candidates), apiKey)
+      .then(function (text) { return parseArchiveVerdicts(text, candidates.length); });
+  }
+
+  function archiveCheckWanted(verdict) {
+    return verdict === 'supports' || verdict === 'partial';
+  }
+
+  // Runs the check for a claim whose Archive search is done, and keeps the
+  // verdicts on its candidates. Without a key, asks for one first.
+  function checkArchiveStage(index) {
+    var a = archiveState[index];
+    if (!a || a.status !== 'done' || !(a.candidates || []).length) return Promise.resolve(a);
+    if (a.checking) return a.checking;
+    var providerId = getProvider();
+    var ready = getKey(providerId) ? Promise.resolve(true) : promptForKey(providerId);
+    a.checking = ready.then(function (ok) {
+      if (!ok || !getKey(providerId)) return a;
+      a.check = { status: 'running', provider: providerId };
+      renderPanel(index);
+      return checkArchiveCandidates(claimContexts[index], a.candidates, providerId, getKey(providerId))
+        .then(function (verdicts) {
+          a.candidates.forEach(function (c, k) { c.check = verdicts[k]; });
+          a.check = { status: 'done', provider: providerId, model: modelFor(providerId) };
+          console.log('[CNfirmed] Internet Archive claim', index, 'checked:',
+            verdicts.map(function (v) { return v ? v.verdict : 'none'; }).join(', '));
+        }, function (err) {
+          console.error('[CNfirmed] Internet Archive check failed for claim', index, ':', err);
+          a.check = { status: 'error', provider: providerId, error: (err && err.message) || String(err) };
+        });
+    }).then(function () {
+      delete a.checking;
+      persistArchive();
+      renderPanel(index);
+      return a;
+    });
+    return a.checking;
   }
 
   // ---- Provider implementations -----------------------------------------
@@ -3318,6 +3451,86 @@
       }
     }
     return parts.join('\n');
+  }
+
+  // One request with no tools, for a short judgment such as the Archive check:
+  // the text of the reply. The model is the one set for the web search.
+  function completeClaude(system, user, apiKey) {
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: modelFor('claude'),
+        max_tokens: 4000,
+        // Reading a dozen short passages needs little thought.
+        output_config: { effort: 'low' },
+        system: system,
+        messages: [{ role: 'user', content: user }]
+      })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        if (!res.ok) throw new Error('Claude API ' + res.status + ': ' + truncate(t, 200));
+        var data = JSON.parse(t);
+        return (data.content || [])
+          .filter(function (b) { return b && b.type === 'text'; })
+          .map(function (b) { return b.text; })
+          .join('\n');
+      });
+    });
+  }
+
+  function completeGemini(system, user, apiKey) {
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+      encodeURIComponent(modelFor('gemini')) + ':generateContent?key=' +
+      encodeURIComponent(apiKey);
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: user }] }],
+        systemInstruction: { parts: [{ text: system }] },
+        generationConfig: { maxOutputTokens: 8192, temperature: 0, responseMimeType: 'application/json' }
+      })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var data;
+        try { data = JSON.parse(t); } catch (e) { data = null; }
+        if (!res.ok) {
+          var msg = (data && data.error && data.error.message) || truncate(t, 200);
+          throw new Error('Gemini API ' + res.status + ': ' + msg);
+        }
+        var c = data && data.candidates && data.candidates[0];
+        return c && c.content && c.content.parts
+          ? c.content.parts.map(function (p) { return p.text || ''; }).join('\n')
+          : '';
+      });
+    });
+  }
+
+  function completeOpenAI(system, user, apiKey) {
+    return fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: JSON.stringify({ model: modelFor('openai'), instructions: system, input: user })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var data;
+        try { data = JSON.parse(t); } catch (e) { data = null; }
+        if (!res.ok) {
+          var msg = (data && data.error && data.error.message) || truncate(t, 200);
+          throw new Error('OpenAI API ' + res.status + ': ' + msg);
+        }
+        return data && data.output_text ? data.output_text : extractOpenAIText(data);
+      });
+    });
   }
 
   // ---- Suggestion JSON parsing ------------------------------------------
@@ -3652,9 +3865,14 @@
         $('<button>').text(a.status === 'error' ? 'Try again' : 'Search Internet Archive books (free)')
           .on('click', function () { runArchiveStage(i); })
       ));
+      var providerName = PROVIDERS[getProvider()].name;
       $section.append($('<div class="cnfirmed-note">').text(
-        'Full-text search of digitised books. Free, no API key. Experimental. ' +
-        'Some need a free archive.org account to borrow.'));
+        'Full-text search of digitised books. Free. Experimental. ' +
+        'Some need a free archive.org account to borrow. ' +
+        (getKey(getProvider())
+          ? 'The passages found are then checked against the claim with ' + providerName +
+            ': one short call to your key.'
+          : 'Without an API key, the passages found are not checked against the claim.')));
       $el.append($section);
       return;
     }
@@ -3665,15 +3883,78 @@
       $section.append($('<div class="cnfirmed-note">')
         .text('No book on the Internet Archive matches this claim.'));
     }
-    candidates.forEach(function (c) {
-      $section.append(renderArchiveCandidate(i, c));
-    });
+    renderArchiveCheckedInto($section, i, a, candidates);
     if (funnel && funnel.queries.length) {
       $section.append($('<div class="cnfirmed-note">').css('font-size', '0.75em')
         .attr('title', funnel.queries.join('\n'))
         .text(archiveFunnelLine(funnel)));
     }
     $el.append($section);
+  }
+
+  // The leads, as the check left them: the books it found stating the claim
+  // (or part of it) first, the others folded away. Unchecked, every lead is
+  // shown, with a plain warning and the button that checks them.
+  var ARCHIVE_VERDICT_LABELS = {
+    supports: { text: 'States the claim', status: 'SUPPORTED' },
+    partial: { text: 'States part of it', status: 'PARTIALLY SUPPORTED' },
+    topic: { text: 'Same subject, another fact', status: 'NOT SUPPORTED' },
+    unrelated: { text: 'Only shares words', status: 'NOT SUPPORTED' }
+  };
+
+  function renderArchiveCheckedInto($section, i, a, candidates) {
+    if (candidates.length === 0) return;
+    var check = a.check || null;
+    var providerName = PROVIDERS[(check && check.provider) || getProvider()].name;
+    if (!check || check.status !== 'done') {
+      if (check && check.status === 'running') {
+        $section.append($('<div class="cnfirmed-note">')
+          .text('Checking the passages against the claim with ' + providerName + '…'));
+      } else {
+        if (check && check.status === 'error') {
+          $section.append($('<div class="cnfirmed-note">').css('color', '#b32424')
+            .text('Check failed: ' + check.error));
+        }
+        $section.append($('<div class="cnfirmed-note">').text(
+          'Not checked: these passages share words with the claim, but nothing has read ' +
+          'them for whether they state it. Most do not.'));
+        $section.append($('<div class="cnfirmed-toolbar">').append(
+          $('<button>').text('Check them with ' + providerName)
+            .attr('title', 'One short API call, billed to your key')
+            .on('click', function () { checkArchiveStage(i); })
+        ));
+      }
+      candidates.forEach(function (c) { $section.append(renderArchiveCandidate(i, c)); });
+      return;
+    }
+
+    var rank = function (c) {
+      var v = c.check && c.check.verdict;
+      return v === 'supports' ? 0 : v === 'partial' ? 1 : v ? 3 : 2;
+    };
+    var ordered = candidates.map(function (c, k) { return { c: c, k: k }; })
+      .sort(function (x, y) { return rank(x.c) - rank(y.c) || x.k - y.k; })
+      .map(function (x) { return x.c; });
+    // A book the model gave no verdict for stays in view, unchecked.
+    var shown = ordered.filter(function (c) { return !c.check || archiveCheckWanted(c.check.verdict); });
+    var folded = ordered.filter(function (c) { return c.check && !archiveCheckWanted(c.check.verdict); });
+    if (!shown.some(function (c) { return c.check; })) {
+      $section.append($('<div class="cnfirmed-note">').text(
+        'Checked with ' + providerName + ': no passage found states the claim.'));
+    }
+    shown.forEach(function (c) { $section.append(renderArchiveCandidate(i, c)); });
+    if (folded.length) {
+      var $folded = $('<div>').hide();
+      folded.forEach(function (c) { $folded.append(renderArchiveCandidate(i, c)); });
+      $section.append($('<div class="cnfirmed-toolbar">').append(
+        $('<button>').text('Show ' + folded.length + ' more, judged not to state it')
+          .on('click', function () { $(this).parent().remove(); $folded.show(); })
+      ));
+      $section.append($folded);
+    }
+    $section.append($('<div class="cnfirmed-note">').text(
+      'Checked by ' + providerName + ' (' + check.model + ') on the passages alone. ' +
+      'Read the passage in the book before citing it.'));
   }
 
   function renderArchiveCandidate(i, c) {
@@ -3691,9 +3972,17 @@
       $row.append($('<span class="cnfirmed-note">')
         .text(' — borrow with a free archive.org account'));
     }
+    var label = c.check && ARCHIVE_VERDICT_LABELS[c.check.verdict];
+    if (label) {
+      $row.append(' ', $('<span class="cnfirmed-pill">').attr('data-status', label.status).text(label.text));
+    }
     // A passage from the whole text is already cut with "…".
     var snippet = c.evidence.fullText ? c.snippet : '…' + c.snippet + '…';
     $row.append($('<div class="cnfirmed-quote">').text(snippet));
+    if (c.check && (c.check.quote || c.check.reason)) {
+      $row.append($('<div class="cnfirmed-note">').text(
+        (c.check.quote ? '\u201c' + c.check.quote + '\u201d ' : '') + c.check.reason));
+    }
     if (c.evidence.matchedAnchors.length) {
       $row.append($('<div class="cnfirmed-note">')
         .text('matched: ' + c.evidence.matchedAnchors.join(', ') +

@@ -125,18 +125,31 @@ function main(): void {
   // The headline: per method, how often it finds a source for the claim.
   // "Found" = at least one lead whose evidence states the claim's fact;
   // "found or partly" also counts a lead that states part of it.
+  // With --check runs, the Archive leads the model kept count as a method of
+  // their own: what an editor with a key set is shown.
+  const checked = results.some((r) => r.archive.some((l) => l.check !== undefined));
+  const methods: { name: string; pick: (r: ClaimResult) => Lead[] }[] = [
+    ...ORIGINS.map((origin) => ({ name: origin, pick: (r: ClaimResult) => leadsOf(r).filter((l) => l.origin === origin) })),
+    ...(checked
+      ? [{
+          name: "archive, checked",
+          // As the popover shows them: what the model kept, and any lead it gave no verdict.
+          pick: (r: ClaimResult) => r.archive.filter((l) => !l.check || GOOD.has(l.check.verdict as Verdict)),
+        }]
+      : []),
+    { name: "any", pick: leadsOf },
+  ];
+
   console.log("\nsource found, per method (share of claims)");
   console.log("  method              all claims            book-plausible        not book-plausible");
   console.log("                      found  or partly      found  or partly      found  or partly");
-  for (const origin of [...ORIGINS, "any" as const]) {
+  for (const { name, pick } of methods) {
     const cells = groups.map(([, rs]) => {
       const has = (ok: Set<Verdict>) =>
-        rs.filter((r) =>
-          leadsOf(r).some((l) => (origin === "any" || l.origin === origin) && ok.has(labelOf(r, l)?.verdict as Verdict)),
-        ).length;
+        rs.filter((r) => pick(r).some((l) => ok.has(labelOf(r, l)?.verdict as Verdict))).length;
       return `${pct(has(new Set(["supports"])), rs.length)}   ${pct(has(GOOD), rs.length)}     `;
     });
-    console.log(`  ${origin.padEnd(18)}  ${cells.join("    ")}`);
+    console.log(`  ${name.padEnd(18)}  ${cells.join("    ")}`);
   }
   console.log(
     `  claims:               ${groups.map(([, rs]) => String(rs.length).padStart(3)).join("                   ")}`,
@@ -146,8 +159,7 @@ function main(): void {
     if (rs.length === 0) continue;
     console.log(`\n${label} (${rs.length} claims)`);
     console.log("  stage             any lead   good lead   top lead good   leads  judged  precision");
-    for (const origin of [...ORIGINS, "any" as const]) {
-      const pick = (r: ClaimResult) => leadsOf(r).filter((l) => origin === "any" || l.origin === origin);
+    for (const { name, pick } of methods) {
       const withLead = rs.filter((r) => pick(r).length > 0);
       const withGood = rs.filter((r) => pick(r).some((l) => GOOD.has(labelOf(r, l)?.verdict as Verdict)));
       const topGood = withLead.filter((r) => {
@@ -158,12 +170,14 @@ function main(): void {
       const judged = all.filter((l) => l && l.verdict !== "unknown");
       const good = judged.filter((l) => GOOD.has(l!.verdict));
       console.log(
-        `  ${origin.padEnd(16)}  ${pct(withLead.length, rs.length)}      ${pct(withGood.length, rs.length)}` +
+        `  ${name.padEnd(16)}  ${pct(withLead.length, rs.length)}      ${pct(withGood.length, rs.length)}` +
           `        ${pct(topGood.length, withLead.length)}      ${String(all.length).padStart(5)}  ${String(judged.length).padStart(6)}` +
           `     ${pct(good.length, judged.length)}`,
       );
     }
   }
+
+  if (checked) scoreCheck(results, labelOf);
 
   const unlabelled = results.reduce((n, r) => n + leadsOf(r).filter((l) => !labelOf(r, l)).length, 0);
   const errors = results.filter((r) => r.errors.length).length;
@@ -191,6 +205,38 @@ function main(): void {
     }
     if (changed === 0) console.log("  none");
   }
+}
+
+/**
+ * How the model's check of the Archive leads agrees with the hand labels: the
+ * verdicts side by side, and what keeping only "supports" and "partial" costs
+ * and gains.
+ */
+function scoreCheck(
+  results: ClaimResult[],
+  labelOf: (r: ClaimResult, l: Lead) => Label | undefined,
+): void {
+  const verdicts: Verdict[] = ["supports", "partial", "topic", "unrelated", "unknown"];
+  const pairs = results.flatMap((r) =>
+    r.archive.map((l) => ({ model: l.check?.verdict ?? "none", label: labelOf(r, l)?.verdict ?? "unjudged" })),
+  );
+  console.log("\nArchive check (model) against the labels (rows: model, columns: label)");
+  console.log(`  ${"".padEnd(10)}${[...verdicts, "unjudged"].map((v) => v.padStart(10)).join("")}`);
+  for (const m of ["supports", "partial", "topic", "unrelated", "none"]) {
+    const row = [...verdicts, "unjudged"].map((v) =>
+      String(pairs.filter((p) => p.model === m && p.label === v).length).padStart(10),
+    );
+    console.log(`  ${m.padEnd(10)}${row.join("")}`);
+  }
+  const judged = pairs.filter((p) => p.label !== "unjudged" && p.label !== "unknown");
+  const kept = judged.filter((p) => GOOD.has(p.model as Verdict));
+  const good = judged.filter((p) => GOOD.has(p.label as Verdict));
+  const keptGood = kept.filter((p) => GOOD.has(p.label as Verdict));
+  console.log(
+    `  kept ${kept.length} of ${judged.length} judged leads: precision ${pct(keptGood.length, kept.length).trim()}` +
+      ` (all leads: ${pct(good.length, judged.length).trim()}); good leads kept ${keptGood.length} of ${good.length}` +
+      `; ${pairs.filter((p) => p.model === "none").length} lead(s) with no verdict`,
+  );
 }
 
 main();

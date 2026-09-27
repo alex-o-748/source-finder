@@ -42,6 +42,9 @@ const EXPOSED = [
   "loadWikiCorpus",
   "taggedSentenceRange",
   "callClaude",
+  "checkArchiveCandidates",
+  "archiveCheckMessage",
+  "parseArchiveVerdicts",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

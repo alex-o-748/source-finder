@@ -74,11 +74,25 @@ of it.
 | --- | --- | --- | --- | --- |
 | Same article | 0% | 1% | 7% | 14% (of 7) |
 | Other language editions | 2% | 3% | 9% | 21% (of 28) |
-| Internet Archive | 3% | 17% | 74% | 14% (of 221) |
-| Any | 5% | 20% | 76% | 15% (of 256) |
+| Internet Archive | 3% | 17% | 51% | 18% (of 157) |
+| Any | 5% | 20% | 56% | 19% (of 192) |
 
 On the 46 claims where a book is a plausible source, the Archive finds 4% and
 finds or partly finds 22%.
+
+**The subject, required again.** The ranking by claim units (below) did not
+require a passage to mention the article's subject, and that is where most of
+the Archive's noise came from: of the 103 leads it found that way, 97 did not
+state the claim ("working-class housing" and "middle-class housing" in a
+history of Nottingham housing, for a claim about Gothic details in
+working-class housing). Every claim they found something for also had a good
+lead that names the subject. Requiring a subject word in the passage, unless
+the book's title is about the subject, changed nothing found (3% and 17%),
+cut the claims shown any Archive lead from 74% to 51% and the leads from 221
+to 158, and raised precision from 14% to 18% and a good top lead from 16% to
+25% of claims with a lead. The 34 books that took the freed places were
+judged too: one states part of its claim, and one cannot be told from its
+passage.
 
 **How the Archive stage got there.** The previous baseline found 0%, or partly
 5% (4% of the book-plausible claims), from 48 leads on 24 claims. Three changes:
@@ -91,11 +105,12 @@ finds or partly finds 22%.
   names. Claims with neither now get a query ("The acini secrete digestive
   enzymes" found "The acini secrete several digestive enzymes").
 - *A second ranking by claim units*, which does not require the passage to
-  name the subject or carry the number ("Prince of Leiningen, who died in
-  1814" for "Feodora's father died in 1814").
+  carry the number ("Prince of Leiningen, who died in 1814" for "Feodora's
+  father died in 1814"). As first built it did not require the subject
+  either; see above.
 
-The cost is noise: three claims in four now get Archive leads, and six in
-seven of those leads do not state the claim. What still caps it is the
+The cost was noise: three claims in four got Archive leads, and six in
+seven of those leads did not state the claim. What still caps it is the
 evidence: each book comes back with at most five highlights of about 100
 characters, each around one term, so the right book often cannot show the
 sentence. See `--full-text` below.
@@ -138,6 +153,28 @@ leads into ones that state the claim ("following the murder of Paul, Tsar
 Alexander revived his grandmother's policy and began Russia's fourth and final
 attempt to conquer the Caucasus"), but most books in the lending library,
 where modern secondary sources are, have no public text.
+
+## Checking the Archive leads (`--check`)
+
+With a key set, the user script sends each claim's Archive leads to the model
+once, and shows only the books it judges to state the claim or part of it
+(README, "Books on the Internet Archive", step 6). Its verdicts are the ones
+`labels.json` uses, so it can be scored against them:
+
+```sh
+NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --check --name check
+npx tsx eval/score.ts --run check
+```
+
+`score.ts` then adds an "archive, checked" method (the leads the popover
+shows: kept by the model, or given no verdict) and a table of the model's
+verdicts against the labels, with the precision of what it keeps and how many
+of the good leads it keeps. Recording needs `CNFIRMED_ANTHROPIC_API_KEY`, like
+the web search; about 50 calls, one per claim with Archive leads.
+
+**Not measured yet.** When the check was built (September 2026), the key this
+set is recorded with had no credit, so there is no recording and no result.
+Until there is, what the check is worth is unknown.
 
 ## The web search (paid)
 

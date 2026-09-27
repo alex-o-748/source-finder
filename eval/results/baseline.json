@@ -101,40 +101,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:biblerecentarcha0000keny_x1j1",
-        "origin": "internet-archive",
-        "title": "The Bible and recent archaeology",
-        "url": "https://archive.org/details/biblerecentarcha0000keny_x1j1",
-        "score": 0.43,
-        "matchedAnchors": [
-          "greek",
-          "ptolemy",
-          "philadelphus"
-        ],
-        "evidence": [
-          "work of seventy-two scholars invited by Ptolemy 11 Philadelphus (c. 309-246 BC) to make a Greek trans-"
-        ],
-        "where": "n.d., borrow"
-      },
-      {
-        "key": "ia:archaeologicalen0000nege",
-        "origin": "internet-archive",
-        "title": "Archaeological encyclopedia of the Holy Land",
-        "url": "https://archive.org/details/archaeologicalen0000nege",
-        "score": 0.43,
-        "matchedAnchors": [
-          "greek",
-          "ptolemy",
-          "philadelphus"
-        ],
-        "evidence": [
-          "His successor, Ptolemy Philadelphus, encouraged Greek literature and art. Under Ptolemy Epiphanes Egypt"
-        ],
-        "where": "n.d., borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Khirbet Kerak\" \"philadelphus\" \"ptolemy\"",
@@ -145,9 +112,9 @@
       "borrowable": 65,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 2,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -163,53 +130,7 @@
     "claimChanged": false,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:thor-comics-collection-2026",
-        "origin": "internet-archive",
-        "title": "Thor Comics Collection",
-        "url": "https://archive.org/details/thor-comics-collection-2026",
-        "score": 0.5,
-        "matchedAnchors": [
-          "2010",
-          "january"
-        ],
-        "evidence": [
-          "MAGUETA TRADUCCION THOR GIANT-SIZE FINALE No. 1, January, 2010. Published as a One-Shot by MARVEL PUBLISHING"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:BNA-DIG-AWEMAINTA-2010-01-16",
-        "origin": "internet-archive",
-        "title": "Awe Mainta (16 Januari 2010)",
-        "url": "https://archive.org/details/BNA-DIG-AWEMAINTA-2010-01-16",
-        "score": 0.5,
-        "matchedAnchors": [
-          "2010",
-          "january"
-        ],
-        "evidence": [
-          "di Tumba na Curacao cu ta tuma lugar 29 di January, 2010. E prijs ta inclui: • Dos anochi na Renaissance"
-        ],
-        "where": "2010, open"
-      },
-      {
-        "key": "ia:dxld2009-086",
-        "origin": "internet-archive",
-        "title": "DX Listening Digest 2009-086",
-        "url": "https://archive.org/details/dxld2009-086",
-        "score": 0.5,
-        "matchedAnchors": [
-          "2010",
-          "january"
-        ],
-        "evidence": [
-          "its celebration with broadcasts on Sunday 10 January, 2010. For those interested, a unique QSL card will"
-        ],
-        "where": "2009, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"MS Ilos\" \"2010\" \"january\"",
@@ -221,9 +142,9 @@
       "borrowable": 9,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -420,21 +341,6 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1955-11-28_28_38",
-        "origin": "internet-archive",
-        "title": "Linn's Weekly Stamp News 1955-11-28: Vol 28 Iss 38",
-        "url": "https://archive.org/details/sim_linns-stamp-news-weekly-news-and-marketplace_1955-11-28_28_38",
-        "score": 0.33,
-        "matchedAnchors": [
-          "japanese philately",
-          "philatelic"
-        ],
-        "evidence": [
-          "office] | INTERNATIONAL SOCIETY FOR JAPANESE PHILATELY | Japanese Philatelic or. t San Jose is shown on"
-        ],
-        "where": "1955, open"
-      },
-      {
         "key": "ia:in.ernet.dli.2015.105044",
         "origin": "internet-archive",
         "title": "Archiv Orientalni: Journal Of The Czechoslovak Oriental Institute, Prague Vol.10",
@@ -449,19 +355,18 @@
         "where": "1929, open"
       },
       {
-        "key": "ia:sim_linns-stamp-news-weekly-news-and-marketplace_1957-02-25_29_51",
+        "key": "ia:sim_japan-times_1956-11-21_20757",
         "origin": "internet-archive",
-        "title": "Linn's Weekly Stamp News 1957-02-25: Vol 29 Iss 51",
-        "url": "https://archive.org/details/sim_linns-stamp-news-weekly-news-and-marketplace_1957-02-25_29_51",
-        "score": 0.33,
+        "title": "The Japan Times 1956-11-21: Iss 20757",
+        "url": "https://archive.org/details/sim_japan-times_1956-11-21_20757",
+        "score": 0.69,
         "matchedAnchors": [
-          "japanese philately",
-          "philatelic"
+          "japanese"
         ],
         "evidence": [
-          "International Society for Japanese Philately first appeared under the name “International Japanese Philatelic Specialists"
+          "Haraguchi, President of Sohyo; Mr. Takaharu Mitsui, Vice-President of the Japanese- German Society; the members"
         ],
-        "where": "1957, open"
+        "where": "1956, open"
       }
     ],
     "archiveFunnel": {
@@ -476,9 +381,9 @@
       "borrowable": 24,
       "rejected": {},
       "matched": 5,
-      "byUnits": 3,
-      "lookedUp": 6,
-      "candidates": 4,
+      "byUnits": 0,
+      "lookedUp": 3,
+      "candidates": 3,
       "errors": []
     },
     "errors": [],
@@ -540,19 +445,18 @@
         "where": "2014, open"
       },
       {
-        "key": "ia:citiesinsand0000aubr",
+        "key": "ia:2007NAC38",
         "origin": "internet-archive",
-        "title": "Cities in the sand",
-        "url": "https://archive.org/details/citiesinsand0000aubr",
-        "score": 0.29,
+        "title": "Auction 38",
+        "url": "https://archive.org/details/2007NAC38",
+        "score": 0.77,
         "matchedAnchors": [
-          "roman empire",
-          "decline"
+          "roman empire"
         ],
         "evidence": [
-          "the man who began the decline and fall of the Roman Empire. Even the Romans called it ‘the Punic revenge’"
+          "Moretti collection. After Didius Julianus purchased the throne of the Roman Empire at an auction held by"
         ],
-        "where": "n.d., borrow"
+        "where": "2007, open"
       }
     ],
     "archiveFunnel": {
@@ -565,11 +469,9 @@
       "hits": 59,
       "available": 59,
       "borrowable": 25,
-      "rejected": {
-        "access restricted": 1
-      },
+      "rejected": {},
       "matched": 10,
-      "byUnits": 3,
+      "byUnits": 0,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -636,6 +538,21 @@
           "(Elizabeth Sewall Alcott) and “Meg” (Anna Bronson Alcott; her husband, John Pratt, lies beside"
         ],
         "where": "1977, borrow"
+      },
+      {
+        "key": "ia:georgesbraquelif0000zurc",
+        "origin": "internet-archive",
+        "title": "Louisa May Alcott and \"Little women\" : biography, critique, publications, poems, songs, and contemporary relevance",
+        "url": "https://archive.org/details/georgesbraquelif0000zurc",
+        "score": 0.11,
+        "matchedAnchors": [
+          "louisa",
+          "concord"
+        ],
+        "evidence": [
+          "” 112 Louisa May Alcott— Her Life Abigail May Alcott (Nieriker) She determined to see if Concord might"
+        ],
+        "where": "1990, borrow"
       }
     ],
     "archiveFunnel": {
@@ -650,12 +567,12 @@
       "available": 54,
       "borrowable": 42,
       "rejected": {
-        "access restricted": 2
+        "access restricted": 1
       },
       "matched": 1,
       "byUnits": 3,
       "lookedUp": 3,
-      "candidates": 1,
+      "candidates": 2,
       "errors": []
     },
     "errors": [],
@@ -869,41 +786,7 @@
       }
     ],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:bournoutian-1998-russians-armenians-1797-1889",
-        "origin": "internet-archive",
-        "title": "Russia and the Armenians of Transcaucasia 1797-1889: A Documentary Record",
-        "url": "https://archive.org/details/bournoutian-1998-russians-armenians-1797-1889",
-        "score": 0.13,
-        "matchedAnchors": [
-          "1800",
-          "1801",
-          "tsar",
-          "georgia"
-        ],
-        "evidence": [
-          "went to St. Petersburg in 1800 to voluntarily submit Georgia to Russia. In 1801 he protested against Tsar"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:hasan-jalaliants-2013-artsakh-english",
-        "origin": "internet-archive",
-        "title": "A History of the Land of Artsakh [Karabagh and Ganje, 1722-1827]",
-        "url": "https://archive.org/details/hasan-jalaliants-2013-artsakh-english",
-        "score": 0.1,
-        "matchedAnchors": [
-          "alexander i",
-          "1801",
-          "tsar"
-        ],
-        "evidence": [
-          "permission and against the wishes of Tsar Alexander I (1801-1825) began using the red seal of the catholicos"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Siege of Ganja\" \"1800\" \"1801\" \"11\" \"tsar paul's\" \"alexander\"",
@@ -917,13 +800,12 @@
       "available": 17,
       "borrowable": 1,
       "rejected": {
-        "not a text": 1,
-        "access restricted": 1
+        "not a text": 1
       },
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -941,53 +823,7 @@
     "wikiWarnings": [
       "no counterpart article on the larger language editions"
     ],
-    "archive": [
-      {
-        "key": "ia:pearlsnaturalcul0000farn",
-        "origin": "internet-archive",
-        "title": "Pearls, natural, cultured, and imitation",
-        "url": "https://archive.org/details/pearlsnaturalcul0000farn",
-        "score": 0.12,
-        "matchedAnchors": [
-          "arabia",
-          "arab"
-        ],
-        "evidence": [
-          "Encircled by Iran, Kuwait, Saudi Arabia, Qatar and the United Arab Emirates, the Persian Gulf (Figure"
-        ],
-        "where": "1986, borrow"
-      },
-      {
-        "key": "ia:debala-mitra",
-        "origin": "internet-archive",
-        "title": "Debala Mitra - Explorations in Art & Archaeology in South Asian Essays Dedicated to N.G.Majumdar",
-        "url": "https://archive.org/details/debala-mitra",
-        "score": 0.12,
-        "matchedAnchors": [
-          "arabia",
-          "arab"
-        ],
-        "evidence": [
-          "viz. Bahrain, parts of the coastal Saudi Arabia, the United Arab Emirates and Oman; and ancient Mesopotamia"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:abehayatshapingc0000azad",
-        "origin": "internet-archive",
-        "title": "Āb-e hayāt : shaping the canon of Urdu poetry",
-        "url": "https://archive.org/details/abehayatshapingc0000azad",
-        "score": 0.12,
-        "matchedAnchors": [
-          "arabia",
-          "arab"
-        ],
-        "evidence": [
-          "(amrikah). #21# Andalusia (andlus). #64 Arabia (‘arab), Arabian, Arab. #27, 28, 48, 51, 53, 54, +834 Arabic"
-        ],
-        "where": "2001, borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Three Gemstones\" \"1980\" \"90\" \"arabia\" \"arab\"",
@@ -1001,9 +837,9 @@
       "borrowable": 9,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -1070,19 +906,19 @@
         "where": "1933, open"
       },
       {
-        "key": "ia:appendixnavylist1943dec",
+        "key": "ia:appendixnavylist1942",
         "origin": "internet-archive",
-        "title": "Appendix to the Navy List 1943 December [Great Britain]. Rates of Pay, Conditions of Retirement, Uniform Regulations, Entry Regulations, etc., etc",
-        "url": "https://archive.org/details/appendixnavylist1943dec",
+        "title": "Appendix to the Navy List [Great Britain] Rates of Pay, Conditions of Retirement, Uniform Regulations, Entry Regulations, etc., etc. 1942 June, 1951 Dec., 1956 Jun. and Dec., 1958, 1959",
+        "url": "https://archive.org/details/appendixnavylist1942",
         "score": 0.22,
         "matchedAnchors": [
           "devonport",
           "division"
         ],
         "evidence": [
-          "charge of the ‘accounts of a Division at R.N. Barracks at Portsmouth, Devonport, and Chatham, subject to"
+          "of the accounts of a Division or at Royal Real Barracks at Portsmouth, Devonport and Paymaster Captain"
         ],
-        "where": "1943, open"
+        "where": "1942, open"
       }
     ],
     "archiveFunnel": {
@@ -1243,21 +1079,6 @@
         "where": "1991, open"
       },
       {
-        "key": "ia:moveablefleetboa0000geor",
-        "origin": "internet-archive",
-        "title": "The moveable fleet : a boatwatcher's guide to San Francisco Bay",
-        "url": "https://archive.org/details/moveablefleetboa0000geor",
-        "score": 0.29,
-        "matchedAnchors": [
-          "gulf",
-          "alaska"
-        ],
-        "evidence": [
-          "the world. They carry oil from Alaska, Indonesia, and the Persian Gulf; molasses from Hawaii; fruit from"
-        ],
-        "where": "1979, borrow"
-      },
-      {
         "key": "ia:allhands9339unit",
         "origin": "internet-archive",
         "title": "All hands",
@@ -1272,19 +1093,34 @@
         "where": "1945, open"
       },
       {
-        "key": "ia:DTIC_ADA329236",
+        "key": "ia:DTIC_ADA267937",
         "origin": "internet-archive",
-        "title": "DTIC ADA329236: NRaD Command History Calendar Year 1996.",
-        "url": "https://archive.org/details/DTIC_ADA329236",
-        "score": 0.29,
+        "title": "DTIC ADA267937: Military Post Office Location List (MPOLL)",
+        "url": "https://archive.org/details/DTIC_ADA267937",
+        "score": 0.37,
         "matchedAnchors": [
-          "gulf",
-          "operations"
+          "alaska"
         ],
         "evidence": [
-          "Watch and other operations in the Persian Gulf. In the reengineered MICFAC, the NCCOSC team"
+          "(G) SSBN USS ALAMO LSD USS ALASKA SSBN USS ALASKA (B) SSBN USS ALASKA (G) SSBN USS ALBUQUERQUE SSN",
+          "USS LEXINGTON* AVT 16 34088-2700 B USS LEYTE GULF CG 55 34091-1175 B USS LIPSCOMB GLENARD B SSN"
         ],
-        "where": "1997, open"
+        "where": "1990, open"
+      },
+      {
+        "key": "ia:orbis-war-machine-003-armed-combat-helicopters",
+        "origin": "internet-archive",
+        "title": "Orbis War Machine",
+        "url": "https://archive.org/details/orbis-war-machine-003-armed-combat-helicopters",
+        "score": 0.37,
+        "matchedAnchors": [
+          "gulf"
+        ],
+        "evidence": [
+          "carrier battle groups to the Indian Ocean and Persian Gulf areas. | USS Ponchatoula of the ‘Neosho’ class whilst",
+          "‘Cimarron’ class oiler USS Platte (AO1 86) in the Gulf of Mexico. The class has been reduced in size to"
+        ],
+        "where": "n.d., open"
       }
     ],
     "archiveFunnel": {
@@ -1299,7 +1135,7 @@
       "borrowable": 19,
       "rejected": {},
       "matched": 12,
-      "byUnits": 2,
+      "byUnits": 0,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -1748,21 +1584,6 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:hitlers-and-hirohitos-kamikaze-flying-bombs-the-axis-manned-suicide-attack-aircraft-of-world-war-ii",
-        "origin": "internet-archive",
-        "title": "Hitler’s and Hirohito’s Kamikaze Flying Bombs : The Axis Manned Suicide Attack Aircraft of World War II",
-        "url": "https://archive.org/details/hitlers-and-hirohitos-kamikaze-flying-bombs-the-axis-manned-suicide-attack-aircraft-of-world-war-ii",
-        "score": 0.5,
-        "matchedAnchors": [
-          "museum",
-          "flight"
-        ],
-        "evidence": [
-          "restored No. 24) Olympic Flight Museum, Olympia, Washington (Replica) Texas Air Museum, Stinson Airfield, San"
-        ],
-        "where": "n.d., open"
-      },
-      {
         "key": "ia:secret-projects-military-space-technology_compress",
         "origin": "internet-archive",
         "title": "Secret Projects: Military Space Technology",
@@ -1777,19 +1598,32 @@
         "where": "2008, open"
       },
       {
-        "key": "ia:rocketplanes-to-space",
+        "key": "ia:read-6317page-pdf-book-forgotten-creators-how-german-speaking-scientists-and-eng",
         "origin": "internet-archive",
-        "title": "Rocketplanes To Space",
-        "url": "https://archive.org/details/rocketplanes-to-space",
-        "score": 0.5,
+        "title": "Read 6317page Pdf Book Forgotten Creators How German Speaking Scientists And Engineers Created The Modern World",
+        "url": "https://archive.org/details/read-6317page-pdf-book-forgotten-creators-how-german-speaking-scientists-and-eng",
+        "score": 0.43,
         "matchedAnchors": [
-          "museum",
-          "national"
+          "flight"
         ],
         "evidence": [
-          "the Planes of Fame Museum, in Chino, California; at the National Air and Space Museum in Washington D.C"
+          "(first flight 1964) and the Lockheed Martin F-35B (first flight 2008). After the war, R. Walter Brisken"
         ],
-        "where": "2017, open"
+        "where": "n.d., open"
+      },
+      {
+        "key": "ia:FC20241211",
+        "origin": "internet-archive",
+        "title": "FC20241211",
+        "url": "https://archive.org/details/FC20241211",
+        "score": 0.43,
+        "matchedAnchors": [
+          "flight"
+        ],
+        "evidence": [
+          "(first flight 1964) and the Lockheed Martin F-35B (first flight 2008). After the war, R. Walter Brisken"
+        ],
+        "where": "n.d., open"
       }
     ],
     "archiveFunnel": {
@@ -1804,7 +1638,7 @@
         "not a text": 3
       },
       "matched": 6,
-      "byUnits": 3,
+      "byUnits": 0,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -1863,55 +1697,7 @@
     "claimChanged": false,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:NPCM19550621",
-        "origin": "internet-archive",
-        "title": "China Mail 1955-06-21",
-        "url": "https://archive.org/details/NPCM19550621",
-        "score": 0.18,
-        "matchedAnchors": [
-          "japanese",
-          "government",
-          "official"
-        ],
-        "evidence": [
-          ", Mr Xiroshi.- Kawazoe, 41, senior Japanese Government: official, was siugged and robbed | early today"
-        ],
-        "where": "1955, open"
-      },
-      {
-        "key": "ia:sim_japan-times_1956-08-20_20665",
-        "origin": "internet-archive",
-        "title": "The Japan Times 1956-08-20: Iss 20665",
-        "url": "https://archive.org/details/sim_japan-times_1956-08-20_20665",
-        "score": 0.18,
-        "matchedAnchors": [
-          "japanese",
-          "government",
-          "official"
-        ],
-        "evidence": [
-          "d’Affaires here, said yes- terday a Japanese Government * official would visit Syria Sept. 12 for talks"
-        ],
-        "where": "1956, open"
-      },
-      {
-        "key": "ia:meteorological-and-geoastrophysical-abstracts_1954-11_5_11",
-        "origin": "internet-archive",
-        "title": "Meteorological Abstracts and Bibliography 1954-11: Vol 5 Iss 11",
-        "url": "https://archive.org/details/meteorological-and-geoastrophysical-abstracts_1954-11_5_11",
-        "score": 0.12,
-        "matchedAnchors": [
-          "38",
-          "551"
-        ],
-        "evidence": [
-          "Subject Heading: 1. Infrared spectroscopy —A.A. 5.11-38 $51.508.25 :551.521.6 Schulze, Rudolf, Uber ein Strahlungsmessgerat"
-        ],
-        "where": "1954, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"September 1954\" \"261.4\" \"38\" \"551\" \"japanese\"",
@@ -1924,9 +1710,9 @@
       "borrowable": 28,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -1965,11 +1751,10 @@
         "url": "https://archive.org/details/emir-o.-filipovic-the-most-nobleand-royal-houseof-kotromanic.-constructing-dynas",
         "score": 0.33,
         "matchedAnchors": [
-          "war against ragusa",
-          "king ostoja"
+          "ostoja"
         ],
         "evidence": [
-          "caused by King Ostoja’s (r. 1398-1404; 1409-1418) war against Ragusa. Attempting to achieve a resolution"
+          "order to bring a new monarch to the Bosnian throne. Describing King Ostoja as a “homo de picolla condicion"
         ],
         "where": "n.d., open"
       },
@@ -1980,11 +1765,10 @@
         "url": "https://archive.org/details/opera-snapshot-2025-03-29-065116-www.fojnica.de",
         "score": 0.33,
         "matchedAnchors": [
-          "war against ragusa",
-          "king ostoja"
+          "ostoja"
         ],
         "evidence": [
-          "caused by King Ostoja’s (r. 1398-1404; 1409-1418) war against Ragusa. Attempting to achieve a resolution"
+          "order to bring a new monarch to the Bosnian throne. Describing King Ostoja as a “homo de picolla condicion"
         ],
         "where": "n.d., open"
       },
@@ -1995,11 +1779,10 @@
         "url": "https://archive.org/details/armorial-general-precede-dun-dictionnaire-des-termes-du-blason",
         "score": 0.33,
         "matchedAnchors": [
-          "war against ragusa",
-          "king ostoja"
+          "ostoja"
         ],
         "evidence": [
-          "caused by King Ostoja’s (r. 1398-1404; 1409-1418) war against Ragusa. Attempting to achieve a resolution"
+          "order to bring a new monarch to the Bosnian throne. Describing King Ostoja as a “homo de picolla condicion"
         ],
         "where": "n.d., open"
       }
@@ -2018,7 +1801,7 @@
       "borrowable": 3,
       "rejected": {},
       "matched": 7,
-      "byUnits": 3,
+      "byUnits": 1,
       "lookedUp": 5,
       "candidates": 4,
       "errors": []
@@ -2066,21 +1849,6 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:roth-norman-j-the-bible-and-jews-in-medieval-spain-2021",
-        "origin": "internet-archive",
-        "title": "The Bible And Jews In Medieval Spain 2021",
-        "url": "https://archive.org/details/roth-norman-j-the-bible-and-jews-in-medieval-spain-2021",
-        "score": 0.5,
-        "matchedAnchors": [
-          "judeo-arabic",
-          "written"
-        ],
-        "evidence": [
-          "biblical commentary in Spain was written in Judeo-Arabic, the spo- ken and written language of Jews in Muslim"
-        ],
-        "where": "n.d., open"
-      },
-      {
         "key": "ia:JewishEncyclopediaDescriptiveRecordHistoryReligionLiteratureCustoms",
         "origin": "internet-archive",
         "title": "Jewish Encyclopedia Descriptive Record History Religion Literature Customs Jewish People from Earliest Times to Present Day.Prepared by More than Four Hundred Scholars and Specialists. Two Thousand Illustrations. Complete in Twelve Volumes. Editor,Singer, Adler, etc, other editors. 12 (13) Volumes 1900-1912.",
@@ -2093,6 +1861,20 @@
           "Dunash is identical with the Dunash living in Seville, who is mentioned by Joseph ibn Migash, he, as"
         ],
         "where": "n.d., open"
+      },
+      {
+        "key": "ia:the-jewish-encyclopedia-vol.-9",
+        "origin": "internet-archive",
+        "title": "The Jewish Encyclopedia, Volume 9",
+        "url": "https://archive.org/details/the-jewish-encyclopedia-vol.-9",
+        "score": 0.41,
+        "matchedAnchors": [
+          "seville"
+        ],
+        "evidence": [
+          "Dunash is identical with the Dunash living in Seville, who is mentioned by Joseph ibn Migash, he, as"
+        ],
+        "where": "1912, open"
       }
     ],
     "archiveFunnel": {
@@ -2105,11 +1887,10 @@
       "available": 53,
       "borrowable": 30,
       "rejected": {
-        "not a text": 1,
-        "access restricted": 1
+        "not a text": 1
       },
       "matched": 6,
-      "byUnits": 3,
+      "byUnits": 2,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -2159,23 +1940,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:syriac-music",
-        "origin": "internet-archive",
-        "title": "Syriac music studies",
-        "url": "https://archive.org/details/syriac-music",
-        "score": 0.11,
-        "matchedAnchors": [
-          "rouran",
-          "hephthalites"
-        ],
-        "evidence": [
-          "empire itself, and fur- ther to the Rouran, Hephthalites, Turks, the Tang empire, Uighurs and others"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Afuzhiluo\" \"hephthalites\" \"karashahr\"",
@@ -2190,9 +1955,9 @@
       "borrowable": 1,
       "rejected": {},
       "matched": 0,
-      "byUnits": 1,
-      "lookedUp": 1,
-      "candidates": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -2266,23 +2031,6 @@
     "wikiWarnings": [],
     "archive": [
       {
-        "key": "ia:W7-BRM-274",
-        "origin": "internet-archive",
-        "title": "Portugal and Brazil",
-        "url": "https://archive.org/details/W7-BRM-274",
-        "score": 0.22,
-        "matchedAnchors": [
-          "manuel mendes",
-          "duarte lobo",
-          "filipe",
-          "composers"
-        ],
-        "evidence": [
-          "some of Portugal’s greatest composers—Manuel Mendes, Duarte Lobo, Filipe de Magalhais —and possibly derived"
-        ],
-        "where": "n.d., borrow"
-      },
-      {
         "key": "ia:historyofmusic0000ruiv",
         "origin": "internet-archive",
         "title": "History of Music",
@@ -2298,23 +2046,6 @@
         "where": "1922, open"
       },
       {
-        "key": "ia:bwb_P9-ECZ-456",
-        "origin": "internet-archive",
-        "title": "Portugal and Brazil an intriduction",
-        "url": "https://archive.org/details/bwb_P9-ECZ-456",
-        "score": 0.22,
-        "matchedAnchors": [
-          "manuel mendes",
-          "duarte lobo",
-          "filipe",
-          "composers"
-        ],
-        "evidence": [
-          "some of Portugal’s greatest composers—Manuel Mendes, Duarte Lobo, Filipe de Magalhais —and possibly derived"
-        ],
-        "where": "1963, borrow"
-      },
-      {
         "key": "ia:newcatholicencyc08thom",
         "origin": "internet-archive",
         "title": "New Catholic Encyclopedia 2003: Vol 8 Second Edition",
@@ -2328,6 +2059,21 @@
           "choirboy studying in Evora cathedral with Manuel Mendes, he attracted the attention of Cardinal"
         ],
         "where": "n.d., borrow"
+      },
+      {
+        "key": "ia:newcatholicencyc08cath",
+        "origin": "internet-archive",
+        "title": "New Catholic Encyclopedia 1967: Vol 8",
+        "url": "https://archive.org/details/newcatholicencyc08cath",
+        "score": 0.3,
+        "matchedAnchors": [
+          "cathedral",
+          "manuel mendes"
+        ],
+        "evidence": [
+          "choirboy studying in Evora cathedral with Manuel Mendes, he attracted the attention of Cardinal"
+        ],
+        "where": "1967, borrow"
       }
     ],
     "archiveFunnel": {
@@ -2346,9 +2092,9 @@
         "access restricted": 2
       },
       "matched": 6,
-      "byUnits": 3,
-      "lookedUp": 6,
-      "candidates": 4,
+      "byUnits": 1,
+      "lookedUp": 5,
+      "candidates": 3,
       "errors": []
     },
     "errors": [],
@@ -2364,40 +2110,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:6179039-Drug-Documents-Dr-Gerber",
-        "origin": "internet-archive",
-        "title": "Dirty Doctor: Controlled Substance",
-        "url": "https://archive.org/details/6179039-Drug-Documents-Dr-Gerber",
-        "score": 0.3,
-        "matchedAnchors": [
-          "medical board",
-          "2013",
-          "2014"
-        ],
-        "evidence": [
-          "24, 2014, Accusation No. 10-2013-235201 was filed before the Medical Board of California (Board), Department"
-        ],
-        "where": "2019, open"
-      },
-      {
-        "key": "ia:2017DOIBudgetReqGovRecs",
-        "origin": "internet-archive",
-        "title": "Department of Insurance, Financial Institutions and Professional Registration Budget Request Governor's Recommendations Fiscal Year 2017",
-        "url": "https://archive.org/details/2017DOIBudgetReqGovRecs",
-        "score": 0.3,
-        "matchedAnchors": [
-          "medical board",
-          "2013",
-          "2014"
-        ],
-        "evidence": [
-          "Missouri Veterinary Medical Board 4. FINANCIAL HISTORY HB Section FY 2013 Actual FY 2014 Actual"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Luigi Caburlotto\" \"2013\" \"2014\" \"congregation\" \"causes\"",
@@ -2413,9 +2126,9 @@
       "borrowable": 5,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 2,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -2433,22 +2146,6 @@
     "wikiWarnings": [],
     "archive": [
       {
-        "key": "ia:changingwaysemin0002unse",
-        "origin": "internet-archive",
-        "title": "Changing The Way Seminaries Teach",
-        "url": "https://archive.org/details/changingwaysemin0002unse",
-        "score": 0.3,
-        "matchedAnchors": [
-          "interfaith relations",
-          "national council",
-          "churches"
-        ],
-        "evidence": [
-          "Discussions...contd. Read: National Council of Churches USA statement on interfaith relations: http://www.ncccusa"
-        ],
-        "where": "2009, borrow"
-      },
-      {
         "key": "ia:wcccurrentdialogue041",
         "origin": "internet-archive",
         "title": "Current Dialogue n°41 July 2003",
@@ -2463,6 +2160,21 @@
           "is expressed in the World Council of Churches Baar Declaration of 1990. *IV Eck. (1993). 188-9. *’ Hick"
         ],
         "where": "n.d., open"
+      },
+      {
+        "key": "ia:importanta-si-actualitatea-dialogului-interreligios-pentru-lumea-contemporan-ist",
+        "origin": "internet-archive",
+        "title": "Importanta si actualitatea dialogului interreligios pentru lumea contemporana: istorie, perspective, soluții",
+        "url": "https://archive.org/details/importanta-si-actualitatea-dialogului-interreligios-pentru-lumea-contemporan-ist",
+        "score": 0.2,
+        "matchedAnchors": [
+          "world",
+          "churches"
+        ],
+        "evidence": [
+          "World. An Ecumenical Conversation”, pp. 2-3. *5 Diana L. ECK, „The Christian Churches and the Plurality of"
+        ],
+        "where": "2015, open"
       },
       {
         "key": "ia:sourcebookforcom0000unse",
@@ -2491,11 +2203,11 @@
       "borrowable": 42,
       "rejected": {
         "not a text": 1,
-        "access restricted": 2
+        "access restricted": 1
       },
       "matched": 3,
       "byUnits": 3,
-      "lookedUp": 5,
+      "lookedUp": 4,
       "candidates": 3,
       "errors": []
     },
@@ -2548,51 +2260,49 @@
     "wikiWarnings": [],
     "archive": [
       {
-        "key": "ia:qNmH_ayurveda-shiksha-a-text-book-of-ayurveda-vil-1-sec-1-historical-back-ground-edit",
+        "key": "ia:international-ayurveda-congress-2017",
         "origin": "internet-archive",
-        "title": "Ayurveda Shiksha A Text Book Of Ayurveda Vil 1 Sec 1 Historical Back Ground Edited By A. Lakshmi Pathi 1944 Jam Nagar Jain Bhaskarodaya Press",
-        "url": "https://archive.org/details/qNmH_ayurveda-shiksha-a-text-book-of-ayurveda-vil-1-sec-1-historical-back-ground-edit",
-        "score": 0.27,
-        "matchedAnchors": [
-          "india",
-          "ayurvedic",
-          "congress"
-        ],
-        "evidence": [
-          ". is Ayorvéaa” Sastri; President All India . Ayurvedic Congress, . .Caleutta and y Bhishagwara’ D. NARAYANA"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:wFoe_a-text-book-of-ayurveda-vol-1-section-1-historical-background-ed-by-dr-a-lakshmi",
-        "origin": "internet-archive",
-        "title": "A Text Book Of Ayurveda Vol 1 Section 1 Historical Background Ed By Dr A Lakshmi Pathi Jain Bhaskarodaya Press Jamnagar",
-        "url": "https://archive.org/details/wFoe_a-text-book-of-ayurveda-vol-1-section-1-historical-background-ed-by-dr-a-lakshmi",
-        "score": 0.27,
-        "matchedAnchors": [
-          "india",
-          "ayurvedic",
-          "congress"
-        ],
-        "evidence": [
-          ". Si Ayorvéaa” Sastri; President All India . Ayurvedic Congress, . .Caleutta and y Bhishagwara’ D. NARAYANA"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:isbn_9781428894051",
-        "origin": "internet-archive",
-        "title": "facts101: Sport Psychology",
-        "url": "https://archive.org/details/isbn_9781428894051",
+        "title": "International Ayurveda Congress 2017",
+        "url": "https://archive.org/details/international-ayurveda-congress-2017",
         "score": 0.18,
         "matchedAnchors": [
-          "1997",
-          "system"
+          "ayurveda",
+          "ayurvedic"
         ],
         "evidence": [
-          "is an early college entrance program created in 1997 and facilitated by the University System of Georgia"
+          "integration through the Ayurvedic modality, Transcendental Meditation ‘Theme continues: Ayurveda Education Concept"
         ],
-        "where": "2012, borrow"
+        "where": "2017, open"
+      },
+      {
+        "key": "ia:oapen-20.500.12657-52898",
+        "origin": "internet-archive",
+        "title": "The Practice of Texts - Education and Healing in South India (Edition 1)",
+        "url": "https://archive.org/details/oapen-20.500.12657-52898",
+        "score": 0.18,
+        "matchedAnchors": [
+          "ayurveda",
+          "ayurvedic"
+        ],
+        "evidence": [
+          "centuries during the Ayurvedic Revitalization Movement (ARM). In the eyes of many students of Ayurveda"
+        ],
+        "where": "2022, open"
+      },
+      {
+        "key": "ia:in.ernet.dli.2015.264976",
+        "origin": "internet-archive",
+        "title": "Historical Background",
+        "url": "https://archive.org/details/in.ernet.dli.2015.264976",
+        "score": 0.18,
+        "matchedAnchors": [
+          "india",
+          "ayurvedic"
+        ],
+        "evidence": [
+          "Pandit Gopalacharlu at Madras, 1905 A. D. Boycott Movement was started, 1907 A, D. All India Ayurvedic Conference"
+        ],
+        "where": "1941, open"
       }
     ],
     "archiveFunnel": {
@@ -2646,21 +2356,6 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:dli.ernet.237058",
-        "origin": "internet-archive",
-        "title": "Dayanand Commemoration Volume (1933)",
-        "url": "https://archive.org/details/dli.ernet.237058",
-        "score": 0.25,
-        "matchedAnchors": [
-          "10",
-          "contains"
-        ],
-        "evidence": [
-          "trace the author of this hymn. APPENDIX 10 This appendix 10 contains a hymn of Sri Padmavati in Apa-"
-        ],
-        "where": "n.d., open"
-      },
-      {
         "key": "ia:aclcpl00000329a880",
         "origin": "internet-archive",
         "title": "ACL-CPL 00329 Jainism Through Prakrt Sources",
@@ -2673,21 +2368,6 @@
           "Anthahkrddaga, (9) Anuttaroupapadikadasa, (10) Prasnavydkarana, (11) Vipakasütra and (12) Drstivada. In addition"
         ],
         "where": "n.d., open"
-      },
-      {
-        "key": "ia:in.ernet.dli.2015.62068",
-        "origin": "internet-archive",
-        "title": "Comprarative And Critical Study Of Mantrasastra (1944)",
-        "url": "https://archive.org/details/in.ernet.dli.2015.62068",
-        "score": 0.25,
-        "matchedAnchors": [
-          "10",
-          "contains"
-        ],
-        "evidence": [
-          "trace the author of this hymn. APPENDIX 10 This appendix 10 contains a hymn of Sri Padmavatl in Apabhramsa"
-        ],
-        "where": "1944, open"
       }
     ],
     "archiveFunnel": {
@@ -2703,9 +2383,9 @@
       "borrowable": 16,
       "rejected": {},
       "matched": 3,
-      "byUnits": 3,
-      "lookedUp": 5,
-      "candidates": 4,
+      "byUnits": 0,
+      "lookedUp": 2,
+      "candidates": 2,
       "errors": []
     },
     "errors": [],
@@ -2723,54 +2403,7 @@
     "wikiWarnings": [
       "no counterpart article on the larger language editions"
     ],
-    "archive": [
-      {
-        "key": "ia:magritte00gimf",
-        "origin": "internet-archive",
-        "title": "Magritte",
-        "url": "https://archive.org/details/magritte00gimf",
-        "score": 0.17,
-        "matchedAnchors": [
-          "residence frequently",
-          "family",
-          "living"
-        ],
-        "evidence": [
-          "The family changes its place of residence frequently, living successively in Chatelet, Charleroi"
-        ],
-        "where": "1987, borrow"
-      },
-      {
-        "key": "ia:grupa-autora-zabiljezene-zene-i-javni-zivot-u-bi-h-u-20-v.",
-        "origin": "internet-archive",
-        "title": "Grupa Autora - Zabilježene žene i javni život Bosne i Hercegovien u 20. vijeku",
-        "url": "https://archive.org/details/grupa-autora-zabiljezene-zene-i-javni-zivot-u-bi-h-u-20-v.",
-        "score": 0.11,
-        "matchedAnchors": [
-          "1910",
-          "1914"
-        ],
-        "evidence": [
-          "prvo u privatnu slikarsku školu, a potom od 1910. do 1914. u umjetničku školu za žene. Iako je tokom školovanja"
-        ],
-        "where": "2014, open"
-      },
-      {
-        "key": "ia:brownalumnimonth141brow",
-        "origin": "internet-archive",
-        "title": "Brown alumni monthly",
-        "url": "https://archive.org/details/brownalumnimonth141brow",
-        "score": 0.11,
-        "matchedAnchors": [
-          "1910",
-          "family"
-        ],
-        "evidence": [
-          "\" 1907; \"The develop- ment of the State,\"' 1910; \"The family in its sociological aspect.'\""
-        ],
-        "where": "1913, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Jelena Skerlić Ćorović\" \"1910\" \"1914\" \"1917\" \"banjaluka\" \"dubrovnik\"",
@@ -2788,9 +2421,9 @@
         "not a text": 1
       },
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -2806,40 +2439,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:the-oxford-handbook-of-the-history-of-terrorism",
-        "origin": "internet-archive",
-        "title": "The Oxford Handbook of the History of Terrorism",
-        "url": "https://archive.org/details/the-oxford-handbook-of-the-history-of-terrorism",
-        "score": 0.15,
-        "matchedAnchors": [
-          "japan",
-          "emperor",
-          "japanese"
-        ],
-        "evidence": [
-          "became anyone, Japanese or white European, who refused the sovereign authority of the Emperor. Modern Japan"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:bwb_W7-CMV-267",
-        "origin": "internet-archive",
-        "title": "Ethical Value",
-        "url": "https://archive.org/details/bwb_W7-CMV-267",
-        "score": 0.15,
-        "matchedAnchors": [
-          "emperor",
-          "japanese",
-          "person"
-        ],
-        "evidence": [
-          "Majesty the Emperor is a person who rules our great Imperial Japanese nation. The Emperor constantly treats"
-        ],
-        "where": "1956, borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Fear and Trembling\" \"1947\" \"japanese\" \"emperor\"",
@@ -2855,9 +2455,9 @@
         "not a text": 1
       },
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 2,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -2875,23 +2475,7 @@
     "wikiWarnings": [
       "no counterpart article on the larger language editions"
     ],
-    "archive": [
-      {
-        "key": "ia:womenartistsofam0000unse",
-        "origin": "internet-archive",
-        "title": "Women artists of the American West",
-        "url": "https://archive.org/details/womenartistsofam0000unse",
-        "score": 0.07,
-        "matchedAnchors": [
-          "bay guardian goldie",
-          "guardian goldie"
-        ],
-        "evidence": [
-          "addition, recent awards include a San Francisco Bay Guardian Goldie (Biographies) Quick-to-See Smith Award (1999)"
-        ],
-        "where": "n.d., borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Genny Lim\" \"spiritual tributary\" \"creative work fund\"",
@@ -2905,12 +2489,12 @@
       "available": 5,
       "borrowable": 3,
       "rejected": {
-        "access restricted": 2
+        "access restricted": 1
       },
       "matched": 1,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 1,
+      "byUnits": 1,
+      "lookedUp": 1,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -2970,38 +2554,7 @@
       }
     ],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:animeclassicszet0000camp",
-        "origin": "internet-archive",
-        "title": "Anime classics zettai! : 100 must-see Japanese animation masterpieces",
-        "url": "https://archive.org/details/animeclassicszet0000camp",
-        "score": 0.09,
-        "matchedAnchors": [
-          "2000",
-          "english"
-        ],
-        "evidence": [
-          "Digimon: The Golden Digimentals (2000, movie, season 2) : Digimon: The Movie (2000, movie, English- dubbed compilation"
-        ],
-        "where": "2007, borrow"
-      },
-      {
-        "key": "ia:internationalwho0000unse_q1k1",
-        "origin": "internet-archive",
-        "title": "The international who's who. 2006",
-        "url": "https://archive.org/details/internationalwho0000unse_q1k1",
-        "score": 0.09,
-        "matchedAnchors": [
-          "los angeles",
-          "2000"
-        ],
-        "evidence": [
-          "Ed. Los Angeles Times 2000-; Pulitzer Prize for Investigative Reporting 1988. Address: Los Angeles Times"
-        ],
-        "where": "2005, borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Mari Iijima\" \"2000\" \"angeles music awards' best pop artist\" \"english\"",
@@ -3012,13 +2565,12 @@
       "available": 52,
       "borrowable": 37,
       "rejected": {
-        "not a text": 3,
-        "access restricted": 1
+        "not a text": 3
       },
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -3139,6 +2691,22 @@
         "where": "2005, open"
       },
       {
+        "key": "ia:globalwarmingver00masl_0",
+        "origin": "internet-archive",
+        "title": "Global warming",
+        "url": "https://archive.org/details/globalwarmingver00masl_0",
+        "score": 0.19,
+        "matchedAnchors": [
+          "novel forty signs",
+          "forty signs",
+          "rain"
+        ],
+        "evidence": [
+          "American dry season. Kim Stanley Robinson in his novel Forty Signs of Rain uses the term Hypernino"
+        ],
+        "where": "2004, borrow"
+      },
+      {
         "key": "ia:magazine-of-fantasy-science-fiction-1951-2008",
         "origin": "internet-archive",
         "title": "Magazine Of Fantasy & Science Fiction 1951-2008",
@@ -3184,12 +2752,12 @@
       "available": 59,
       "borrowable": 9,
       "rejected": {
-        "access restricted": 3
+        "access restricted": 2
       },
       "matched": 39,
       "byUnits": 3,
       "lookedUp": 6,
-      "candidates": 3,
+      "candidates": 4,
       "errors": []
     },
     "errors": [],
@@ -3207,53 +2775,7 @@
     "wikiWarnings": [
       "no counterpart article on the larger language editions"
     ],
-    "archive": [
-      {
-        "key": "ia:homebuilders0000unse",
-        "origin": "internet-archive",
-        "title": "Home builders",
-        "url": "https://archive.org/details/homebuilders0000unse",
-        "score": 0.13,
-        "matchedAnchors": [
-          "1992",
-          "housing"
-        ],
-        "evidence": [
-          "107 West Regent Street, which was cancelled in 1992. In the housing field, the drop in demand particularly"
-        ],
-        "where": "1999, borrow"
-      },
-      {
-        "key": "ia:stirlingcentrals0000giff",
-        "origin": "internet-archive",
-        "title": "Stirling and Central Scotland",
-        "url": "https://archive.org/details/stirlingcentrals0000giff",
-        "score": 0.13,
-        "matchedAnchors": [
-          "1992",
-          "housing"
-        ],
-        "evidence": [
-          "buildings were converted to housing by Bob Heath, 1992. — Just to the £, a pair of pinnacled GATEPIERS"
-        ],
-        "where": "2002, borrow"
-      },
-      {
-        "key": "ia:scotlandhighland0000unse",
-        "origin": "internet-archive",
-        "title": "Scotland : highlands and islands",
-        "url": "https://archive.org/details/scotlandhighland0000unse",
-        "score": 0.13,
-        "matchedAnchors": [
-          "1992",
-          "association"
-        ],
-        "evidence": [
-          "Reprinted 1987, 1989, 1990 Revised edition 1992 The Automobile Association and the Ordnance"
-        ],
-        "where": "1996, borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Bellsmyre\" \"1992\" \"bellsmyre housing association\" \"scottish homes\"",
@@ -3268,9 +2790,9 @@
       "borrowable": 41,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -3286,23 +2808,7 @@
     "claimChanged": false,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:hachetteguidetog00hach",
-        "origin": "internet-archive",
-        "title": "The Hachette guide to Great Britain",
-        "url": "https://archive.org/details/hachetteguidetog00hach",
-        "score": 0.22,
-        "matchedAnchors": [
-          "january",
-          "closed"
-        ],
-        "evidence": [
-          "services are closed. Shops re-open on 2 January and huge bargains are available when large"
-        ],
-        "where": "n.d., borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Cromlix House\" \"2023\" \"january\" \"murrays\"",
@@ -3317,9 +2823,9 @@
       "borrowable": 54,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 1,
-      "candidates": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -3353,23 +2859,6 @@
           "Childish Fear s MAY - 6 June, 2003 The Lance Fung Gallery IS PROUD TO represent Richard Humann"
         ],
         "where": "1939, borrow"
-      },
-      {
-        "key": "ia:bwb_Y0-BVF-491",
-        "origin": "internet-archive",
-        "title": "Art in America",
-        "url": "https://archive.org/details/bwb_Y0-BVF-491",
-        "score": 0.19,
-        "matchedAnchors": [
-          "gordon matta-clark",
-          "richard humann",
-          "peter hutchinson",
-          "nam"
-        ],
-        "evidence": [
-          "Richard Humann, Peter Hutchinson, Erika Knerr, Shigeko Kubota, Gordon Matta-Clark, Robert Morris, Nam"
-        ],
-        "where": "n.d., borrow"
       }
     ],
     "archiveFunnel": {
@@ -3383,9 +2872,9 @@
       "borrowable": 59,
       "rejected": {},
       "matched": 2,
-      "byUnits": 3,
-      "lookedUp": 2,
-      "candidates": 2,
+      "byUnits": 2,
+      "lookedUp": 1,
+      "candidates": 1,
       "errors": []
     },
     "errors": [],
@@ -3417,21 +2906,6 @@
           "Hills, California. CALIFORNIA & WESTERN ART | 55 134 135 56 | BONHAMS 134 GEORGE KENNEDY BRANDRIFF (1890-"
         ],
         "where": "n.d., open"
-      },
-      {
-        "key": "ia:californiaimpres0000gerd",
-        "origin": "internet-archive",
-        "title": "California impressionism",
-        "url": "https://archive.org/details/californiaimpres0000gerd",
-        "score": 0.18,
-        "matchedAnchors": [
-          "william wendt",
-          "paul lauritz"
-        ],
-        "evidence": [
-          "Paul Lauritz, Edgar Payne, Hanson Puthuff, and William Wendt, whereas most of the better-known eastern Impressionists"
-        ],
-        "where": "1998, borrow"
       }
     ],
     "archiveFunnel": {
@@ -3447,9 +2921,9 @@
       "borrowable": 8,
       "rejected": {},
       "matched": 1,
-      "byUnits": 1,
-      "lookedUp": 2,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 1,
+      "candidates": 1,
       "errors": []
     },
     "errors": [],
@@ -3468,21 +2942,6 @@
       "no counterpart article on the larger language editions"
     ],
     "archive": [
-      {
-        "key": "ia:jenny-uglow-the-lunar-men-the-inventors-of-the-modern-world-1730-1810",
-        "origin": "internet-archive",
-        "title": "The Lunar Men: The Inventors of the Modern World 1730 -1810",
-        "url": "https://archive.org/details/jenny-uglow-the-lunar-men-the-inventors-of-the-modern-world-1730-1810",
-        "score": 0.11,
-        "matchedAnchors": [
-          "darwins",
-          "across"
-        ],
-        "evidence": [
-          "premonition of the evolutionary interests of future Darwins, the bones found in the rectory garden across the"
-        ],
-        "where": "2010, open"
-      },
       {
         "key": "ia:darwin0000pear",
         "origin": "internet-archive",
@@ -3510,6 +2969,20 @@
           "1859 1862 1864 Amazing Scientists The Darwins moved to Down House in Bromley, Kent, south-east England"
         ],
         "where": "2014, borrow"
+      },
+      {
+        "key": "ia:erasmusdarwin0000desm",
+        "origin": "internet-archive",
+        "title": "erasmus darwin",
+        "url": "https://archive.org/details/erasmusdarwin0000desm",
+        "score": 0.67,
+        "matchedAnchors": [
+          "darwins"
+        ],
+        "evidence": [
+          "only four miles 32 ERASMUS DARWIN west of Derby. In 1783 the Darwins moved into a house near the corner"
+        ],
+        "where": "1963, borrow"
       }
     ],
     "archiveFunnel": {
@@ -3526,7 +2999,7 @@
         "access restricted": 3
       },
       "matched": 18,
-      "byUnits": 3,
+      "byUnits": 0,
       "lookedUp": 6,
       "candidates": 3,
       "errors": []
@@ -3774,53 +3247,7 @@
     "claimChanged": false,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:micro_IA40243303_2081",
-        "origin": "internet-archive",
-        "title": "Cassiar Timber Supply Area analysis report",
-        "url": "https://archive.org/details/micro_IA40243303_2081",
-        "score": 0.29,
-        "matchedAnchors": [
-          "mountain goat",
-          "hectares"
-        ],
-        "evidence": [
-          "overlaps entirely with the grizzly bear and mountain goat habitat in the CWH. While about 8180 hectares"
-        ],
-        "where": "2001, open"
-      },
-      {
-        "key": "ia:papersproceeding0000inte_b8f9",
-        "origin": "internet-archive",
-        "title": "Papers and proceedings [of the] Eleventh Technical meeting. : New Delhi, India, 25 to 28 November, 1969",
-        "url": "https://archive.org/details/papersproceeding0000inte_b8f9",
-        "score": 0.29,
-        "matchedAnchors": [
-          "000 hectares",
-          "mountain goat"
-        ],
-        "evidence": [
-          "and mountain goat. 3. Kerumutan in Riau (Central Sumatra): about 120, 000 hectares have"
-        ],
-        "where": "1970, borrow"
-      },
-      {
-        "key": "ia:micro_IA40243311_3192",
-        "origin": "internet-archive",
-        "title": "Management plan background report : draft for Stikine Country protected areas (B.C.)",
-        "url": "https://archive.org/details/micro_IA40243311_3192",
-        "score": 0.29,
-        "matchedAnchors": [
-          "mountain goat",
-          "protected"
-        ],
-        "evidence": [
-          "ccccccccceccececesceeceeeees Attached Figure 7: Mountain goat habitat of Stikine Country Protected Areas"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Lankaran-Astara Economic Region\" \"15,000\"",
@@ -3834,9 +3261,9 @@
       "borrowable": 7,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -3965,49 +3392,19 @@
         "where": "2005, borrow"
       },
       {
-        "key": "ia:oapen-20.500.12657-57597",
+        "key": "ia:spasinternationa00bain",
         "origin": "internet-archive",
-        "title": "New Industrial Urbanism - Designing Places for Production",
-        "url": "https://archive.org/details/oapen-20.500.12657-57597",
+        "title": "Spas : the international spa guide : an international passport to beauty, fitness and well-being",
+        "url": "https://archive.org/details/spasinternationa00bain",
         "score": 0.18,
         "matchedAnchors": [
-          "20",
-          "1997"
+          "7 km",
+          "9 mi"
         ],
         "evidence": [
-          "2006; Feser, 2008; Mills et al., 2008; Rosenfeld, 1997) have suggested governments should use to support"
+          "Int'l AP (SJU) 9 mi. / 1 4 km. Isla Grand Airport (SIG) 4.5 mi. / 7 km. Caribe Hilton cjocpcpc*"
         ],
-        "where": "2022, open"
-      },
-      {
-        "key": "ia:garrettcountydee00garr_4",
-        "origin": "internet-archive",
-        "title": "Garrett County & Deep Creek Lake, Maryland: Maryland's West is Best - A Four Season Vacation Area",
-        "url": "https://archive.org/details/garrettcountydee00garr_4",
-        "score": 0.18,
-        "matchedAnchors": [
-          "12",
-          "1997"
-        ],
-        "evidence": [
-          "Teek Lake Meshack Browning’s Facilities Renovated 1997-1998 (301) 334-2126 Full Service Restaurant & Lounge"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:taipei0000marc",
-        "origin": "internet-archive",
-        "title": "Taipei",
-        "url": "https://archive.org/details/taipei0000marc",
-        "score": 0.18,
-        "matchedAnchors": [
-          "12",
-          "1997"
-        ],
-        "evidence": [
-          "parlors in a week, and pledge to close the rest. 1997 The opposition DPP wins 12 out of 23 mayoral and"
-        ],
-        "where": "2015, borrow"
+        "where": "1999, borrow"
       }
     ],
     "archiveFunnel": {
@@ -4022,9 +3419,9 @@
       "borrowable": 46,
       "rejected": {},
       "matched": 1,
-      "byUnits": 3,
-      "lookedUp": 4,
-      "candidates": 4,
+      "byUnits": 2,
+      "lookedUp": 2,
+      "candidates": 2,
       "errors": []
     },
     "errors": [],
@@ -4104,21 +3501,6 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:radiantenergyits00larkrich",
-        "origin": "internet-archive",
-        "title": "Radiant energy and its analysis; its relation to modern astrophysics",
-        "url": "https://archive.org/details/radiantenergyits00larkrich",
-        "score": 0.2,
-        "matchedAnchors": [
-          "22",
-          "december"
-        ],
-        "evidence": [
-          "total eclipse of the sun in Spain on December 22, 1870. When the moon had almost hidden"
-        ],
-        "where": "1903, open"
-      },
-      {
         "key": "ia:appletonsannual50unkngoog",
         "origin": "internet-archive",
         "title": "Appletons' annual cyclopædia and register of important events of the year ..",
@@ -4147,9 +3529,9 @@
       "borrowable": 2,
       "rejected": {},
       "matched": 3,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 2,
+      "candidates": 2,
       "errors": []
     },
     "errors": [],
@@ -4173,12 +3555,10 @@
       "hits": 13,
       "available": 13,
       "borrowable": 6,
-      "rejected": {
-        "access restricted": 1
-      },
+      "rejected": {},
       "matched": 0,
-      "byUnits": 1,
-      "lookedUp": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
       "candidates": 0,
       "errors": []
     },
@@ -4216,19 +3596,19 @@
         "where": "1990, open"
       },
       {
-        "key": "ia:oceansofkansasna0000ever",
+        "key": "ia:newsuperfamilyt82tyle",
         "origin": "internet-archive",
-        "title": "Oceans of Kansas : a natural history of the western interior sea",
-        "url": "https://archive.org/details/oceansofkansasna0000ever",
+        "title": "New superfamily and three new families of tetraodontiform fishes from the Upper Cretaceous : the earliest and most morphologically primitive plectognaths",
+        "url": "https://archive.org/details/newsuperfamilyt82tyle",
         "score": 0.29,
         "matchedAnchors": [
-          "95",
-          "mya"
+          "95 mya",
+          "upper"
         ],
         "evidence": [
-          "aigialosaur specimens from Cenomanian-Tur- onian (93 mya) deposits in Yugoslavia. About 95 million years ago,"
+          "Hakel, Lebanon; Upper Cretaceous (Lower Cenomanian), about 95 MYA. FIGURE 9.—Photographs of the part and"
         ],
-        "where": "2005, borrow"
+        "where": "1996, open"
       },
       {
         "key": "ia:adele-h-pentland-a-review-of-the-jurassic-and",
@@ -4247,19 +3627,24 @@
         "where": "2023, open"
       },
       {
-        "key": "ia:newsuperfamilyt82tyle",
+        "key": "ia:cretaceouscroco28sere",
         "origin": "internet-archive",
-        "title": "New superfamily and three new families of tetraodontiform fishes from the Upper Cretaceous : the earliest and most morphologically primitive plectognaths",
-        "url": "https://archive.org/details/newsuperfamilyt82tyle",
-        "score": 0.29,
+        "title": "Cretaceous Crocodyliforms from the Sahara",
+        "url": "https://archive.org/details/cretaceouscroco28sere",
+        "score": 0.81,
         "matchedAnchors": [
-          "95 mya",
-          "upper"
+          "95",
+          "upper",
+          "cenomanian",
+          "mya"
         ],
         "evidence": [
-          "Hakel, Lebanon; Upper Cretaceous (Lower Cenomanian), about 95 MYA. FIGURE 9.—Photographs of the part and"
+          "Horizon. Kem Kem Beds; Upper Cretaceous (Cenomanian), ca. 95 Mya (Sereno et al. 1996). The referred specimen",
+          "Formation, Tegama Series; Upper Cretaceous (Cenomanian), ca. 95 Mya (Taquet 1976). In association with the",
+          "Formation, Tegama Series; Upper Cretaceous (Cenomanian), ca. 95 Mya (Taquet 1976). Found in association with",
+          "Beds, upper member; Upper Cretaceous (Cenomanian), ca. 95 Mya (Sereno et al. 1996). Diagnosis. Metasuchian"
         ],
-        "where": "1996, open"
+        "where": "2009, open"
       }
     ],
     "archiveFunnel": {
@@ -4305,21 +3690,6 @@
         "where": "1987, borrow"
       },
       {
-        "key": "ia:in.ernet.dli.2015.238497",
-        "origin": "internet-archive",
-        "title": "Animal Geography (1913)",
-        "url": "https://archive.org/details/in.ernet.dli.2015.238497",
-        "score": 0.29,
-        "matchedAnchors": [
-          "webbed feet",
-          "adaptation"
-        ],
-        "evidence": [
-          "partial adaptation to fresh-water life. Thus we have many kinds of otters, which have webbed feet and feed"
-        ],
-        "where": "1913, open"
-      },
-      {
         "key": "ia:the-encyclopedia-of-animals-a-complete-visual-guide",
         "origin": "internet-archive",
         "title": "The Encyclopedia Of Animals A Complete Visual Guide",
@@ -4332,19 +3702,28 @@
         "where": "2008, open"
       },
       {
-        "key": "ia:animalgeographyf00newbuoft",
+        "key": "ia:mammals_202310",
         "origin": "internet-archive",
-        "title": "Animal geography, the faunas of the natural regions of the Globe",
-        "url": "https://archive.org/details/animalgeographyf00newbuoft",
-        "score": 0.29,
-        "matchedAnchors": [
-          "webbed feet",
-          "adaptation"
-        ],
+        "title": "Mammals (DK Smithsonian Handbooks)",
+        "url": "https://archive.org/details/mammals_202310",
+        "score": 0.35,
+        "matchedAnchors": [],
         "evidence": [
-          "partial adaptation to fresh-water life. Thus we have many kinds of otters, which have webbed feet and feed"
+          "estuaries, ASIA e REMARK This is the smallest otter. webbed feet @ and along coastlines. flattened. Social"
         ],
-        "where": "1913, open"
+        "where": "2002, open"
+      },
+      {
+        "key": "ia:ssaki0000unse",
+        "origin": "internet-archive",
+        "title": "Ssaki",
+        "url": "https://archive.org/details/ssaki0000unse",
+        "score": 0.35,
+        "matchedAnchors": [],
+        "evidence": [
+          "mongoose resembling an otter in appearance. Like the otter, it has broad, webbed feet and its nostrils and"
+        ],
+        "where": "1998, borrow"
       }
     ],
     "archiveFunnel": {
@@ -4355,10 +3734,10 @@
       "available": 50,
       "borrowable": 32,
       "rejected": {
-        "access restricted": 1
+        "access restricted": 2
       },
       "matched": 16,
-      "byUnits": 3,
+      "byUnits": 1,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -4482,23 +3861,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:thehindu-newspaper-all-editions-07-10-2025",
-        "origin": "internet-archive",
-        "title": "The Hindu Newspaper All Editions 07-10-2025",
-        "url": "https://archive.org/details/thehindu-newspaper-all-editions-07-10-2025",
-        "score": 0.09,
-        "matchedAnchors": [
-          "2026",
-          "april"
-        ],
-        "evidence": [
-          "Board (KSEAB) has in- creased the SSLC exam fee for 2026 March/April ex- ams by 5%. With this hike, fresher"
-        ],
-        "where": "2025, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"BWF World Ranking\" \"2026\" \"123,905\" \"14\" \"seo seung-jae\" \"kim won-ho\"",
@@ -4514,9 +3877,9 @@
       "borrowable": 0,
       "rejected": {},
       "matched": 0,
-      "byUnits": 1,
-      "lookedUp": 1,
-      "candidates": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -4678,55 +4041,7 @@
     "wikiWarnings": [
       "no counterpart article on the larger language editions"
     ],
-    "archive": [
-      {
-        "key": "ia:nldn_india-today-international-edition-jan-feb-1991-delhi-living-room-media-india-pvt.-ltd.",
-        "origin": "internet-archive",
-        "title": "India Today International Edition Jan Feb 1991 Delhi Living Room Media India Pvt. Ltd.",
-        "url": "https://archive.org/details/nldn_india-today-international-edition-jan-feb-1991-delhi-living-room-media-india-pvt.-ltd.",
-        "score": 0.21,
-        "matchedAnchors": [
-          "shivaji park",
-          "park youngsters",
-          "shivaji park youngsters"
-        ],
-        "evidence": [
-          "Giants From — Shivaji Park Youngsters grow up listening to glorlous exploits of Shivaji Park cricketers"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:dli.bengal.10689.11904",
-        "origin": "internet-archive",
-        "title": "SPORTSWEEK",
-        "url": "https://archive.org/details/dli.bengal.10689.11904",
-        "score": 0.21,
-        "matchedAnchors": [
-          "shivaji park",
-          "park youngsters",
-          "shivaji park youngsters"
-        ],
-        "evidence": [
-          "Mahim Juvenile S.C., Dahisar C.C. and Shivaji Park youngsters — RIP, •FO^TBWEEK. JULY 4. lass"
-        ],
-        "where": "1982, open"
-      },
-      {
-        "key": "ia:india.history.resource.14254",
-        "origin": "internet-archive",
-        "title": "The Bombay Chronicle (Sunday / Weekly Edition), 22 October 1950",
-        "url": "https://archive.org/details/india.history.resource.14254",
-        "score": 0.14,
-        "matchedAnchors": [
-          "shivaji park",
-          "club"
-        ],
-        "evidence": [
-          "J. G. Rangnekar. Shivaji Park Gymkhana Vs Fort Vijay Cricke, Club on Shivaji Park Gymkhana Ground at"
-        ],
-        "where": "1950, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Deepak Jain\" \"shivaji park youngsters\" \"rajasthan club\"",
@@ -4740,9 +4055,9 @@
       "borrowable": 0,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -4800,36 +4115,6 @@
           "in the last round, while Gloucester's fly-half Santiago Carreras will want to continue his good run of"
         ],
         "where": "n.d., open"
-      },
-      {
-        "key": "ia:sportbibliografh0000spor",
-        "origin": "internet-archive",
-        "title": "Sport bibliografhy. #x88;12, #x89;Sport bibliography. the international sport bibliographical system /prepared by Sport Information Resource Centre ; edited by L. Wheeler ... [et al.]",
-        "url": "https://archive.org/details/sportbibliografh0000spor",
-        "score": 0.33,
-        "matchedAnchors": [
-          "fullback",
-          "wing"
-        ],
-        "evidence": [
-          "OFFENSIVE Aldrich, J.F. Single wing offense with the spinning fullback. 1st ed. Ames, lowa: lowa State"
-        ],
-        "where": "1986, borrow"
-      },
-      {
-        "key": "ia:internationaldic0000cudd_m2x2",
-        "origin": "internet-archive",
-        "title": "The International Dictionary of Sports and Games",
-        "url": "https://archive.org/details/internationaldic0000cudd_m2x2",
-        "score": 0.33,
-        "matchedAnchors": [
-          "playing positions",
-          "wing"
-        ],
-        "evidence": [
-          "seven has five playing positions: goal shooter, goal attack, wing attack, centre, wing defence, goal defence"
-        ],
-        "where": "1979, borrow"
       }
     ],
     "archiveFunnel": {
@@ -4845,9 +4130,9 @@
         "not a text": 1
       },
       "matched": 1,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 1,
+      "candidates": 1,
       "errors": []
     },
     "errors": [],
@@ -4897,20 +4182,19 @@
         "where": "2014, open"
       },
       {
-        "key": "ia:strib-08-16-2023",
+        "key": "ia:houston-astros-2014-media-guide",
         "origin": "internet-archive",
-        "title": "Saipan Tribune August 2023 Newspaper Issues",
-        "url": "https://archive.org/details/strib-08-16-2023",
-        "score": 0.38,
+        "title": "Houston Astros 2014 Media Guide",
+        "url": "https://archive.org/details/houston-astros-2014-media-guide",
+        "score": 0.25,
         "matchedAnchors": [
-          "houston astros",
-          "against",
-          "inning"
+          "houston",
+          "astros"
         ],
         "evidence": [
-          "eighth inning of a baseball game against the Houston Astros, Monday, Aug. 14, 2023, in Miami. Tristan Beck"
+          "Coordinator Minor League Houston DYAR MILLER PITCHING COORDINATOR Dyar Miller returns to the Astros organization"
         ],
-        "where": "2023, open"
+        "where": "2014, open"
       },
       {
         "key": "ia:world-series-2021-game-program-astros-vs-braves-c",
@@ -4928,19 +4212,19 @@
         "where": "2021, open"
       },
       {
-        "key": "ia:2025-chicago-cubs-media-guide_202512",
+        "key": "ia:isbn_9781599210278",
         "origin": "internet-archive",
-        "title": "2025 Chicago Cubs Media Guide",
-        "url": "https://archive.org/details/2025-chicago-cubs-media-guide_202512",
-        "score": 0.25,
+        "title": "Being there : 100 sports pros talk about the best sporting events they ever witnessed firsthand",
+        "url": "https://archive.org/details/isbn_9781599210278",
+        "score": 0.69,
         "matchedAnchors": [
           "houston astros",
-          "against"
+          "miller"
         ],
         "evidence": [
-          "league record with 20 strikeouts against the Houston Astros, May 6, 1998. * Averaged 10.32 strikeouts per"
+          "Gary Miller —1986 National League Championship Series, Game 6, New York Mets at Houston Astros, Astrodome"
         ],
-        "where": "n.d., open"
+        "where": "2007, borrow"
       }
     ],
     "archiveFunnel": {
@@ -4953,7 +4237,7 @@
       "borrowable": 16,
       "rejected": {},
       "matched": 7,
-      "byUnits": 3,
+      "byUnits": 1,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -5005,54 +4289,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:historyoftelevis0000gold",
-        "origin": "internet-archive",
-        "title": "The history of television",
-        "url": "https://archive.org/details/historyoftelevis0000gold",
-        "score": 0.27,
-        "matchedAnchors": [
-          "europe",
-          "numerous",
-          "television"
-        ],
-        "evidence": [
-          "January the following year. Despite the war in Europe, television was gradually growing. There were numerous"
-        ],
-        "where": "1991, borrow"
-      },
-      {
-        "key": "ia:tvdigest-philadelphia-1951-09-29",
-        "origin": "internet-archive",
-        "title": "TV Digest - Philadelphia (September 29, 1951)",
-        "url": "https://archive.org/details/tvdigest-philadelphia-1951-09-29",
-        "score": 0.18,
-        "matchedAnchors": [
-          "europe",
-          "appeared"
-        ],
-        "evidence": [
-          "really are going places. Joe McKee, recently tcured Europe and appeared on “Toast of the Town”; Cathy Capizola"
-        ],
-        "where": "1951, open"
-      },
-      {
-        "key": "ia:internationalwho0003unse",
-        "origin": "internet-archive",
-        "title": "International who's who in music",
-        "url": "https://archive.org/details/internationalwho0003unse",
-        "score": 0.18,
-        "matchedAnchors": [
-          "throughout europe",
-          "shows throughout"
-        ],
-        "evidence": [
-          "appearances throughout Europe; 18 official recordings released; Radio shows throughout Europe and TV appearances"
-        ],
-        "where": "n.d., borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Al Hodge\" \"europe\"",
@@ -5066,9 +4303,9 @@
         "access restricted": 1
       },
       "matched": 1,
-      "byUnits": 3,
-      "lookedUp": 4,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 1,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -5115,19 +4352,19 @@
         "where": "2020, open"
       },
       {
-        "key": "ia:cannock-chronicle-2014-12-04",
+        "key": "ia:PSW_Issue_014_2003_09_Next_Gaming_AU",
         "origin": "internet-archive",
-        "title": "Cannock Chronicle, December 4, 2014",
-        "url": "https://archive.org/details/cannock-chronicle-2014-12-04",
+        "title": "PSW - Issue 014 (2003-09)(Next Gaming)(AU)",
+        "url": "https://archive.org/details/PSW_Issue_014_2003_09_Next_Gaming_AU",
         "score": 0.14,
         "matchedAnchors": [
           "know",
-          "you're"
+          "second"
         ],
         "evidence": [
-          "business, it’s really im¬ portant to know where you’re going and how to get there. “At Westons, we wanted"
+          "isolate the hard part. Then you know that when you get into the second split you need to concentrate more\" Complete"
         ],
-        "where": "n.d., open"
+        "where": "2003, open"
       }
     ],
     "archiveFunnel": {
@@ -5139,11 +4376,11 @@
       "available": 45,
       "borrowable": 19,
       "rejected": {
-        "access restricted": 2
+        "access restricted": 1
       },
       "matched": 2,
       "byUnits": 3,
-      "lookedUp": 5,
+      "lookedUp": 4,
       "candidates": 3,
       "errors": []
     },
@@ -5228,20 +4465,20 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:researchers-beware-wikipedia-entries-about-high-control-groups-are-not-very-trustworthy",
+        "key": "ia:the-crown-v-32n-01-2014-september",
         "origin": "internet-archive",
-        "title": "Wikipedia Archive",
-        "url": "https://archive.org/details/researchers-beware-wikipedia-entries-about-high-control-groups-are-not-very-trustworthy",
+        "title": "The Crown Volume 32, Number 1",
+        "url": "https://archive.org/details/the-crown-v-32n-01-2014-september",
         "score": 0.13,
         "matchedAnchors": [
-          "september 22",
-          "19",
-          "2014"
+          "2014",
+          "cohen",
+          "september"
         ],
         "evidence": [
-          "original on October 19, 2014. Retrieved September 22, 2014. 25. Iyer, Pico (October 22, 2001). \"Listening"
+          "Cohen, Popular Problems Sam Smith, In the Lonely Hour Lecrae, Anamoly OPINION SEPTEMBER 2014//thecrown"
         ],
-        "where": "n.d., open"
+        "where": "2014, open"
       },
       {
         "key": "ia:jazz-dergisi-sayi-76",
@@ -5358,19 +4595,19 @@
         "where": "1950, open"
       },
       {
-        "key": "ia:The_Austin_Chronicle-2014-03-07",
+        "key": "ia:poundkesterfamil1904hunt",
         "origin": "internet-archive",
-        "title": "The Austin Chronicle 2014-03-07",
-        "url": "https://archive.org/details/The_Austin_Chronicle-2014-03-07",
+        "title": "The Pound and Kester families : containing an account of the ancestry of John Pound (born in 1735) and William Kester (born in 1733) and a genealogical record of all their descendants and other family historical matter",
+        "url": "https://archive.org/details/poundkesterfamil1904hunt",
         "score": 0.22,
         "matchedAnchors": [
           "18",
-          "47"
+          "september"
         ],
         "evidence": [
-          "512-480-8400 Use FREE Code 2606 18+ Nightline “Where Naughty Is Nice”(TM) Free to try! 18+ 512.493.0000 210.477"
+          "September 12, 1866, Harvey Sparks, son of Harmon and Malinda (Peake) Sparks, born in Jefferson"
         ],
-        "where": "2014, open"
+        "where": "1904, open"
       },
       {
         "key": "ia:screechowl1974mayn",
@@ -5389,19 +4626,20 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:sim_boston-phoenix_april-15-21-2005_34_15",
+        "key": "ia:sim_billboard_1909-09-18_21_38",
         "origin": "internet-archive",
-        "title": "Boston Phoenix April 15-21, 2005: Vol 34 Iss 15",
-        "url": "https://archive.org/details/sim_boston-phoenix_april-15-21-2005_34_15",
-        "score": 0.22,
+        "title": "The Billboard 1909-09-18: Vol 21 Iss 38",
+        "url": "https://archive.org/details/sim_billboard_1909-09-18_21_38",
+        "score": 0.36,
         "matchedAnchors": [
           "18",
-          "47"
+          "sparks",
+          "september"
         ],
         "evidence": [
-          "477] THE FRAY Tuesday, June 7 8PM 18+ DIGBY, THE SO & SOS 8PM 18+ KYLE RAIBKO, NATE CAMPANY 4/29 ADAM"
+          "lowest. 1 pay all. N. SPARKS, 6c2 8S. Warren S8t., Syracuse, N. Y. | | | } | SEPTEMBER 18, 1909. AMERICA’S"
         ],
-        "where": "2005, open"
+        "where": "1909, open"
       }
     ],
     "archiveFunnel": {
@@ -5539,21 +4777,6 @@
         "where": "1917, open"
       },
       {
-        "key": "ia:lfx-v-17",
-        "origin": "internet-archive",
-        "title": "LF Examiner, Volume 17",
-        "url": "https://archive.org/details/lfx-v-17",
-        "score": 0.17,
-        "matchedAnchors": [
-          "23",
-          "25"
-        ],
-        "evidence": [
-          "5/26/12 5/23/14 12/10/04 1/30/14 8/22/14 6/13/14 4/25/14 10/5/12 5/23/14 3/7/14 10/4/13 4/4/14 5/23/14 2/28/14"
-        ],
-        "where": "2014, open"
-      },
-      {
         "key": "ia:moving34chal",
         "origin": "internet-archive",
         "title": "Moving Picture World (Dec 1917)",
@@ -5568,19 +4791,34 @@
         "where": "1917, open"
       },
       {
-        "key": "ia:isbn_9781928936732",
+        "key": "ia:sim_billboard_1932-10-29_44_44",
         "origin": "internet-archive",
-        "title": "The Filmmaker's Guide to Distribution: Hollywood Distribution Directory 2010",
-        "url": "https://archive.org/details/isbn_9781928936732",
-        "score": 0.17,
+        "title": "The Billboard 1932-10-29: Vol 44 Iss 44",
+        "url": "https://archive.org/details/sim_billboard_1932-10-29_44_44",
+        "score": 0.42,
         "matchedAnchors": [
-          "23",
           "25"
         ],
         "evidence": [
-          "316 Blanchard) {Cameron (4252... 23 bbe bese s Cee ogee Bravo, p. 23 Blanchard) iGanjerorm taste eiiage"
+          "from 25 cents to $1 top. The price scale at the Empire ranges from 25 cents to $1.50. Both theaters have",
+          "salaries runs at the large theaters up to 42 per cent; at the small theaters up to 25 per cent. Actors"
         ],
-        "where": "2010, borrow"
+        "where": "1932, open"
+      },
+      {
+        "key": "ia:north-adams-transcript-1898-12-17",
+        "origin": "internet-archive",
+        "title": "North Adams Transcript (1898-12-17)",
+        "url": "https://archive.org/details/north-adams-transcript-1898-12-17",
+        "score": 0.39,
+        "matchedAnchors": [
+          "25"
+        ],
+        "evidence": [
+          "made from good quality leather, purchased for our holiday rush, your choice at 25 cents each. 200 pocketbooks",
+          "holiday special offering at 25 cents each. Ladies' handkerchief,, fine quality, lace edge, extra holiday"
+        ],
+        "where": "1898, open"
       }
     ],
     "archiveFunnel": {
@@ -5595,7 +4833,7 @@
       "borrowable": 7,
       "rejected": {},
       "matched": 9,
-      "byUnits": 3,
+      "byUnits": 1,
       "lookedUp": 6,
       "candidates": 4,
       "errors": []
@@ -5613,54 +4851,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:pro-wrestling-illustrated-may-2025",
-        "origin": "internet-archive",
-        "title": "Pro Wrestling Illustrated May 2025 wrestling magazine",
-        "url": "https://archive.org/details/pro-wrestling-illustrated-may-2025",
-        "score": 0.1,
-        "matchedAnchors": [
-          "august 2",
-          "2024",
-          "july"
-        ],
-        "evidence": [
-          "JULY 13, 2024 AJ Styles defeats Naomichi Marufuji at NOAH's Destination 2024 event. AUGUST 2, 2024 NXT's"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:magazines-2023-publications-index",
-        "origin": "internet-archive",
-        "title": "2023 Magazine and Publication Filename Index",
-        "url": "https://archive.org/details/magazines-2023-publications-index",
-        "score": 0.07,
-        "matchedAnchors": [
-          "2020",
-          "including"
-        ],
-        "evidence": [
-          "memora- ble wrestling moments at sea— including in 2020, when AEW taped matches for Dynamite as part of"
-        ],
-        "where": "2026, open"
-      },
-      {
-        "key": "ia:tv-satellite-week-24-august-2024",
-        "origin": "internet-archive",
-        "title": "TV & Satellite Week 24 August 2024",
-        "url": "https://archive.org/details/tv-satellite-week-24-august-2024",
-        "score": 0.07,
-        "matchedAnchors": [
-          "2020",
-          "2024"
-        ],
-        "evidence": [
-          "Killer Thriller (2024, 15, 105min) xxx 3.20 Unhinged Psychological thriller. (2020, 15, 90min) xxx 4"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Mercedes Moné\" \"2020\" \"2024\" \"vince mcmahon\" \"august\"",
@@ -5676,9 +4867,9 @@
       "borrowable": 0,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -5696,35 +4887,17 @@
     "wikiWarnings": [],
     "archive": [
       {
-        "key": "ia:isbn_9781241049034",
-        "origin": "internet-archive",
-        "title": "Comparing the Movie JFK to the Real Life Events Around the Assassination of John F. Kennedy",
-        "url": "https://archive.org/details/isbn_9781241049034",
-        "score": 0.25,
-        "matchedAnchors": [
-          "film critics circle",
-          "ben",
-          "best",
-          "actor"
-        ],
-        "evidence": [
-          "also director and producer San Francisco Film Critics Circle Award for Best Supporting Actor Ben Randall"
-        ],
-        "where": "1991, borrow"
-      },
-      {
         "key": "ia:oxfordcompaniont0000unse_h5j6",
         "origin": "internet-archive",
         "title": "The Oxford companion to Australian film",
         "url": "https://archive.org/details/oxfordcompaniont0000unse_h5j6",
-        "score": 0.19,
+        "score": 0.13,
         "matchedAnchors": [
-          "film",
-          "critics",
-          "circle"
+          "film critics circle",
+          "best"
         ],
         "evidence": [
-          "awards, from the New York Film Critics’ Circle and the LA Film Critics’ Circle, and then there was a Golden"
+          "Australian films include: Metal Skin (1995), for which Gar- ner received a Film Critics Circle Award for ‘Best"
         ],
         "where": "1999, borrow"
       }
@@ -5745,8 +4918,8 @@
       },
       "matched": 5,
       "byUnits": 3,
-      "lookedUp": 5,
-      "candidates": 2,
+      "lookedUp": 4,
+      "candidates": 1,
       "errors": []
     },
     "errors": [],
@@ -5762,39 +4935,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:85yearsofoscar0000osbo",
-        "origin": "internet-archive",
-        "title": "85 years of the Oscar",
-        "url": "https://archive.org/details/85yearsofoscar0000osbo",
-        "score": 0.12,
-        "matchedAnchors": [
-          "2013",
-          "award",
-          "academy"
-        ],
-        "evidence": [
-          "Title: Eighty-five years of the Oscar. PN1993.92.0833 2013 791.43079—dc23 2013033021 Academy Award(s)® and"
-        ],
-        "where": "2013, borrow"
-      },
-      {
-        "key": "ia:BNA-DIG-ARUBATODAY-2010-04-19",
-        "origin": "internet-archive",
-        "title": "Aruba Today (April 19, 2010)",
-        "url": "https://archive.org/details/BNA-DIG-ARUBATODAY-2010-04-19",
-        "score": 0.08,
-        "matchedAnchors": [
-          "career achievement award",
-          "cinema"
-        ],
-        "evidence": [
-          "Against Tomorrow.” In 1994, Allen received a career achievement award given by American Cinema Editors. In November"
-        ],
-        "where": "2010, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Michael J. Kohut\" \"2013\" \"cinema audio society award\" \"career achievement award\"",
@@ -5806,13 +4947,11 @@
       "hits": 90,
       "available": 90,
       "borrowable": 44,
-      "rejected": {
-        "access restricted": 1
-      },
+      "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 2,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -5841,12 +4980,10 @@
       "hits": 5,
       "available": 5,
       "borrowable": 1,
-      "rejected": {
-        "access restricted": 1
-      },
+      "rejected": {},
       "matched": 0,
-      "byUnits": 1,
-      "lookedUp": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
       "candidates": 0,
       "errors": []
     },
@@ -5910,54 +5047,7 @@
       }
     ],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:evolveeventprogr2004unse",
-        "origin": "internet-archive",
-        "title": "Evolve Event Program",
-        "url": "https://archive.org/details/evolveeventprogr2004unse",
-        "score": 0.19,
-        "matchedAnchors": [
-          "2001",
-          "squaresoft",
-          "company"
-        ],
-        "evidence": [
-          "Tokyo-based Squaresoft before founding his own company, G3 Studios, in 2001, pio- neering"
-        ],
-        "where": "2004, open"
-      },
-      {
-        "key": "ia:high-score-6-hse-6-final-300-sec",
-        "origin": "internet-archive",
-        "title": "High Score 6 HSE 6 Final 300 Sec",
-        "url": "https://archive.org/details/high-score-6-hse-6-final-300-sec",
-        "score": 0.13,
-        "matchedAnchors": [
-          "vice president",
-          "2001"
-        ],
-        "evidence": [
-          "nior vice president, and the next year as chairman. (When we originally interviewed him in 2001, he was"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:game-developer-may-2003",
-        "origin": "internet-archive",
-        "title": "Game Developer - May 2003",
-        "url": "https://archive.org/details/game-developer-may-2003",
-        "score": 0.13,
-        "matchedAnchors": [
-          "2001",
-          "joined"
-        ],
-        "evidence": [
-          "in-house middleware used in more than 20 games. In 2001 he joined Intrinsic Graphics’ developer support"
-        ],
-        "where": "2003, open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Guido Henkel\" \"2001\" \"vice president\" \"squaresoft\"",
@@ -5974,9 +5064,9 @@
         "not a text": 1
       },
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -6059,19 +5149,22 @@
         "where": "1981, open"
       },
       {
-        "key": "ia:evolution-of-unix",
+        "key": "ia:bitsavers_cdcmp32173olsDec82_3727528",
         "origin": "internet-archive",
-        "title": "The Evolution of Unix: 1974 to the Present",
-        "url": "https://archive.org/details/evolution-of-unix",
-        "score": 0.17,
+        "title": "cdc :: mp-32 :: 17329105D MP-60 Sofware Tools Dec82",
+        "url": "https://archive.org/details/bitsavers_cdcmp32173olsDec82_3727528",
+        "score": 0.66,
         "matchedAnchors": [
-          "unix",
-          "basic"
+          "software tools",
+          "unix"
         ],
         "evidence": [
-          "a glimpse inside the history of the UNIX verse. Basic sources Since we can’t say everything about UNIX"
+          "Text Editor\" by B. W. Kernighan Kernighan and Plauger's \"Software Tools\", pages 163-217 The Unix",
+          "Fortran. It was conceived by Kernighan and Plauger for their book \"Software Tools\" (Addison-Wesley, 1976)",
+          "be obtained from the example code in SOFTWARE TOOLS, Kernighan & Plauger; Addison-Wesley, 1976. 1.",
+          "extension of the editor described in Brian Kernigan's book SOFTWARE TOOLS (1976 ADDISON-WESLEY) and is known"
         ],
-        "where": "1984, open"
+        "where": "1982, open"
       }
     ],
     "archiveFunnel": {
@@ -6165,36 +5258,6 @@
           "presentó de nuevo en 2015 como un lanzamiento para PlayStation 4. Gran dificultad Nioh nos lleva a vivir"
         ],
         "where": "n.d., open"
-      },
-      {
-        "key": "ia:magazines_201704",
-        "origin": "internet-archive",
-        "title": "magazines",
-        "url": "https://archive.org/details/magazines_201704",
-        "score": 0.29,
-        "matchedAnchors": [
-          "2015",
-          "development"
-        ],
-        "evidence": [
-          "Planning & Development division was only created in 2015 after two of the largest sectors of its business"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:nhp-jugal-kishore",
-        "origin": "internet-archive",
-        "title": "NHP Jugal Kishore",
-        "url": "https://archive.org/details/nhp-jugal-kishore",
-        "score": 0.29,
-        "matchedAnchors": [
-          "2015",
-          "development"
-        ],
-        "evidence": [
-          "meet the 2015 Millennium Development Goal target and 12 countries are on track to reach the 2015 Stop TB"
-        ],
-        "where": "2025, open"
       }
     ],
     "archiveFunnel": {
@@ -6209,9 +5272,9 @@
         "not a text": 2
       },
       "matched": 1,
-      "byUnits": 2,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 1,
+      "candidates": 1,
       "errors": []
     },
     "errors": [],
@@ -6344,23 +5407,6 @@
         "where": "2014, open"
       },
       {
-        "key": "ia:leo-10873-edictos",
-        "origin": "internet-archive",
-        "title": "La Estrella del Oriente. Edictos Legales. Edición N° 10873 de 3 de Agosto de 2023.",
-        "url": "https://archive.org/details/leo-10873-edictos",
-        "score": 0.67,
-        "matchedAnchors": [
-          "santa cruz",
-          "cruz de",
-          "la sierra",
-          "de la"
-        ],
-        "evidence": [
-          "de ley.--- Santa Cruz de la Sierra, 30 de junio del 2023.--- SANTA CRUZ DE LA SIERRA, 05 DE JULIO DE 2023"
-        ],
-        "where": "2023, open"
-      },
-      {
         "key": "ia:losmercedariosen03barr",
         "origin": "internet-archive",
         "title": "Los mercedarios en el Perú en el siglo XVI; documentos inéditos del Archivo General de Indias de Sevilla",
@@ -6389,6 +5435,22 @@
           "DE JULIO DE 2023 Santa Cruz de la Sierra | 3 SENECESITA PERSONAL FEMENINO que viva porlaZona Norte paravender"
         ],
         "where": "2023, open"
+      },
+      {
+        "key": "ia:leo-7551",
+        "origin": "internet-archive",
+        "title": "La Estrella del Oriente. Edición N° 7551 de 9 de Junio de 2014.",
+        "url": "https://archive.org/details/leo-7551",
+        "score": 1,
+        "matchedAnchors": [
+          "cruz",
+          "sierra"
+        ],
+        "evidence": [
+          "llevarse — siéramos que vengan a visitar — viva Bolivia!” 04 santa cruz dea Sierra Lunes 9 de junio de 2014",
+          "verdad esta avenida es tan — da decir ¡Qué viva Santa Cruz! hacional tan importante, nos — promiso con"
+        ],
+        "where": "2014, open"
       }
     ],
     "archiveFunnel": {
@@ -6450,23 +5512,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:InStyle_Men_Winter_2015",
-        "origin": "internet-archive",
-        "title": "InStyle Men Winter 2015",
-        "url": "https://archive.org/details/InStyle_Men_Winter_2015",
-        "score": 0.11,
-        "matchedAnchors": [
-          "2015",
-          "david"
-        ],
-        "evidence": [
-          "90 €| lOO INSTYLE MEN WINTER 2015 FOTOS: TAG HEUER (2), DAVID MAUPILE/2015 VERLAG EUGEN ULMER, STUTTGART;"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Belstaff\" \"2015\" \"17\" \"katherine waterston\" \"cathy moriarty\"",
@@ -6481,9 +5527,9 @@
       "borrowable": 1,
       "rejected": {},
       "matched": 0,
-      "byUnits": 1,
-      "lookedUp": 1,
-      "candidates": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -6515,22 +5561,6 @@
         "where": "1970, borrow"
       },
       {
-        "key": "ia:mexicos-new-politics-the-pan-and-democratic-change-david-a-shirk-2004",
-        "origin": "internet-archive",
-        "title": "Mexico's New Politics The Pan And Democratic Change ( David A Shirk) 2004",
-        "url": "https://archive.org/details/mexicos-new-politics-the-pan-and-democratic-change-david-a-shirk-2004",
-        "score": 0.21,
-        "matchedAnchors": [
-          "pri",
-          "executive",
-          "legislative"
-        ],
-        "evidence": [
-          "Executive and Legislative Posts, 1985-2000 PRI Nomination Polling Data PRI Open Primary Results for “Fantastic"
-        ],
-        "where": "n.d., open"
-      },
-      {
         "key": "ia:foreign-affairs-1922-2001",
         "origin": "internet-archive",
         "title": "Foreign Affairs 1922-2001",
@@ -6545,20 +5575,34 @@
         "where": "n.d., open"
       },
       {
-        "key": "ia:nationalsecurity0000gear",
+        "key": "ia:cu31924032449278",
         "origin": "internet-archive",
-        "title": "National security and civil liberty : a chronological perspective",
-        "url": "https://archive.org/details/nationalsecurity0000gear",
-        "score": 0.21,
+        "title": "The new nationalism",
+        "url": "https://archive.org/details/cu31924032449278",
+        "score": 0.53,
         "matchedAnchors": [
-          "supreme court",
-          "legislative branches",
-          "executive"
+          "supreme court"
         ],
         "evidence": [
-          "the Executive and Legislative Branches of govern- ment. Since 2004, the Supreme Court, and some lesser"
+          "true democracy. Take, for instance, what I said in reference to two decisions of the Supreme Court. It"
         ],
-        "where": "2014, borrow"
+        "where": "1910, open"
+      },
+      {
+        "key": "ia:velvetcoupconsti00laza",
+        "origin": "internet-archive",
+        "title": "The velvet coup : the Constitution, the Supreme Court, and the decline of American democracy",
+        "url": "https://archive.org/details/velvetcoupconsti00laza",
+        "score": 0.53,
+        "matchedAnchors": [
+          "supreme court"
+        ],
+        "evidence": [
+          "CONSTITUTION HS SUPREME COURT, D THE DECLINE OF AMERICAN DEMOCRACY DANIEL LAZARE A ccording",
+          "the Constitution, the Supreme Court, and the decline of American democracy Ij di^ DATE DUE .1111",
+          "The Constitution, the Supreme Court, and the Decline of American Democracy DANIEL LAZARE VERSO London"
+        ],
+        "where": "2001, borrow"
       }
     ],
     "archiveFunnel": {
@@ -6569,7 +5613,9 @@
       "hits": 100,
       "available": 100,
       "borrowable": 41,
-      "rejected": {},
+      "rejected": {
+        "access restricted": 1
+      },
       "matched": 8,
       "byUnits": 3,
       "lookedUp": 6,
@@ -6591,23 +5637,7 @@
     "wikiWarnings": [
       "no counterpart article on the larger language editions"
     ],
-    "archive": [
-      {
-        "key": "ia:annualregister190232hods",
-        "origin": "internet-archive",
-        "title": "Annual Register 1990. Vol. 232",
-        "url": "https://archive.org/details/annualregister190232hods",
-        "score": 0.33,
-        "matchedAnchors": [
-          "party",
-          "politician"
-        ],
-        "evidence": [
-          "13 June Theo Mitchell became the first black politician to win a major party nomination for state office"
-        ],
-        "where": "1991, borrow"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"Sanjiv Kumar\" \"jharkhand mukti morcha party\"",
@@ -6620,9 +5650,9 @@
       "borrowable": 6,
       "rejected": {},
       "matched": 0,
-      "byUnits": 1,
-      "lookedUp": 1,
-      "candidates": 1,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -6638,62 +5668,7 @@
     "claimChanged": true,
     "wiki": [],
     "wikiWarnings": [],
-    "archive": [
-      {
-        "key": "ia:09BARCELONA32",
-        "origin": "internet-archive",
-        "title": "09BARCELONA32",
-        "url": "https://archive.org/details/09BARCELONA32",
-        "score": 0.26,
-        "matchedAnchors": [
-          "french president",
-          "president nicolas",
-          "nicolas sarkozy",
-          "french president nicolas sarkozy",
-          "france"
-        ],
-        "evidence": [
-          "between Andorra and France last week when French President Nicolas Sarkozy went on TF1, French"
-        ],
-        "where": "n.d., open"
-      },
-      {
-        "key": "ia:nicolassarkozy0000abra",
-        "origin": "internet-archive",
-        "title": "Nicolas Sarkozy",
-        "url": "https://archive.org/details/nicolassarkozy0000abra",
-        "score": 0.26,
-        "matchedAnchors": [
-          "french president",
-          "president nicolas",
-          "nicolas sarkozy",
-          "french president nicolas sarkozy",
-          "france"
-        ],
-        "evidence": [
-          "France? In other words, who exactly is French president Nicolas Sarkozy? CHAPTER A Family of Immigrants"
-        ],
-        "where": "2009, borrow"
-      },
-      {
-        "key": "ia:neweuropejuly2007",
-        "origin": "internet-archive",
-        "title": "New Europe July 2007",
-        "url": "https://archive.org/details/neweuropejuly2007",
-        "score": 0.26,
-        "matchedAnchors": [
-          "french president",
-          "president nicolas",
-          "nicolas sarkozy",
-          "french president nicolas sarkozy",
-          "france"
-        ],
-        "evidence": [
-          "surviving infected children. That came after French President Nicolas Sarkozy went to Libya and said France"
-        ],
-        "where": "n.d., open"
-      }
-    ],
+    "archive": [],
     "archiveFunnel": {
       "queries": [
         "\"2010 Yeonpyeongdo bombardment\" \"french president nicolas sarkozy\"",
@@ -6707,9 +5682,9 @@
       "borrowable": 8,
       "rejected": {},
       "matched": 0,
-      "byUnits": 3,
-      "lookedUp": 3,
-      "candidates": 3,
+      "byUnits": 0,
+      "lookedUp": 0,
+      "candidates": 0,
       "errors": []
     },
     "errors": [],
@@ -6882,20 +5857,19 @@
         "where": "2008, borrow"
       },
       {
-        "key": "ia:otherbolsheviksl00will",
+        "key": "ia:inwarsdarkshadow0000linc_g4e8",
         "origin": "internet-archive",
-        "title": "The other Bolsheviks : Lenin and his critics, 1904-1914",
-        "url": "https://archive.org/details/otherbolsheviksl00will",
-        "score": 0.3,
+        "title": "In war's dark shadow : the Russians before the Great War",
+        "url": "https://archive.org/details/inwarsdarkshadow0000linc_g4e8",
+        "score": 0.37,
         "matchedAnchors": [
           "1905",
-          "bloody sunday",
-          "january"
+          "okhrana"
         ],
         "evidence": [
-          "that began with the Bloody Sunday demonstration of January 22, 1905. Neverthe- less, a flood"
+          "Sergei Aleksandrovich (February 1905) to take place unhindered by Okhrana interference. Both were killed"
         ],
-        "where": "1986, borrow"
+        "where": "1983, borrow"
       }
     ],
     "archiveFunnel": {
@@ -6980,35 +5954,34 @@
         "where": "2014, open"
       },
       {
-        "key": "ia:pubmed-PMC4153915",
+        "key": "ia:isbn_9789290616030",
         "origin": "internet-archive",
-        "title": "Integrated mapping of lymphatic filariasis and podoconiosis: lessons learnt from Ethiopia.",
-        "url": "https://archive.org/details/pubmed-PMC4153915",
-        "score": 0.18,
-        "matchedAnchors": [
-          "neglected tropical diseases",
-          "neglected tropical diseases",
-          "ntds",
-          "control"
-        ],
-        "evidence": [
-          "importance of integrated control of neglected tropical diseases (NTDs). Integrated mapping of NTDs is"
-        ],
-        "where": "2014, open"
-      },
-      {
-        "key": "ia:R42931ProgressinCombatingNeglectedTropicalDiseasesNTDsUSandGlobalEffortsfromFY2006toFY2015-crs",
-        "origin": "internet-archive",
-        "title": "R42931 Progress in Combating Neglected Tropical Diseases (NTDs) U.S. and Global Efforts from FY2006 to FY2015",
-        "url": "https://archive.org/details/R42931ProgressinCombatingNeglectedTropicalDiseasesNTDsUSandGlobalEffortsfromFY2006toFY2015-crs",
+        "title": "Regional action plan for neglected tropical diseases in the Western Pacific Region (2012-2016)",
+        "url": "https://archive.org/details/isbn_9789290616030",
         "score": 0.14,
         "matchedAnchors": [
           "neglected tropical diseases",
           "neglected tropical diseases",
-          "ntds"
+          "global network"
         ],
         "evidence": [
-          "Combating Neglected Tropical Diseases (NTDs) Summary The term “neglected tropical diseases” (NTDs) was"
+          "foodborne trematodiases Global Network for Neglected Tropical Diseases health management information system"
+        ],
+        "where": "2013, borrow"
+      },
+      {
+        "key": "ia:pubmed-PMC3178873",
+        "origin": "internet-archive",
+        "title": "Closing the praziquantel treatment gap: new steps in epidemiological monitoring and control of schistosomiasis in African infants and preschool-aged children.",
+        "url": "https://archive.org/details/pubmed-PMC3178873",
+        "score": 0.14,
+        "matchedAnchors": [
+          "neglected tropical diseases",
+          "neglected tropical diseases",
+          "control"
+        ],
+        "evidence": [
+          "Uganda 11 Department of Control of Neglected Tropical Diseases, World Health Organization, CH-1211 Geneva"
         ],
         "where": "n.d., open"
       }
@@ -7194,22 +6167,6 @@
         "where": "1990, open"
       },
       {
-        "key": "ia:VeterinaryPharmacologyAndTherapeutics",
-        "origin": "internet-archive",
-        "title": "Veterinary Pharmacology and therapeutics",
-        "url": "https://archive.org/details/VeterinaryPharmacologyAndTherapeutics",
-        "score": 0.27,
-        "matchedAnchors": [
-          "haemonchus contortus",
-          "against",
-          "resistant"
-        ],
-        "evidence": [
-          "increment in drug efficacy against a resistant Haemonchus contortus strain (Alvarez et al., 2012). Metabolism"
-        ],
-        "where": "n.d., open"
-      },
-      {
         "key": "ia:veterinary-bulletin_1992_62_index",
         "origin": "internet-archive",
         "title": "Veterinary Bulletin 1992: Vol 62 Index",
@@ -7222,6 +6179,20 @@
           "Nigella sativa, seeds 6290 nitroxinil, pharmacokinetics 279 oxfendazole Haemonchus contortus 1487 Trichostrongylus"
         ],
         "where": "1992, open"
+      },
+      {
+        "key": "ia:veterinaryformul0000unse",
+        "origin": "internet-archive",
+        "title": "The veterinary formulary",
+        "url": "https://archive.org/details/veterinaryformul0000unse",
+        "score": 0.65,
+        "matchedAnchors": [
+          "haemonchus"
+        ],
+        "evidence": [
+          "(Ostertagia), Strongyloides, netobimin, nitroxinil (Bunostomum, Haemonchus, Trichostrongylus Oesophagostomum"
+        ],
+        "where": "2005, borrow"
       }
     ],
     "archiveFunnel": {
@@ -7234,12 +6205,10 @@
       "hits": 62,
       "available": 62,
       "borrowable": 10,
-      "rejected": {
-        "withdrawn": 1
-      },
+      "rejected": {},
       "matched": 4,
-      "byUnits": 3,
-      "lookedUp": 6,
+      "byUnits": 1,
+      "lookedUp": 4,
       "candidates": 4,
       "errors": []
     },
