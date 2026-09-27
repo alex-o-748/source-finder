@@ -44,9 +44,22 @@ export interface CassetteOptions {
   hostConcurrency?: Record<string, number>;
   /** Retries on 429 / 5xx / network errors before giving up (default 6). */
   maxRetries?: number;
+  /**
+   * Per host, how long one live request may take (default 60 s), and whether
+   * a timeout or dropped connection is retried (default yes). A model call
+   * with web search can run for minutes, and is billed even when abandoned,
+   * so it gets a long wait and no retry.
+   */
+  hostTimeouts?: Record<string, { ms: number; retryNetworkErrors: boolean }>;
+  /**
+   * Hosts whose error responses are never recorded. A model API's 400 or 401
+   * (no credit, a bad key) says nothing about the claim, and replaying it
+   * would hide the gap from the next --record.
+   */
+  recordOnlyOk?: string[];
   log?: (line: string) => void;
-  /** Sees every response body, replayed or live: for tallying model usage. */
-  observe?: (key: string, body: string) => void;
+  /** Sees every response body, replayed or live, and how long it took live. */
+  observe?: (key: string, body: string, ms: number | undefined) => void;
 }
 
 interface Recorded {
@@ -54,6 +67,8 @@ interface Recorded {
   status: number;
   contentType: string | null;
   body: string;
+  /** Wall-clock time of the live request, when recorded. */
+  ms?: number;
 }
 
 export interface CassetteStats {
@@ -137,20 +152,22 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     init: RequestInit | undefined,
     host: string,
     lanes: number,
-  ): Promise<{ res: Response; body: string }> {
+  ): Promise<{ res: Response; body: string; ms: number }> {
+    const timeout = options.hostTimeouts?.[host] ?? { ms: 60_000, retryNetworkErrors: true };
     for (let attempt = 0; ; attempt++) {
       const wait = (lastSent.get(host) ?? 0) + minInterval / lanes - Date.now();
       if (wait > 0) await sleep(wait);
       lastSent.set(host, Date.now());
       let res: Response;
+      const started = Date.now();
       try {
         // The caller's abort signal is dropped: a request may sit in the queue
         // longer than the caller's timeout expects, and that is fine here.
         const headers = new Headers(init?.headers);
         headers.set("user-agent", EVAL_USER_AGENT);
-        res = await realFetch(url, { ...init, headers, signal: AbortSignal.timeout(60_000) });
+        res = await realFetch(url, { ...init, headers, signal: AbortSignal.timeout(timeout.ms) });
       } catch (err) {
-        if (attempt >= maxRetries) throw err;
+        if (attempt >= maxRetries || !timeout.retryNetworkErrors) throw err;
         stats.retries++;
         log(`  network error on ${host}, retry ${attempt + 1}: ${(err as Error).message}`);
         await sleep(2_000 * 2 ** attempt);
@@ -164,7 +181,7 @@ export function installCassette(options: CassetteOptions): CassetteStats {
         await sleep(ms);
         continue;
       }
-      return { res, body };
+      return { res, body, ms: Date.now() - started };
     }
   }
 
@@ -178,7 +195,7 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     if (existsSync(path)) {
       const rec = JSON.parse(gunzipSync(readFileSync(path)).toString("utf8")) as Recorded;
       stats.hits++;
-      options.observe?.(key, rec.body);
+      options.observe?.(key, rec.body, rec.ms);
       return new Response(rec.body, {
         status: rec.status,
         headers: rec.contentType ? { "content-type": rec.contentType } : {},
@@ -197,12 +214,12 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     const previous = queues.get(lane) ?? Promise.resolve();
     const run = previous.catch(() => {}).then(() => live(url, init, host, lanes));
     queues.set(lane, run);
-    const { res, body: text } = await run;
+    const { res, body: text, ms } = await run;
     // Rate limits and server errors that outlived the retries are not facts
     // about the world; everything else (200, 404, a MediaWiki error) is.
-    options.observe?.(key, text);
-    if (!isTransient(res.status, text)) {
-      const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body: text };
+    options.observe?.(key, text, ms);
+    if (!isTransient(res.status, text) && (res.ok || !options.recordOnlyOk?.includes(host))) {
+      const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body: text, ms };
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, gzipSync(JSON.stringify(rec)));
       stats.recorded++;

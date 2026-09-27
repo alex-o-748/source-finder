@@ -51,7 +51,7 @@ The script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.or
 
 | Provider | Default model           | Override (set on `window.…` before the script loads) |
 | -------- | ----------------------- | ---------------------------------------------------- |
-| Claude   | `claude-sonnet-4-6`     | `cnfirmedModelClaude`                                |
+| Claude   | `claude-sonnet-5`     | `cnfirmedModelClaude`                                |
 | Gemini   | `gemini-flash-latest`   | `cnfirmedModelGemini`                                |
 | OpenAI   | `gpt-5-mini`            | `cnfirmedModelOpenAI`                                |
 
@@ -92,7 +92,7 @@ Set your API key:
 ```sh
 export ANTHROPIC_API_KEY=sk-ant-...
 # optional:
-export CNFIRMED_MODEL=claude-sonnet-4-6
+export CNFIRMED_MODEL=claude-sonnet-5
 ```
 
 ### Usage

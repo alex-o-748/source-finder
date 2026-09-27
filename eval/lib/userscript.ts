@@ -42,7 +42,7 @@ export interface ScriptArticle {
 
 export async function loadScriptArticle(
   c: Pick<EvalClaim, "lang" | "title" | "revid">,
-  opts: { fullText?: boolean } = {},
+  window: Record<string, unknown> = {},
 ): Promise<ScriptArticle> {
   const res = await fetch(renderUrl(c.lang, c.revid));
   if (!res.ok) throw new Error(`rendered page: HTTP ${res.status}`);
@@ -57,9 +57,7 @@ export async function loadScriptArticle(
       wgTitle: c.title,
       wgCurRevisionId: c.revid,
     },
-    // Node has no CORS, so the whole-text switch can be tried here before
-    // archive.org allows it in a browser.
-    { document, window: opts.fullText ? { cnfirmedArchiveFullText: true } : {} },
+    { document, window },
   );
   const sups = Array.from(document.querySelectorAll("sup.Template-Fact"));
   script.setCnSups(sups);

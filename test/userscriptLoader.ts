@@ -57,7 +57,7 @@ export type UserScriptModule = Record<string, (...args: any[]) => any> & {
  */
 export interface UserScriptEnv {
   document?: unknown;
-  /** Globals set before the script runs, e.g. `cnfirmedArchiveFullText`. */
+  /** Globals on `window`, such as the script's model overrides or `cnfirmedArchiveFullText`. */
   window?: Record<string, unknown>;
 }
 
