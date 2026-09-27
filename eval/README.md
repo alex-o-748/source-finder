@@ -37,6 +37,7 @@ npx tsx eval/score.ts --unlabelled        # leads nobody has judged yet
 # The first table is the headline: per method, how often a source is found.
 npx tsx eval/run.ts --engine core         # the Node core (CLI) instead of the user script
 npx tsx eval/run.ts --only military       # one stratum
+npx tsx eval/run.ts --full-text --name fulltext  # also read open books' whole text (see below)
 ```
 
 Replay needs no network. The default engine is the shipped user script, run over
@@ -65,21 +66,39 @@ re-record takes the better part of an hour. Replay is instant.
 
 ## Baseline (September 2026)
 
-The user script on all 100 claims, after references already cited in the
-tagged sentence stopped being offered (an editor saw those and still asked for
-a citation). "Found" means at least one lead whose evidence states the claim's
-fact; "or partly" also counts one that states part of it.
+The user script on all 100 claims. "Found" means at least one lead whose
+evidence states the claim's fact; "or partly" also counts one that states part
+of it.
 
 | Method | Found | Found or partly | Claims with any lead | Precision of leads |
 | --- | --- | --- | --- | --- |
 | Same article | 0% | 1% | 7% | 14% (of 7) |
 | Other language editions | 2% | 3% | 9% | 21% (of 28) |
-| Internet Archive | 0% | 5% | 24% | 10% (of 48) |
-| Any | 2% | 8% | 33% | 14% (of 83) |
+| Internet Archive | 3% | 17% | 74% | 14% (of 221) |
+| Any | 5% | 20% | 76% | 15% (of 256) |
 
-On the 46 claims where a book is a plausible source: found 2%, found or
-partly 9%. The Archive stage offers a book for a third of them, but only 2 of
-its 33 books state even part of the claim.
+On the 46 claims where a book is a plausible source, the Archive finds 4% and
+finds or partly finds 22%.
+
+**How the Archive stage got there.** The previous baseline found 0%, or partly
+5% (4% of the book-plausible claims), from 48 leads on 24 claims. Three changes:
+
+- *Queries joined by spaces.* Between two terms, the endpoint reads `AND` as
+  the word "and", so 62 of the 83 claims with a query spent their highlights
+  on "and". On its own, in a hand-judged probe of the 46 book-plausible
+  claims, this took "found or partly" from 4% to 20%.
+- *Queries from the claim's key phrases*, beside the ones from its numbers and
+  names. Claims with neither now get a query ("The acini secrete digestive
+  enzymes" found "The acini secrete several digestive enzymes").
+- *A second ranking by claim units*, which does not require the passage to
+  name the subject or carry the number ("Prince of Leiningen, who died in
+  1814" for "Feodora's father died in 1814").
+
+The cost is noise: three claims in four now get Archive leads, and six in
+seven of those leads do not state the claim. What still caps it is the
+evidence: each book comes back with at most five highlights of about 100
+characters, each around one term, so the right book often cannot show the
+sentence. See `--full-text` below.
 
 Before the same-sentence rule, same-article leads looked far better (53%
 precision): 7 of its 8 good leads were references already attached to the
@@ -93,11 +112,32 @@ sentence end, and twice the rendered tag is paired with the wrong wikitext tag.
 What most bad leads have in common: they matched on numbers or names that are
 in the paragraph but not in the claim (five Ju 52 accident reports matched
 "52, 230"; four Belgium–Luxembourg sources matched years from neighbouring
-sentences), or on a single common word ("Roman", "gulf", "10").
+sentences), or on a single common word ("Roman", "gulf", "10"), or, from the
+key-phrase queries, on a date and a common word ("January 2010").
 
-Six Archive searches fail on every attempt (the service reports its search
-backend failing, as HTTP 400) and are not recorded; those claims show
-"not recorded" on replay.
+## Whole book texts (`--full-text`)
+
+`npx tsx eval/run.ts --full-text` also reads the whole OCR text of up to five
+open books per claim, as the CLI's `archive --full-text` does and as the user
+script would with `window.cnfirmedArchiveFullText` set. The texts run to a
+megabyte each, so they are recorded to `eval/cassettes-fulltext/`, which is
+not committed: replaying this run needs a local recording (`--record`). A
+lead read from a whole text is labelled separately (`ia:<id>#text`).
+
+Run in September 2026 (`results/fulltext.json`): 355 whole texts read, 233
+with a passage, 198 of those shown as leads.
+
+| Internet Archive | Found | Found or partly | Claims with any lead | Precision of leads |
+| --- | --- | --- | --- | --- |
+| Highlights only (baseline) | 3% | 17% | 74% | 14% (of 221) |
+| With whole texts | 4% | 18% | 79% | 11% (of 288) |
+| …book-plausible claims | 7% | 24% | | |
+
+A modest gain, at the cost of precision: a longer passage turns some partial
+leads into ones that state the claim ("following the murder of Paul, Tsar
+Alexander revived his grandmother's policy and began Russia's fourth and final
+attempt to conquer the Caucasus"), but most books in the lending library,
+where modern secondary sources are, have no public text.
 
 ## The web search (paid)
 
