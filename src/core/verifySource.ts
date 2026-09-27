@@ -14,7 +14,7 @@ const DEFAULT_VERIFY_BASE = "https://citation-verifier.toolforge.org";
 const MAX_SOURCE_CONTENT_CHARS = 50_000;
 
 /**
- * The service allows 10 requests/minute across all callers and answers 429
+ * The service allows 30 requests/minute across all callers and answers 429
  * with Retry-After. A whole-article run verifies candidates one after another,
  * so it waits out the window a few times rather than failing the candidate.
  */

@@ -178,7 +178,7 @@ What comes back:
 - `quote` — the API's `verified_text`: the part of the model's quote actually found in the source. The model's unverified quote is never passed on.
 - `reliability` is `"n/a"`: the Verify API grades substantiation only. Candidates are still screened against the WP:RSP blocklist before they reach the verifier, and judging reliability for the claim is left to the editor.
 
-The service allows 10 requests a minute across all callers. On a 429, `verifySource` waits out `Retry-After` (up to three times) rather than failing the candidate; a source the API cannot fetch (422) becomes a `SOURCE UNAVAILABLE` verdict.
+The service allows 30 requests a minute across all callers. On a 429, `verifySource` waits out `Retry-After` (up to three times) rather than failing the candidate; a source the API cannot fetch (422) becomes a `SOURCE UNAVAILABLE` verdict.
 
 A cite template and `<ref>` snippet are emitted for every candidate; the verdict, confidence and quote shown alongside are what a human editor uses to decide whether to paste it.
 
