@@ -11,6 +11,8 @@
  *                                          # fetch and save whatever is missing
  *                                          # (4 claims at a time; --concurrency N)
  *   npx tsx eval/run.ts --web --limit 5    # also the paid web search (Claude), on 5 claims across subjects
+ *   npx tsx eval/run.ts --full-text        # also read open books' whole text (recorded to
+ *                                          # eval/cassettes-fulltext/, not committed)
  *
  * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record: replaying a
  * recorded call needs no key. The key travels in a header, and headers are
@@ -31,7 +33,15 @@ import { findArchiveCandidates } from "../src/core/archiveSources.js";
 import type { ArchiveFunnel } from "../src/core/archiveSources.js";
 import { installCassette } from "./lib/http.js";
 import { indexOfClaim, loadScriptArticle } from "./lib/userscript.js";
-import { CASSETTE_DIR, EVAL_DIR, articleRef, claimAt, loadClaims, type EvalClaim } from "./lib/dataset.js";
+import {
+  CASSETTE_DIR,
+  EVAL_DIR,
+  FULLTEXT_CASSETTE_DIR,
+  articleRef,
+  claimAt,
+  loadClaims,
+  type EvalClaim,
+} from "./lib/dataset.js";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -46,6 +56,8 @@ if (engine !== "userscript" && engine !== "core") throw new Error(`unknown engin
 
 const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
 const web = process.argv.includes("--web");
+/** Read the whole text of open books too (option off in the shipped script until archive.org allows it). */
+const fullText = process.argv.includes("--full-text");
 const limit = arg("limit") ? Number(arg("limit")) : undefined;
 // Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
 const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
@@ -75,6 +87,7 @@ function tallyUsage(key: string, body: string): void {
 
 const stats = installCassette({
   dir: CASSETTE_DIR,
+  dirFor: (key) => (key.startsWith("GET archive.org/stream/") ? FULLTEXT_CASSETTE_DIR : CASSETTE_DIR),
   mode: record ? "record" : "replay",
   hostConcurrency: { "archive.org": 2, "api.anthropic.com": 4 },
   log: (line) => console.error(line),
@@ -155,14 +168,16 @@ function wikiLead(w: any): Lead {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function archiveLead(a: any): Lead {
   return {
-    key: `ia:${a.evidence.identifier}`,
+    // A passage from the whole text is different evidence from the search's
+    // highlights, so it is judged on its own.
+    key: `ia:${a.evidence.identifier}${a.evidence.fullText ? "#text" : ""}`,
     origin: "internet-archive",
     title: a.title,
     url: a.url,
     score: a.evidence.score,
     matchedAnchors: a.evidence.matchedAnchors,
     evidence: a.evidence.passages,
-    where: `${a.evidence.year ?? "n.d."}, ${a.evidence.access}`,
+    where: `${a.evidence.year ?? "n.d."}, ${a.evidence.access}${a.evidence.fullText ? ", whole text" : ""}`,
   };
 }
 
@@ -170,7 +185,7 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
   const result = emptyResult(c);
   let page;
   try {
-    page = await loadScriptArticle(c);
+    page = await loadScriptArticle(c, { fullText });
   } catch (err) {
     result.errors.push(`page: ${(err as Error).message}`);
     return result;
@@ -252,7 +267,7 @@ async function runCoreClaim(c: EvalClaim): Promise<ClaimResult> {
   }
 
   try {
-    const archive = await findArchiveCandidates(claim, article.title);
+    const archive = await findArchiveCandidates(claim, article.title, { fullText });
     const { passages: _p, ...funnel } = archive.funnel;
     void _p;
     result.archiveFunnel = funnel;

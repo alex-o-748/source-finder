@@ -25,6 +25,7 @@ import { USER_AGENT } from "./mediawiki.js";
 
 export const SEARCH_URL = "https://archive.org/services/search/beta/page_production/";
 export const METADATA_URL = "https://archive.org/metadata/";
+export const STREAM_URL = "https://archive.org/stream/";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 /** Longest `Retry-After` honoured on a 429 before giving up. */
@@ -51,6 +52,18 @@ export interface SearchRequest {
 export interface ArchiveClient {
   fullTextSearch(request: SearchRequest): Promise<SearchResponse>;
   metadata(identifier: string): Promise<MetadataResponse>;
+  /** The `/stream/` page holding an open book's whole OCR text (HTML, the text in a `<pre>`). */
+  streamPage?(identifier: string, file: string): Promise<string>;
+}
+
+/**
+ * An open book's whole OCR text, served by archive.org itself. Readable from
+ * Node; not from a Wikipedia page until archive.org sends a CORS header on it
+ * (`/metadata` and the search do, this does not). `/download/…_djvu.txt`
+ * redirects to a numbered server Wikipedia's CSP refuses.
+ */
+export function streamUrl(identifier: string, file: string): string {
+  return `${STREAM_URL}${encodeURIComponent(identifier)}/${encodeURIComponent(file)}_djvu.txt`;
 }
 
 /** Query-string parameters for a full-text search. The user script builds the same. */
@@ -62,7 +75,7 @@ export function searchParams(request: SearchRequest): URLSearchParams {
   });
 }
 
-async function getJson<T>(url: string, retried = false): Promise<T> {
+async function get(url: string, accept: string, retried = false): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
@@ -70,7 +83,7 @@ async function getJson<T>(url: string, retried = false): Promise<T> {
     res = await fetch(url, {
       signal: controller.signal,
       // The Archive asks every automated client to identify itself.
-      headers: { "user-agent": USER_AGENT, accept: "application/json" },
+      headers: { "user-agent": USER_AGENT, accept },
     });
   } finally {
     clearTimeout(timer);
@@ -79,14 +92,18 @@ async function getJson<T>(url: string, retried = false): Promise<T> {
     const wait = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
     if (Number.isFinite(wait) && wait <= MAX_RETRY_AFTER_S) {
       await new Promise((r) => setTimeout(r, Math.max(wait, 1) * 1000));
-      return getJson<T>(url, true);
+      return get(url, accept, true);
     }
   }
   if (!res.ok) {
     // Status text is empty over HTTP/2, so the code alone.
     throw new Error(`Internet Archive: HTTP ${res.status}`);
   }
-  return (await res.json()) as T;
+  return res;
+}
+
+async function getJson<T>(url: string): Promise<T> {
+  return (await (await get(url, "application/json")).json()) as T;
 }
 
 /** The live client. */
@@ -96,6 +113,9 @@ export const httpArchiveClient: ArchiveClient = {
   },
   metadata(identifier) {
     return getJson<MetadataResponse>(METADATA_URL + encodeURIComponent(identifier));
+  },
+  async streamPage(identifier, file) {
+    return (await get(streamUrl(identifier, file), "text/html")).text();
   },
 };
 
@@ -123,5 +143,12 @@ export function recordingClient(inner: ArchiveClient, dir: string): ArchiveClien
       save(`metadata-${identifier}`, r);
       return r;
     },
+    ...(inner.streamPage && {
+      async streamPage(identifier: string, file: string) {
+        const r = await inner.streamPage!(identifier, file);
+        save(`stream-${identifier}`, { length: r.length });
+        return r;
+      },
+    }),
   };
 }

@@ -4,8 +4,9 @@
  *
  * A funnel, so that at most a handful of books are ever looked at closely:
  *
- *   1. **Search.** One to three full-text queries built from the claim's
- *      numbers and names plus the article's subject, strictest first.
+ *   1. **Search.** Two families of full-text queries side by side, each
+ *      strictest first: the claim's numbers and names with the article's
+ *      subject, and the claim's key phrases with the subject's words.
  *   2. **Access gate**, on the hit's own fields. What matters is that an
  *      editor can read the passage: an open book, or one in the lending
  *      library, which anyone with a free archive.org account can borrow. Books
@@ -13,10 +14,14 @@
  *   3. **Score.** Each hit comes with its matching passages. Each passage is
  *      scored on its own — two passages from one book may be pages apart — with
  *      the sister-wiki scoring: anchors that must match, then anchors and
- *      weighted token coverage. A book counts as its best passage.
+ *      weighted token coverage. A book counts as its best passage. A second
+ *      ranking counts the claim units (phrases, numbers, names, longer words)
+ *      in a passage, without those gates; the two are taken in turn.
  *   4. **Dedupe and look up.** One book per work, however many scans of it the
  *      Archive holds; then, for the few kept, the item metadata: the publisher
  *      and ISBN for the citation, and whether it has been withdrawn.
+ *   5. **Whole text**, optional: for a few open books, the best stretch of
+ *      the whole OCR text instead of the search's short highlights.
  *
  * What comes out is evidence — a book, a passage, the anchors it matched — not
  * a verdict.
@@ -38,6 +43,7 @@ import {
   normaliseDigits,
   tokenSet,
   weightedTokens,
+  words,
 } from "./relevance.js";
 import type { Anchors, TokenBag } from "./relevance.js";
 import type { ArchiveCandidate, Article, Citation, Claim } from "./types.js";
@@ -45,12 +51,24 @@ import type { ArchiveCandidate, Article, Citation, Claim } from "./types.js";
 export interface ArchiveSourceOptions {
   /** Hits requested per full-text query (default 50). */
   maxHits?: number;
-  /** Full-text queries per claim, strictest first (default 3). */
+  /** Queries from the claim's numbers and names, strictest first (default 3). */
   maxQueries?: number;
-  /** Stop issuing looser queries once this many distinct books are found (default 10). */
+  /** Queries from the claim's key phrases, strictest first (default 4). */
+  maxPhraseQueries?: number;
+  /** Each family of queries stops loosening once it has found this many distinct books (default 10). */
   enoughHits?: number;
-  /** Candidates returned per claim (default 3). */
+  /** Candidates returned per claim from the search (default 4). */
   maxCandidates?: number;
+  /**
+   * Read the whole OCR text of open books and show the best passage in it
+   * instead of the search's ~100-character highlights (default off). Node
+   * only for now: see `streamUrl`.
+   */
+  fullText?: boolean;
+  /** Open books whose whole text is read, per claim (default 5). */
+  fullTextBooks?: number;
+  /** Extra leads found only in a whole text, beyond `maxCandidates` (default 2). */
+  fullTextLeads?: number;
   /** Minimum passage score to return a candidate (default 0.3). */
   minScore?: number;
   /** Swap in a fixture-backed or recording client. */
@@ -77,13 +95,105 @@ export interface ClaimTerms {
   numbers: string[];
   /** Proper names in the claim that are not just the subject, longest first. */
   names: string[];
+  /** The claim's key phrases, most telling first (see `keyPhrases`). */
+  phrases: string[];
+  /** The subject's own words, each searched on its own: "Princess Feodora of Leiningen" → Princess, Feodora, Leiningen. */
+  subjectWords: string[];
 }
 
 const MAX_QUERY_NUMBERS = 3;
 const MAX_QUERY_NAMES = 2;
+const MAX_QUERY_PHRASES = 3;
 
 export function subjectOf(title: string): string {
   return title.replace(/_/g, " ").replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+/**
+ * Where a key phrase breaks: function words, and common verbs and adverbs — a
+ * phrase worth searching verbatim is a noun group ("digestive enzymes",
+ * "Ptolemy II Philadelphus"), not "possesses webbed".
+ */
+const PHRASE_BREAKS = new Set(
+  (
+    "a an the of in on at to by for from with as is was were be been being are it its this that these those " +
+    "and or but not no nor so than then there their they he she his her him them who whom which what when where " +
+    "while also has have had do does did can could would should may might will shall must into onto over under " +
+    "after before during about between through up down out off such some any all each other more most many much " +
+    "very only just even both either neither however although though because since if until unless whether " +
+    "one two three four five six seven eight nine ten first second third including include includes " +
+    "became become becomes took take takes taken went go goes gone made make makes led lead leads said say says " +
+    "called known used using possesses possess possessed considered consider held hold holds given give gave " +
+    "found find finds began begin begins started starts start came come comes saw seen see got get gets " +
+    "presumably originally initially usually often later still around almost nearly approximately " +
+    "contains contain contained included according reported confirmed refer refers referred"
+  ).split(/\s+/),
+);
+
+/**
+ * The claim's key phrases, most telling first: runs of words between
+ * punctuation and `PHRASE_BREAKS` (RAKE-style), with a possessive ending its
+ * run ("Feodora's father": a book may say "the father of Feodora"). A run of
+ * four or more words rarely recurs verbatim, so it is split into overlapping
+ * pairs — unless every word is capitalised, which makes it a name. A phrase
+ * made only of the subject's words says nothing new and is dropped.
+ *
+ * The full-text search highlights an exact phrase as one passage, so a
+ * two-word phrase is the one way to ask for words that stand together.
+ */
+export function keyPhrases(claim: string, subject: string): string[] {
+  const subjectTokens = tokenSet(subject);
+  const tokens = claim
+    .replace(/[‘’“”]/g, "'")
+    .split(/(\s+|[,;:()."!?–—]+)/)
+    .filter((t) => t.trim().length > 0);
+  const runs: string[][] = [];
+  let run: string[] = [];
+  const flush = (): void => {
+    if (run.length) runs.push(run);
+    run = [];
+  };
+  for (const t of tokens) {
+    if (/^[,;:()."!?–—]+$/.test(t) || PHRASE_BREAKS.has(t.toLowerCase()) || /^'s$/i.test(t)) {
+      flush();
+      continue;
+    }
+    const possessive = /'s$/i.test(t);
+    const w = t.replace(/^'+|'+$/g, "").replace(/'s$/i, "");
+    if (!w) continue;
+    run.push(w);
+    if (possessive) flush();
+  }
+  flush();
+
+  const split: string[][] = [];
+  for (const r of runs) {
+    if (r.length <= 3 || r.every((w) => /^\p{Lu}/u.test(w))) split.push(r.slice(0, 4));
+    else for (let i = 0; i + 1 < r.length; i++) split.push(r.slice(i, i + 2));
+  }
+  const score = (p: string[]): number => {
+    const informative = p.filter((w) => !subjectTokens.has(fold(w)));
+    if (informative.length === 0) return -1;
+    let s = p.length * 2;
+    for (const w of informative) {
+      if (/\d/.test(w)) s += 3;
+      else if (/^\p{Lu}/u.test(w)) s += 2;
+      else if (w.length >= 8) s += 1.5;
+      else if (w.length >= 5) s += 0.5;
+    }
+    return s;
+  };
+  const scored = split
+    .filter((p) => p.join(" ").length >= 4)
+    .map((p) => ({ phrase: p.join(" "), score: score(p) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score);
+  return [...new Set(scored.map((x) => x.phrase))];
+}
+
+/** The subject's words worth a search term of their own. */
+export function subjectWordsOf(subject: string): string[] {
+  return words(subject).filter((w) => w.length >= 3 && !PHRASE_BREAKS.has(w.toLowerCase()));
 }
 
 /** Numbers as written — grouping kept, since OCR text keeps it too. */
@@ -116,6 +226,8 @@ export function claimTerms(claim: string, articleTitle: string): ClaimTerms {
     subject,
     numbers: rawNumbers(claim).slice(0, MAX_QUERY_NUMBERS),
     names: kept.slice(0, MAX_QUERY_NAMES),
+    phrases: keyPhrases(claim, subject).slice(0, MAX_QUERY_PHRASES),
+    subjectWords: subjectWordsOf(subject),
   };
 }
 
@@ -124,10 +236,21 @@ function phrase(term: string): string {
 }
 
 /**
- * Full-text queries for a claim, strictest first: the subject with every
- * number and name, then with the numbers only, then with the single strongest
- * anchor. Empty when the claim has no number or name — the subject alone
- * would match every book about it.
+ * Terms are joined by a space, which the endpoint reads as AND. An explicit
+ * `AND` is not safe: between two terms it is taken for the word "and"
+ * (`"Feodora" AND "Leiningen"` returns exactly what `"Feodora" "Leiningen"
+ * "and"` does, checked live), and the few passages each book comes back with
+ * are then spent highlighting "and".
+ */
+function allOf(terms: string[]): string {
+  return terms.join(" ");
+}
+
+/**
+ * Full-text queries for a claim from its numbers and names, strictest first:
+ * the subject with every number and name, then with the numbers only, then
+ * with the single strongest anchor. Empty when the claim has no number or name
+ * — the subject alone would match every book about it.
  */
 export function buildArchiveQueries(terms: ClaimTerms): string[] {
   const subject = phrase(terms.subject);
@@ -142,7 +265,28 @@ export function buildArchiveQueries(terms: ClaimTerms): string[] {
     [subject, strongest],
   ]
     .filter((t) => t.length > 1)
-    .map((t) => t.join(" AND "));
+    .map(allOf);
+  return [...new Set(tiers)];
+}
+
+/**
+ * Full-text queries from the claim's key phrases, strictest first: the
+ * subject's words with three phrases, two, one, and last two phrases without
+ * the subject (a Wikipedia title is often not how a book names its subject).
+ * These also give a claim with no number or name something to search on.
+ */
+export function buildPhraseQueries(terms: ClaimTerms): string[] {
+  const subject = terms.subjectWords.map(phrase);
+  const phrases = terms.phrases.map(phrase);
+  if (phrases.length === 0) return [];
+  const tiers = [
+    [...subject, ...phrases.slice(0, 3)],
+    [...subject, ...phrases.slice(0, 2)],
+    [...subject, phrases[0]],
+    phrases.length >= 2 ? phrases.slice(0, 2) : [],
+  ]
+    .filter((t) => t.length > 0)
+    .map(allOf);
   return [...new Set(tiers)];
 }
 
@@ -158,6 +302,8 @@ export interface ArchiveHit {
   year: number | null;
   mediatype: string | null;
   collections: string[];
+  /** The text file that matched, without `_djvu.txt`: several volumes can share an item. */
+  file: string | null;
   /** Matching passages the search returned, markup stripped. */
   highlights: string[];
   /** Position across all searches for this claim, for tie-breaking. */
@@ -210,6 +356,7 @@ export function parseSearchHits(response: SearchResponse, query: string): Archiv
       year: yearOf(f.year) ?? yearOf(f.date),
       mediatype: first(f.mediatype),
       collections: all(f.collection),
+      file: first(f.file_basename),
       highlights: all(hit.highlight?.text).map(stripHighlight).filter((t) => t.length > 0),
       rank,
       query,
@@ -406,6 +553,8 @@ export interface ScoredHit {
   passages: { text: string; score: number; matched: string[] }[];
   /** The best passage's score. */
   score: number;
+  /** The best passage came from the book's whole text. */
+  fullText?: true;
 }
 
 export interface RankedHits {
@@ -485,6 +634,174 @@ export function rankArchiveHits(
     if (!ranked.some((kept) => sameWork(kept.hit, s.hit))) ranked.push(s);
   }
   return { ranked, available, borrowable, rejected, matched: scored.length, passages: stats };
+}
+
+// ---------------------------------------------------------------------------
+// 3b. Claim units: a second ranking, and reading whole books
+// ---------------------------------------------------------------------------
+
+/**
+ * The parts of a claim a passage can be checked for. Strong: a key phrase of
+ * two or more words, a number, a name that is not the subject's. Weak: a
+ * longer content word, and (for whole books) any word of the subject.
+ */
+export interface ClaimUnit {
+  key: string;
+  strong: boolean;
+  test: (folded: string, have: Set<string>) => boolean;
+}
+
+export function claimUnits(
+  claim: string,
+  subject: string,
+  opts: { minWordLength: number; subjectUnit: boolean },
+): ClaimUnit[] {
+  const subjectTokens = tokenSet(subject);
+  const anchors = anchorsOf(claim);
+  const units: ClaimUnit[] = [];
+  for (const k of keyPhrases(claim, subject).map(fold)) {
+    if (k.includes(" ")) units.push({ key: k, strong: true, test: (f) => f.includes(k) });
+  }
+  const known = (key: string): boolean => units.some((u) => u.key === key);
+  for (const n of anchors.numbers) {
+    if (known(n)) continue;
+    units.push({ key: n, strong: true, test: (f, have) => have.has(n) || f.includes(n) });
+  }
+  for (const n of anchors.names) {
+    if (known(n) || n.split(" ").every((w) => subjectTokens.has(w))) continue;
+    units.push({ key: n, strong: true, test: (f, have) => (n.includes(" ") ? f.includes(n) : have.has(n)) });
+  }
+  for (const w of tokenSet(claim)) {
+    if (w.length < opts.minWordLength || subjectTokens.has(w) || /\d/.test(w)) continue;
+    // A word inside a phrase still counts alone: the book may not use the phrase.
+    if (known(w)) continue;
+    units.push({ key: w, strong: false, test: (_f, have) => have.has(w) });
+  }
+  const subjectWords = [...subjectTokens];
+  if (opts.subjectUnit && subjectWords.length > 0) {
+    units.push({ key: `[${subject}]`, strong: false, test: (_f, have) => subjectWords.some((w) => have.has(w)) });
+  }
+  return units;
+}
+
+/** The units a text contains; a word already inside a matched phrase is not counted again. */
+export function unitsIn(text: string, units: ClaimUnit[]): ClaimUnit[] {
+  const f = fold(text);
+  const have = tokenSet(text);
+  const hit = units.filter((u) => u.test(f, have));
+  return hit.filter((u) => !hit.some((o) => o !== u && o.key.includes(" ") && o.key.split(" ").includes(u.key)));
+}
+
+/**
+ * Books ranked by the claim units in their best passage, in place of the
+ * score's gates: a passage needs two units, one of them strong, and need not
+ * name the subject or carry the claim's number. This is what finds "The acini
+ * secrete several digestive enzymes" for a claim with neither, and a passage
+ * that says "Prince of Leiningen" rather than "Feodora". Top three, most units
+ * first, then search order.
+ */
+export function rankByUnits(hits: ArchiveHit[], claim: string, articleTitle: string): ScoredHit[] {
+  const units = claimUnits(claim, subjectOf(articleTitle), { minWordLength: 6, subjectUnit: false });
+  const out: ScoredHit[] = [];
+  for (const hit of hits) {
+    const gate = accessGate(hit);
+    if (!gate.ok) continue;
+    let best: { text: string; matched: ClaimUnit[] } | null = null;
+    for (const text of hit.highlights) {
+      const matched = unitsIn(text, units);
+      if (matched.length >= 2 && matched.some((u) => u.strong) && (!best || matched.length > best.matched.length)) {
+        best = { text, matched };
+      }
+    }
+    if (!best) continue;
+    const score = Math.round((best.matched.length / units.length) * 100) / 100;
+    out.push({
+      hit,
+      access: gate.access,
+      passages: [{ text: best.text, score, matched: best.matched.map((u) => u.key) }],
+      score,
+    });
+  }
+  return out
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => b.s.passages[0].matched.length - a.s.passages[0].matched.length || a.i - b.i)
+    .slice(0, 3)
+    .map((x) => x.s);
+}
+
+/** The two rankings taken in turn, one book per work. */
+export function mergeRankings(first: ScoredHit[], second: ScoredHit[]): ScoredHit[] {
+  const out: ScoredHit[] = [];
+  for (let i = 0; i < Math.max(first.length, second.length); i++) {
+    for (const s of [first[i], second[i]]) {
+      if (s && !out.some((kept) => sameWork(kept.hit, s.hit))) out.push(s);
+    }
+  }
+  return out;
+}
+
+/**
+ * The OCR text inside archive.org's `/stream/{id}/{file}_djvu.txt` page, one
+ * line, words broken at a line end joined again.
+ */
+export function streamText(html: string): string | null {
+  const m = /<pre[^>]*>([\s\S]*?)<\/pre>/.exec(html);
+  if (!m) return null;
+  return m[1]
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/-\s*\n\s*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const WINDOW_CHARS = 450;
+const WINDOW_STEP = 150;
+/** Two strong units, or one and two weak ones. */
+const MIN_WINDOW_SCORE = 4;
+
+/**
+ * The best ~450-character stretch of a whole book: the most claim units, a
+ * strong one counting double; needs a strong unit and a score of four. Of a
+ * run of equally good stretches (the same passage seen from a little before
+ * and a little after), the middle one, so the passage is not at an edge. Cut
+ * at word boundaries.
+ */
+export function bestWindow(
+  text: string,
+  claim: string,
+  articleTitle: string,
+): { text: string; score: number; matched: string[] } | null {
+  const units = claimUnits(claim, subjectOf(articleTitle), { minWordLength: 5, subjectUnit: true });
+  const most = units.reduce((n, u) => n + (u.strong ? 2 : 1), 0);
+  let best: { starts: number[]; score: number; matched: string[] } | null = null;
+  let runOpen = false;
+  for (let i = 0; i < text.length; i += WINDOW_STEP) {
+    const matched = unitsIn(text.slice(i, i + WINDOW_CHARS), units);
+    const strong = matched.filter((u) => u.strong).length;
+    const score = strong === 0 ? 0 : strong * 2 + (matched.length - strong);
+    if (score >= MIN_WINDOW_SCORE && (!best || score > best.score)) {
+      best = { starts: [i], score, matched: matched.map((u) => u.key) };
+      runOpen = true;
+    } else if (best && runOpen && score === best.score) {
+      best.starts.push(i);
+    } else {
+      runOpen = false;
+    }
+  }
+  if (!best) return null;
+  const start = best.starts[Math.floor((best.starts.length - 1) / 2)];
+  let window = text.slice(start, start + WINDOW_CHARS);
+  if (start > 0) window = `…${window.replace(/^\S*\s+/, "")}`;
+  if (start + WINDOW_CHARS < text.length) window = `${window.replace(/\s+\S*$/, "")}…`;
+  return {
+    text: window,
+    score: Math.round((best.score / most) * 100) / 100,
+    matched: best.matched.filter((k) => !k.startsWith("[")),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -569,6 +886,7 @@ export function toArchiveCandidate(
       matchedAnchors: matched,
       query: hit.query,
       viewerUrl: viewerUrl(hit.identifier, terms),
+      ...(s.fullText && { fullText: true as const }),
     },
     citation: formatArchiveCitation(hit, s.access, details),
   };
@@ -606,6 +924,10 @@ export interface ArchiveFunnel {
   rejected: Record<string, number>;
   /** Books with a passage above the score threshold. */
   matched: number;
+  /** Books ranked by the claim units in a passage (at most three). */
+  byUnits: number;
+  /** Open books whose whole text was read, and how many held a passage. */
+  fullText?: { read: number; windows: number };
   /** Why the readable books' passages did or did not count. */
   passages: PassageStats;
   /** Books whose metadata was read. */
@@ -628,9 +950,12 @@ export async function findArchiveCandidates(
   options: ArchiveSourceOptions = {},
 ): Promise<ArchiveSourceResult> {
   const client = options.client ?? httpArchiveClient;
-  const maxCandidates = options.maxCandidates ?? 3;
+  const maxCandidates = options.maxCandidates ?? 4;
   const terms = claimTerms(claim.claim, articleTitle);
-  const queries = buildArchiveQueries(terms).slice(0, options.maxQueries ?? 3);
+  const families = [
+    buildArchiveQueries(terms).slice(0, options.maxQueries ?? 3),
+    buildPhraseQueries(terms).slice(0, options.maxPhraseQueries ?? 4),
+  ];
 
   const funnel: ArchiveFunnel = {
     queries: [],
@@ -639,66 +964,134 @@ export async function findArchiveCandidates(
     borrowable: 0,
     rejected: {},
     matched: 0,
+    byUnits: 0,
     passages: { seen: 0, dropped: {}, bestBelow: null },
     lookedUp: 0,
     candidates: 0,
     errors: [],
   };
 
-  // 1. Search, strictest query first, until enough distinct books.
-  const hits = new Map<string, ArchiveHit>();
-  for (const query of queries) {
-    funnel.queries.push(query);
-    let response: SearchResponse | null = null;
-    try {
-      response = await client.fullTextSearch({ query, size: options.maxHits ?? 50 });
-    } catch (err) {
-      funnel.errors.push(`search failed: ${(err as Error).message}`);
+  // 1. Search: the two families side by side, each strictest first until it
+  // has enough distinct books of its own.
+  const searchFamily = async (queries: string[]): Promise<{ used: string[]; hits: ArchiveHit[] }> => {
+    const used: string[] = [];
+    const found = new Map<string, ArchiveHit>();
+    for (const query of queries) {
+      used.push(query);
+      let response: SearchResponse | null = null;
+      try {
+        response = await client.fullTextSearch({ query, size: options.maxHits ?? 50 });
+      } catch (err) {
+        funnel.errors.push(`search failed: ${(err as Error).message}`);
+      }
+      for (const hit of response ? parseSearchHits(response, query) : []) {
+        if (!found.has(hit.identifier)) found.set(hit.identifier, hit);
+      }
+      if (found.size >= (options.enoughHits ?? 10)) break;
     }
-    for (const hit of response ? parseSearchHits(response, query) : []) {
+    return { used, hits: [...found.values()] };
+  };
+  const results = await Promise.all(families.map(searchFamily));
+  const hits = new Map<string, ArchiveHit>();
+  for (const r of results) {
+    funnel.queries.push(...r.used);
+    for (const hit of r.hits) {
       if (!hits.has(hit.identifier)) hits.set(hit.identifier, { ...hit, rank: hits.size });
     }
-    if (hits.size >= (options.enoughHits ?? 10)) break;
   }
   funnel.hits = hits.size;
 
-  // 2–3. Gate, score, one per work.
-  const ranked = rankArchiveHits(
-    [...hits.values()],
-    claim.claim,
-    articleTitle,
-    options.minScore ?? 0.3,
-  );
+  // 2–3. Gate, score, one per work — by the passage score, and by claim units.
+  const all = [...hits.values()];
+  const ranked = rankArchiveHits(all, claim.claim, articleTitle, options.minScore ?? 0.3);
+  const byUnits = rankByUnits(all, claim.claim, articleTitle);
   funnel.available = ranked.available;
   funnel.borrowable = ranked.borrowable;
   funnel.rejected = ranked.rejected;
   funnel.matched = ranked.matched;
+  funnel.byUnits = byUnits.length;
   funnel.passages = ranked.passages;
 
+  // A couple of spares, in case one turns out not to be readable.
+  const shortlist = mergeRankings(ranked.ranked, byUnits).slice(0, maxCandidates + 2);
+  const extras: ScoredHit[] = [];
+  if (options.fullText) await readWholeBooks(all, shortlist, extras, claim.claim, articleTitle, client, options, funnel);
+
   // 4. Metadata for the few kept: publisher, ISBN, and whether it is still
-  // readable. A couple of spares, in case one turns out not to be.
-  const shortlist = ranked.ranked.slice(0, maxCandidates + 2);
-  funnel.lookedUp = shortlist.length;
+  // readable.
+  funnel.lookedUp = shortlist.length + extras.length;
   const candidates: ArchiveCandidate[] = [];
-  for (const s of shortlist) {
-    if (candidates.length >= maxCandidates) break;
-    let details: ItemDetails | null = null;
-    try {
-      details = parseItemDetails(await client.metadata(s.hit.identifier));
-      const gate = detailsGate(details, s.access);
-      if (!gate.ok) {
-        funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] ?? 0) + 1;
-        continue;
+  const lookUp = async (list: ScoredHit[], cap: number): Promise<void> => {
+    let added = 0;
+    for (const s of list) {
+      if (added >= cap) break;
+      let details: ItemDetails | null = null;
+      try {
+        details = parseItemDetails(await client.metadata(s.hit.identifier));
+        const gate = detailsGate(details, s.access);
+        if (!gate.ok) {
+          funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] ?? 0) + 1;
+          continue;
+        }
+      } catch (err) {
+        // The hit already passed the gate; a lead without a publisher is still a lead.
+        funnel.errors.push(`metadata ${s.hit.identifier}: ${(err as Error).message}`);
       }
-    } catch (err) {
-      // The hit already passed the gate; a lead without a publisher is still a lead.
-      funnel.errors.push(`metadata ${s.hit.identifier}: ${(err as Error).message}`);
+      candidates.push(toArchiveCandidate(s, details, terms));
+      added++;
     }
-    candidates.push(toArchiveCandidate(s, details, terms));
-  }
+  };
+  await lookUp(shortlist, maxCandidates);
+  await lookUp(extras, options.fullTextLeads ?? 2);
   funnel.candidates = candidates.length;
 
   return { claim, candidates, funnel };
+}
+
+/**
+ * Reads the whole OCR text of open books — those on the shortlist first, then
+ * the other open books in search order, `fullTextBooks` in all — and puts the
+ * best window of each in front of its passages. A book not on the shortlist
+ * whose text has a window becomes an extra lead. Lending-library books are
+ * skipped: their text is not public.
+ */
+async function readWholeBooks(
+  hits: ArchiveHit[],
+  shortlist: ScoredHit[],
+  extras: ScoredHit[],
+  claim: string,
+  articleTitle: string,
+  client: ArchiveClient,
+  options: ArchiveSourceOptions,
+  funnel: ArchiveFunnel,
+): Promise<void> {
+  if (!client.streamPage) return;
+  const others = hits
+    .filter((h) => {
+      const gate = accessGate(h);
+      return gate.ok && gate.access === "open" && !shortlist.some((s) => sameWork(s.hit, h));
+    })
+    .filter((h, i, list) => list.findIndex((o) => sameWork(o, h)) === i)
+    .map((hit): ScoredHit => ({ hit, access: "open", passages: [], score: 0 }));
+  const toRead = [...shortlist.filter((s) => s.access === "open"), ...others].slice(0, options.fullTextBooks ?? 5);
+  funnel.fullText = { read: 0, windows: 0 };
+  for (const s of toRead) {
+    let text: string | null = null;
+    try {
+      text = streamText(await client.streamPage(s.hit.identifier, s.hit.file ?? s.hit.identifier));
+    } catch (err) {
+      funnel.errors.push(`text ${s.hit.identifier}: ${(err as Error).message}`);
+    }
+    if (!text) continue;
+    funnel.fullText.read++;
+    const window = bestWindow(text, claim, articleTitle);
+    if (!window) continue;
+    funnel.fullText.windows++;
+    s.passages.unshift(window);
+    s.score = Math.max(s.score, window.score);
+    s.fullText = true;
+    if (!shortlist.includes(s)) extras.push(s);
+  }
 }
 
 export interface ArticleArchiveSources {

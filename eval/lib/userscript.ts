@@ -40,7 +40,10 @@ export interface ScriptArticle {
   findWeb(index: number, apiKey: string): Promise<Json[]>;
 }
 
-export async function loadScriptArticle(c: Pick<EvalClaim, "lang" | "title" | "revid">): Promise<ScriptArticle> {
+export async function loadScriptArticle(
+  c: Pick<EvalClaim, "lang" | "title" | "revid">,
+  opts: { fullText?: boolean } = {},
+): Promise<ScriptArticle> {
   const res = await fetch(renderUrl(c.lang, c.revid));
   if (!res.ok) throw new Error(`rendered page: HTTP ${res.status}`);
   const html = await res.text();
@@ -54,7 +57,9 @@ export async function loadScriptArticle(c: Pick<EvalClaim, "lang" | "title" | "r
       wgTitle: c.title,
       wgCurRevisionId: c.revid,
     },
-    { document },
+    // Node has no CORS, so the whole-text switch can be tried here before
+    // archive.org allows it in a browser.
+    { document, window: opts.fullText ? { cnfirmedArchiveFullText: true } : {} },
   );
   const sups = Array.from(document.querySelectorAll("sup.Template-Fact"));
   script.setCnSups(sups);

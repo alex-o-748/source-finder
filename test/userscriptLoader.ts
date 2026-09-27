@@ -24,6 +24,12 @@ const EXPOSED = [
   "refToSource",
   "iaClaimTerms",
   "buildArchiveQueries",
+  "buildPhraseQueries",
+  "iaKeyPhrases",
+  "rankArchiveByUnits",
+  "mergeArchiveRankings",
+  "iaStreamText",
+  "iaBestWindow",
   "parseArchiveHits",
   "rankArchiveHits",
   "toArchiveCandidate",
@@ -51,6 +57,8 @@ export type UserScriptModule = Record<string, (...args: any[]) => any> & {
  */
 export interface UserScriptEnv {
   document?: unknown;
+  /** Globals set before the script runs, e.g. `cnfirmedArchiveFullText`. */
+  window?: Record<string, unknown>;
 }
 
 export function loadUserScript(
@@ -104,7 +112,7 @@ export function loadUserScript(
 
   return factory(
     mw,
-    {},
+    { ...env.window },
     env.document ?? { addEventListener() {}, querySelectorAll: () => [] },
     localStorage,
     jquery,

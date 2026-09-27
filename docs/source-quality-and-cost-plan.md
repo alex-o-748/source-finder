@@ -144,12 +144,24 @@ year-filtered search returns mostly digitised periodicals, whose mastheads
 print the year on every page (the issue's own year is now ignored as
 evidence), and a passage matching only "1889" and "Eiffel" scores 0.38 whether
 it says the tower was completed that year or that a cannon was fired from it —
-the matched anchors, shown with each lead, are what tell them apart. Next: the
-funnel counts over ~20 real articles, then decide whether it joins "Verify
-all" and `find` (verifying passages via `verifySource`'s `sourceText`). Page
-numbers and longer passages would need search-inside, on `*.archive.org`
-servers the CSP refuses: an allowlist request or a Toolforge proxy, if the
-counts say it is worth it.
+the matched anchors, shown with each lead, are what tell them apart.
+
+*Measured on the eval set (September 2026):* the stage first found 0% of
+claims (5% partly). The largest cause was a query bug — between two terms the
+endpoint reads `AND` as the word "and" — and after that the evidence: each book
+comes back with at most five ~100-character highlights, each around one term,
+and there is no proximity operator, so the right book rarely shows the
+sentence. Space-joined queries, queries from the claim's key phrases and a
+second ranking by claim units took it to 3% found, 17% partly (22% of the
+book-plausible claims). Reading an open book's whole text
+(`archive.org/stream/…_djvu.txt`) is built but off in the user script: that
+page sends no CORS header, so a browser will not hand it to a script on a
+Wikipedia page. What would lift the ceiling, from archive.org: that header;
+longer highlights, more of them, with page numbers; search inside lending
+books from archive.org itself; an ISBN-to-item lookup, for searching inside
+the books an article already cites (32 of the 46 book-plausible articles cite
+books; 36 of 84 of those were found readable on the Archive by title and
+author).
 
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and

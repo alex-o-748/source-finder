@@ -14,3 +14,6 @@ src/server/generated/
 
 # Evaluation runs other than the committed baseline.
 eval/results/latest*.json
+
+# Whole book texts recorded by `eval/run.ts --full-text`: a megabyte each.
+eval/cassettes-fulltext/

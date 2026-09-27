@@ -28,6 +28,11 @@ export type CassetteMode = "replay" | "record";
 
 export interface CassetteOptions {
   dir: string;
+  /**
+   * Where a request's recording lives, when not in `dir`: a whole book's text
+   * runs to a megabyte, too much to commit, so those go to an ignored folder.
+   */
+  dirFor?: (key: string) => string;
   mode: CassetteMode;
   /** Minimum gap between two live requests to the same host (default 1000 ms). */
   minIntervalMs?: number;
@@ -168,7 +173,7 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     const method = init?.method ?? (input instanceof Request ? input.method : "GET");
     const body = typeof init?.body === "string" ? init.body : undefined;
     const key = requestKey(url, method, body);
-    const path = cassettePath(options.dir, key);
+    const path = cassettePath(options.dirFor?.(key) ?? options.dir, key);
 
     if (existsSync(path)) {
       const rec = JSON.parse(gunzipSync(readFileSync(path)).toString("utf8")) as Recorded;

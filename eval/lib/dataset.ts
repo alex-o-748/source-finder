@@ -11,6 +11,8 @@ import type { Claim } from "../../src/core/types.js";
 
 export const EVAL_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const CASSETTE_DIR = join(EVAL_DIR, "cassettes");
+/** Whole book texts for `--full-text`: large, so recorded locally and not committed. */
+export const FULLTEXT_CASSETTE_DIR = join(EVAL_DIR, "cassettes-fulltext");
 
 export interface EvalClaim {
   /** `Title@revid#offset` — the tag's position in that exact revision. */

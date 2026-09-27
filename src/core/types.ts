@@ -126,6 +126,8 @@ export interface ArchiveEvidence {
   query: string;
   /** The book in the Archive's viewer with the claim's strongest anchor searched. */
   viewerUrl: string;
+  /** The best passage was read from the book's whole text, not the search's highlights. */
+  fullText?: true;
 }
 
 /** A book on the Internet Archive, open or borrowable, with a passage matching the claim. */
