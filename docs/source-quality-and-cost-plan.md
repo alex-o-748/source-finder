@@ -133,6 +133,17 @@ All free, unlimited for reasonable use, and need no model at all.
   candidates, whose citation template is copied from the wiki verbatim rather
   than written by a model.)*
 
+- **Other articles on the same wiki** (probed, not built). The tagged fact
+  might sit, already cited, in a related article. A probe on 25 eval claims
+  (October 2026) searched en.wikipedia with the claim's six most distinctive
+  words and read the best-matching sentence in each of the top four hits. No
+  hit stated a claim's fact. About four of the 25 hit the right neighbourhood
+  without the fact: the Global Network for NTDs article (founded 2006) for a
+  claim that SCI was a founding partner, and Évora's polyphonists named in
+  *Music history of Portugal* for a claim about the cathedral's composers.
+  That is the Archive stage's partial-lead rate at best, so not worth
+  building as a source of answers.
+
 ## Direction 2: route the rest to open corpora by claim type
 
 Each corpus contains *only* citable material, so quality becomes a
