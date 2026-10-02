@@ -6,6 +6,25 @@ the web search in both the CLI and the user script; see "What's built" below.
 The rest is still exploratory, written up so the thinking doesn't have to be
 redone before work starts.
 
+## The goal
+
+**A tool that produces a useful source for most `{{citation needed}}` claims.**
+Every direction below serves that goal and is judged against it.
+
+- *Useful* means an editor could cite it: at least one lead whose evidence
+  states the claim's fact. This is the "Found" column of the eval
+  (`eval/README.md`). A lead that states only part of the claim is tracked
+  separately ("or partly") and does not count.
+- *Most of the time* means more than half of the eval set's 100 claims.
+
+**We are not there.** The free stages find 5% (20% counting partial leads;
+September 2026 baseline). The paid web search has been run on only 5 claims, and
+its leads were never judged, so its share is unknown. Until a change moves the
+"Found" number, it has not moved us toward the goal, however good it looks.
+How a source is found (free, paid, precomputed) is secondary to finding one:
+"free at the point of use" below is a constraint on the shipped tool, not a
+reason to stop measuring what works.
+
 ## The two problems
 
 1. **Source quality.** Web search too often surfaces Wikipedia mirrors,

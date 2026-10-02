@@ -64,6 +64,12 @@ re-record takes the better part of an hour. Replay is instant.
 3. If the change is kept, copy `results/latest.json` to `results/baseline.json`
    and put the before/after table in the PR.
 
+## The target
+
+The goal is a useful source for most claims: **"Found" on the "Any" row above
+50%**. "Found or partly" does not count toward it. The baseline below is 5%. See
+`docs/source-quality-and-cost-plan.md`, "The goal".
+
 ## Baseline (September 2026)
 
 The user script on all 100 claims. "Found" means at least one lead whose
