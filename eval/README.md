@@ -64,6 +64,12 @@ re-record takes the better part of an hour. Replay is instant.
 3. If the change is kept, copy `results/latest.json` to `results/baseline.json`
    and put the before/after table in the PR.
 
+## The target
+
+The goal is a useful source for most claims: **"Found" on the "Any" row above
+50%**. "Found or partly" does not count toward it. The baseline below is 5%. See
+`docs/source-quality-and-cost-plan.md`, "The goal".
+
 ## Baseline (September 2026)
 
 The user script on all 100 claims. "Found" means at least one lead whose
@@ -197,6 +203,44 @@ The run prints the calls, web searches and tokens it used. Web leads are
 judged like the others, but from the model's own quote unless the page itself
 can be read: with network access limited to Wikipedia and archive.org, it
 cannot.
+
+## Plain web search, checked for free (`eval/tavily/`)
+
+Can a cheap search API plus the free verifier stand in for the paid model's
+web search? `eval/tavily/probe.mjs` sends one query per claim ("Article
+title: claim") to [Tavily](https://tavily.com) (1 credit; keyless mode
+works), with Wikipedia, its mirrors, social media and the deprecated-source
+seed list excluded. It then checks the top 10 results in rank order with the
+Verify API's own handler (gpt-oss-20b via llm-router, run in-process),
+stopping at the first SUPPORTED. Every claim with a SUPPORTED verdict was then
+judged by hand (`judged-run1.json`).
+
+Run in October 2026 (`run1.json`): 100 credits, 451 verifier calls, about
+20 minutes.
+
+| | Claims |
+| --- | --- |
+| Verifier says SUPPORTED | 29 |
+| …a source an editor could cite (**found**) | **9** |
+| …states the fact, but a blog or self-published page | 5 |
+| …a Wikipedia copy, an AI wiki, or wrong | 15 |
+
+So **9% found, 14% counting weak sources**, against 5% for the free stages.
+That is better, and nearly free, but nowhere near the target. What the
+probe shows:
+
+- **Wikipedia copies are the main noise.** A page repeating 8 or more of
+  the claim's words in a row was flagged as a copy, and most were. But
+  twice the flagged page was the *original*, copied by Wikipedia
+  (Encyclopaedia Iranica, a company's own site), so the flag cannot simply
+  discard a page.
+- **The verifier's SUPPORTED is about half right** on these pages: it
+  accepted pages that state something nearby (a different song first on
+  MTV) and Wikipedia clones that escaped the domain list.
+- **Not looked at:** the 71 claims with no SUPPORTED verdict. Whether the
+  search returned nothing useful or the verifier rejected a good page is
+  unknown; a second query per claim (key terms, no title) and
+  `search_depth: advanced` are untried.
 
 ## What this set does not measure yet
 
