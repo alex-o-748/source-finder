@@ -5,13 +5,13 @@ Find and verify sources for Wikipedia `{{citation needed}}` claims.
 CNfirmed locates every `{{citation needed}}`-family tag in a Wikipedia article and extracts the claim being cited, plus surrounding context. It then looks for a source in two stages:
 
 1. **On wiki, free.** Citations this article already carries, and citations other language editions attach to the same fact. No model, no API key, no cost.
-2. **On the web, paid.** Only for the claims stage 1 could not answer: an LLM with web search discovers candidates and judges whether each *actually substantiates the specific claim* — not just mentions the topic.
+2. **On the web.** Only for the claims stage 1 could not answer. By default free: a web search, then each result is checked against the claim by the Verify API. With your own API key, an LLM with web search can do it instead. Either way, the check is whether a page *actually substantiates the specific claim*, not just mentions the topic.
 
 Results are returned ranked, each with a ready-to-paste Wikipedia cite template.
 
 This repo ships two things:
 
-- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all; the web search talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. The one backend it calls is the Verify API, which checks Internet Archive passages against the claim and needs no key.
+- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. It needs no key: the web search goes through the Verify API, which searches and checks each result against the claim. Optionally it talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. The one backend it calls is the Verify API, which also checks Internet Archive passages against the claim.
 - A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal. Web search uses the Anthropic API; checking a candidate against the claim uses the [Verify API](#the-verifier-is-separable-cli).
 
 ## Why
@@ -22,9 +22,9 @@ And a lot of the time nobody needs to search at all. A tagged sentence often sit
 
 ## User script (recommended)
 
-The user script is the primary way to use CNfirmed. It runs on the Wikipedia page — no server of its own, no Cloudflare Worker, no allowlist. The only service it calls besides the model provider is the Verify API, for the Internet Archive check.
+The user script is the primary way to use CNfirmed. It runs on the Wikipedia page — no server of its own, no Cloudflare Worker, no allowlist. The only service it calls besides an optional model provider is the Verify API, for the free web search and the Internet Archive check.
 
-The wiki-local stage works with no API key at all. For the web search you provide a key for Claude, Gemini, or OpenAI; it's kept in your browser's `localStorage` and only sent to the provider you chose.
+Nothing needs an API key. The default web search is free; if you prefer a model's own web search, choose Claude, Gemini, or OpenAI and provide a key. It's kept in your browser's `localStorage` and only sent to the provider you chose.
 
 ### Install
 
@@ -41,9 +41,9 @@ Need an article to test on? [Category:All articles with unsourced statements](ht
 
 - A 🔍 badge appears next to every `[citation needed]` superscript.
 - A **CNfirmed** portlet appears in the sidebar with a provider dropdown, an API-key control, a free **Find sources on Wikipedia** button, and one row per citation-needed claim.
-- Click a 🔍 badge or a sidebar row to work on a single claim. The free wiki-local stage runs first; if it finds a citation, you get it without an API call. If it finds nothing and you have a key set, the web search runs as before.
-- Click **Verify all** to scan every claim on wiki for free, then confirm a web search for whatever is left — the dialog tells you how many claims Wikipedia already answered and how many API calls the rest would cost.
-- An API key is only needed for the web search. Keys are stored in `localStorage` and you're prompted the first time you ask for one.
+- Click a 🔍 badge or a sidebar row to work on a single claim. The free wiki-local stage runs first; if it finds a citation, you get it without an API call. If it finds nothing, the web search runs: the free one by default, or your chosen model's if its key is set.
+- Click **Verify all** to scan every claim on wiki for free, then confirm a web search for whatever is left — the dialog tells you how many claims Wikipedia already answered, and for a model provider how many API calls the rest would cost. The free search runs one claim at a time and can take up to a minute each.
+- An API key is only needed for a model provider's web search. Keys are stored in `localStorage` and you're prompted the first time you ask for one.
 
 The script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.org/wiki/User:Polygnotus/Helpers/Sidebar.js) for the sidebar portlet.
 
@@ -51,11 +51,14 @@ The script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.or
 
 | Provider | Default model           | Override (set on `window.…` before the script loads) |
 | -------- | ----------------------- | ---------------------------------------------------- |
+| Free web search (default) | none: Tavily, then the Verify API's `gpt-oss-20b` | `cnfirmedVerifyUrl` (the Verify API host) |
 | Claude   | `claude-sonnet-5`     | `cnfirmedModelClaude`                                |
 | Gemini   | `gemini-flash-latest`   | `cnfirmedModelGemini`                                |
 | OpenAI   | `gpt-5-mini`            | `cnfirmedModelOpenAI`                                |
 
-Each provider is invoked with its built-in web-search tool (Anthropic `web_search`, Google `googleSearch`+`urlContext`, OpenAI `web_search`) so source discovery and verification happen in a single round-trip per claim.
+**Free web search** sends one query (the article title and the claim) to the Verify API's `POST /v1/search`, which searches with Tavily on the service's budget and leaves out Wikipedia, its copies and user-generated sites. Each result, best first, then goes to `POST /v1/verify` with the claim, until three results state it; the ones that state the claim or part of it are shown, with the words from the page that back it. A page that repeats eight or more of the claim's words in a row is labelled as probably copied from Wikipedia and ranked last, not dropped: sometimes it is the source Wikipedia copied. On the evaluation set this finds a citable source for 9 of 100 claims, and a weak one for 5 more (`eval/README.md`, "Plain web search"); the model providers are believed to do better, but have not been measured on the same claims. The search has a daily budget shared by every editor; when it is spent, the panel says so.
+
+Each model provider is invoked with its built-in web-search tool (Anthropic `web_search`, Google `googleSearch`+`urlContext`, OpenAI `web_search`) so source discovery and verification happen in a single round-trip per claim.
 
 ### Output
 

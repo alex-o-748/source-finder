@@ -45,7 +45,15 @@
 
   // ---- Providers --------------------------------------------------------
 
+  // `free` needs no key: it searches through the Verify API's /v1/search
+  // (Tavily, on the tool's budget) and checks each result with /v1/verify.
+  // The model providers search and judge in one call billed to the user's key.
   var PROVIDERS = {
+    free: {
+      name: 'Free web search',
+      keyless: true,
+      run: callFreeSearch
+    },
     claude: {
       name: 'Claude',
       keyStorage: 'cnfirmed-key-claude',
@@ -74,8 +82,8 @@
   };
 
   function getProvider() {
-    var p = localStorage.getItem('cnfirmed-provider') || 'claude';
-    return PROVIDERS[p] ? p : 'claude';
+    var p = localStorage.getItem('cnfirmed-provider') || 'free';
+    return PROVIDERS[p] ? p : 'free';
   }
 
   function setProvider(p) {
@@ -84,7 +92,13 @@
   }
 
   function getKey(providerId) {
+    if (PROVIDERS[providerId].keyless) return '';
     return localStorage.getItem(PROVIDERS[providerId].keyStorage) || '';
+  }
+
+  // Whether the web search can run without asking for anything.
+  function providerReady(providerId) {
+    return !!PROVIDERS[providerId].keyless || !!getKey(providerId);
   }
 
   function setKey(providerId, value) {
@@ -803,7 +817,7 @@
     row1.appendChild(select);
     bar.appendChild(row1);
 
-    // Row 2: key status + buttons
+    // Row 2: key status + buttons. The free search has no key to manage.
     var row2 = document.createElement('div');
     row2.className = 'cnfirmed-controls-row';
     var status = document.createElement('span');
@@ -838,7 +852,7 @@
       row2.appendChild(rmBtn);
     }
 
-    bar.appendChild(row2);
+    if (!PROVIDERS[providerId].keyless) bar.appendChild(row2);
 
     // Row 3: the free stage. Deliberately outside the API-key controls — it
     // needs no key, and that is the point.
@@ -931,16 +945,16 @@
       renderPanel(i);
       if (alreadySearched) return;
       if (w.status === 'done' && w.candidates && w.candidates.length > 0) return;
-      // Nothing on wiki. Fall through to the paid path, as before, but only
-      // when a key is already set — never prompt for one unasked.
-      if (getKey(getProvider())) runOne(i);
+      // Nothing on wiki. Fall through to the web search, but only when it
+      // needs nothing from the user — never prompt for a key unasked.
+      if (providerReady(getProvider())) runOne(i);
     });
   }
 
   function runOne(i) {
     var providerId = getProvider();
     var key = getKey(providerId);
-    if (!key) {
+    if (!providerReady(providerId)) {
       toast('Set your ' + PROVIDERS[providerId].name + ' API key first');
       promptForKey(providerId).then(function (ok) {
         if (ok && getKey(providerId)) runOne(i);
@@ -1035,7 +1049,7 @@
       }
 
       var providerId = getProvider();
-      if (!getKey(providerId)) {
+      if (!providerReady(providerId)) {
         toast('Set your ' + PROVIDERS[providerId].name + ' API key first');
         return promptForKey(providerId).then(function (ok) {
           if (ok && getKey(providerId)) return verifyAll();
@@ -1045,9 +1059,13 @@
       var msg = (onWiki > 0
         ? onWiki + ' claim(s) already have a source on Wikipedia, for free.\n\n'
         : '') +
-        'Search the web for the remaining ' + queue.length + ' claim(s) using ' +
-        PROVIDERS[providerId].name + '? That is ' + queue.length +
-        ' API call(s) — costs scale linearly.';
+        (PROVIDERS[providerId].keyless
+          ? 'Search the web for the remaining ' + queue.length + ' claim(s)? Free, ' +
+            'but slow: every result is checked by a service shared with other ' +
+            'editors, so expect up to a minute per claim.'
+          : 'Search the web for the remaining ' + queue.length + ' claim(s) using ' +
+            PROVIDERS[providerId].name + '? That is ' + queue.length +
+            ' API call(s) — costs scale linearly.');
       if (!confirm(msg)) return;
       return runWebSearchQueue(queue, providerId);
     });
@@ -1058,7 +1076,9 @@
       helper.setHeadingLabel('CNfirmed (0/' + queue.length + ')');
     }
     var done = 0;
-    var concurrency = 2;
+    // The free search shares the Verify API's per-minute budget with every
+    // other caller, so it runs one claim at a time.
+    var concurrency = PROVIDERS[providerId].keyless ? 1 : 2;
     var inFlight = 0;
     var idx = 0;
     return new Promise(function (resolve) {
@@ -3317,6 +3337,98 @@
     return a.checking;
   }
 
+  // ---- Free web search -----------------------------------------------------
+  // One search through the Verify API's /v1/search (Tavily, excluding
+  // Wikipedia, its copies and user-generated sites), then one /v1/verify call
+  // per result, best first, until FREE_WANTED results state the claim. No key:
+  // both endpoints run on the tool's budget. Measured on the eval set: 9 of
+  // 100 claims got a citable source this way, 5 more a weak one
+  // (eval/README.md, "Plain web search").
+
+  var FREE_MAX_QUERY = 400;
+  var FREE_MAX_CHECKS = 10;
+  // More than one, so the editor can choose: the first page that states a
+  // claim is often a blog when a newspaper further down says the same.
+  var FREE_WANTED = 3;
+  var COPY_RUN = 8;
+
+  function freeSearchQuery(ctx) {
+    return (pageTitle.replace(/_/g, ' ') + ': ' + ctx.claim).slice(0, FREE_MAX_QUERY);
+  }
+
+  function callSearchApi(query) {
+    return fetch(VERIFY_API_BASE + '/v1/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var data;
+        try { data = JSON.parse(t); } catch (e) { data = null; }
+        if (res.ok && data && Array.isArray(data.results)) return data.results;
+        throw new Error('Search ' + res.status + ': ' +
+          ((data && data.error) || truncate(t, 200)));
+      });
+    });
+  }
+
+  // A page repeating COPY_RUN or more of the claim's words in a row most
+  // likely copied Wikipedia. Not dropped: sometimes it is the original
+  // Wikipedia copied (Encyclopaedia Iranica, a company's own site), so it is
+  // shown, ranked last and labelled.
+  function looksCopied(claim, text) {
+    var words = function (x) { return String(x).toLowerCase().match(/[\p{L}\p{N}]+/gu) || []; };
+    var w = words(claim);
+    if (w.length < COPY_RUN) return false;
+    var t = ' ' + words(text).join(' ') + ' ';
+    for (var k = 0; k + COPY_RUN <= w.length; k++) {
+      if (t.indexOf(' ' + w.slice(k, k + COPY_RUN).join(' ') + ' ') !== -1) return true;
+    }
+    return false;
+  }
+
+  function freeSuggestion(result, verify, copied) {
+    var source = { url: result.url, title: result.title || result.url };
+    var quote = verify.verified_text || '';
+    return {
+      source: source,
+      verdict: {
+        verdict: normaliseVerdict(verify.verdict),
+        confidence: clampConfidence(verify.support_score),
+        // verified_text, never source_quote: only it is known to be on the page.
+        comments: (quote ? '\u201c' + quote + '\u201d ' : '') + (verify.comments || ''),
+        reliability: copied ? 'low' : 'n/a',
+        reliabilityReason: copied
+          ? 'Repeats the claim word for word: probably copied from Wikipedia, unless Wikipedia copied it.'
+          : 'Not assessed: check the publisher before citing.'
+      },
+      citation: formatCitation(source)
+    };
+  }
+
+  function callFreeSearch(ctx) {
+    var out = [];
+    var wanted = 0;
+    return callSearchApi(freeSearchQuery(ctx)).then(function (results) {
+      var checks = results.filter(function (r) {
+        return r && r.url && r.text && !isUnreliableDomain(r.url);
+      }).slice(0, FREE_MAX_CHECKS);
+      return checks.reduce(function (chain, r) {
+        return chain.then(function () {
+          if (wanted >= FREE_WANTED) return;
+          return callVerifyApi(ctx.claim, r.text).then(function (v) {
+            if (!v) return;
+            var s = freeSuggestion(r, v, looksCopied(ctx.claim, r.text));
+            var verdict = s.verdict.verdict;
+            if (verdict !== 'SUPPORTED' && verdict !== 'PARTIALLY SUPPORTED') return;
+            out.push(s);
+            if (verdict === 'SUPPORTED' && s.verdict.reliability !== 'low') wanted++;
+          });
+        });
+      }, Promise.resolve());
+    }).then(function () { return out; });
+  }
+
   // ---- Provider implementations -----------------------------------------
 
   function buildUserMessage(ctx) {
@@ -3931,6 +4043,7 @@
   function renderWebSearchCta($el, i, label) {
     var providerId = getProvider();
     var hasKey = !!getKey(providerId);
+    var keyless = !!PROVIDERS[providerId].keyless;
     var $cta = $('<div class="cnfirmed-toolbar">');
     $cta.append(
       $('<button>')
@@ -3939,7 +4052,9 @@
     );
     $el.append($cta);
     $el.append($('<div class="cnfirmed-note">').text(
-      hasKey
+      keyless
+        ? 'Free, no key. A web search, then each result is checked against the claim.'
+        : hasKey
         ? 'One API call, billed to your key.'
         : 'Needs a ' + PROVIDERS[providerId].name + ' API key — you will be asked for one.'
     ));
@@ -3958,9 +4073,12 @@
     var providerName = progress && progress.provider
       ? PROVIDERS[progress.provider].name
       : PROVIDERS[getProvider()].name;
-    $el.append($('<div>').text('Searching with ' + providerName + '…'));
+    var keyless = PROVIDERS[(progress && progress.provider) || getProvider()].keyless;
+    $el.append($('<div>').text(keyless ? 'Searching the web…' : 'Searching with ' + providerName + '…'));
     $el.append($('<div>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '4px' })
-      .text('Finding and verifying candidate sources. This usually takes 10–30 seconds.'));
+      .text(keyless
+        ? 'Checking each result against the claim. This can take up to a minute.'
+        : 'Finding and verifying candidate sources. This usually takes 10–30 seconds.'));
   }
 
   function renderResultInto($el, i, result) {
@@ -3969,7 +4087,9 @@
     if (!result.suggestions || result.suggestions.length === 0) {
       $el.append($('<div>').text('No suitable sources found.'));
       $el.append($('<div class="cnfirmed-note">')
-        .text('The model did not return any candidates that pass the WP:RSP filter.'));
+        .text(PROVIDERS[result.provider || getProvider()].keyless
+          ? 'No search result was judged to state the claim, or part of it.'
+          : 'The model did not return any candidates that pass the WP:RSP filter.'));
       return;
     }
     var top = result.suggestions[0];

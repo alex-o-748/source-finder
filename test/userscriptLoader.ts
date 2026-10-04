@@ -45,6 +45,9 @@ const EXPOSED = [
   "checkArchiveCandidates",
   "archiveSourceContent",
   "toArchiveVerdict",
+  "callFreeSearch",
+  "freeSearchQuery",
+  "looksCopied",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
