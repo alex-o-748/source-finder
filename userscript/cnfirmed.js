@@ -319,7 +319,7 @@
     '  border-left: 3px solid #c8ccd1; padding: 4px 8px;',
     '  margin: 6px 0; font-size: 0.9em;',
     '}',
-    '.cnfirmed-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }',
+    '.cnfirmed-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }',
     '.cnfirmed-note { font-size: 0.85em; color: #54595d; margin-top: 4px; }',
     '.cnfirmed-wiki {',
     '  border-left: 3px solid #3056a9; padding-left: 8px; margin-bottom: 10px;',
@@ -3658,7 +3658,8 @@
       renderProgressInto($el, { phase: 'verifying', provider: s.provider });
     } else if (s.status === 'error') {
       $el.append($('<div>').css({ color: '#b32424', 'margin-top': '8px' })
-        .text('Web search error: ' + s.error));
+        .text((s.provider && PROVIDERS[s.provider] ? PROVIDERS[s.provider].name + ' w' : 'W') +
+          'eb search error: ' + s.error));
       renderWebSearchCta($el, i, 'Try the web search again');
     } else if (s.status === 'done' && s.result) {
       renderResultInto($el, i, s.result);
@@ -3928,14 +3929,30 @@
     return $row;
   }
 
+  // The provider picker is repeated here because the sidebar box that also
+  // holds it is drawn by an external helper and may not render at all; the
+  // popover is the one place a user hitting a provider error is guaranteed
+  // to be looking.
   function renderWebSearchCta($el, i, label) {
     var providerId = getProvider();
     var hasKey = !!getKey(providerId);
+    var $select = $('<select class="cnfirmed-popover-provider">')
+      .attr('aria-label', 'Web search provider');
+    Object.keys(PROVIDERS).forEach(function (id) {
+      $select.append($('<option>').val(id).text(PROVIDERS[id].name)
+        .prop('selected', id === providerId));
+    });
+    $select.on('change', function () {
+      setProvider($select.val());
+      renderControlsBar();
+      renderPanel(i);
+    });
     var $cta = $('<div class="cnfirmed-toolbar">');
     $cta.append(
       $('<button>')
-        .text(label || ('Search the web with ' + PROVIDERS[providerId].name))
-        .on('click', function () { runOne(i); })
+        .text((label || 'Search the web') + ' with')
+        .on('click', function () { runOne(i); }),
+      $select
     );
     $el.append($cta);
     $el.append($('<div class="cnfirmed-note">').text(
