@@ -1,6 +1,7 @@
 /**
  * The user script's Tavily + GPT-OSS provider: Tavily searches, a model on the
- * Hugging Face router judges what came back. No network: `fetch` is stubbed,
+ * Hugging Face router judges what came back, both through the proxy Worker
+ * (Wikipedia's CSP blocks the services themselves). No network: `fetch` is stubbed,
  * and what is tested is the requests the script sends and how it reads the
  * replies.
  */
@@ -16,7 +17,8 @@ const CTX = {
   section: "Marriage",
   links: [],
 };
-const KEYS = { tavily: "tvly-test", hf: "hf_test" };
+const KEY = "tvly-test";
+const PROXY = "https://publicai-proxy.alaexis.workers.dev";
 
 const realFetch = globalThis.fetch;
 after(() => {
@@ -59,7 +61,7 @@ function hfReply(suggestions: unknown[]) {
   };
 }
 
-test("searches Tavily, then asks the Hugging Face model about only what was found", async () => {
+test("searches Tavily, then asks the model about only what was found, both via the proxy", async () => {
   const sent = stubFetch([
     TAVILY_OK,
     hfReply([
@@ -76,17 +78,18 @@ test("searches Tavily, then asks the Hugging Face model about only what was foun
     ]),
   ]);
 
-  const out = await script.callTavilyGptOss(CTX, KEYS);
+  const out = await script.callTavilyGptOss(CTX, KEY);
 
   assert.equal(sent.length, 2);
-  assert.equal(sent[0].url, "https://api.tavily.com/search");
+  assert.equal(sent[0].url, `${PROXY}/tavily`);
   assert.equal(sent[0].auth, "Bearer tvly-test");
   assert.match(String(sent[0].body.query), /^Elizabeth Báthory: In 1578/);
   assert.ok(String(sent[0].body.query).length <= 400);
 
-  assert.equal(sent[1].url, "https://router.huggingface.co/v1/chat/completions");
-  assert.equal(sent[1].auth, "Bearer hf_test");
-  assert.equal(sent[1].body.model, "openai/gpt-oss-120b");
+  assert.equal(sent[1].url, `${PROXY}/hf`);
+  // The proxy pays for the model; the Tavily key never goes there.
+  assert.equal(sent[1].auth, null);
+  assert.equal(sent[1].body.model, "openai/gpt-oss-20b");
   const user = String((sent[1].body.messages as { content: string }[])[1].content);
   assert.match(user, /britannica\.com/);
   assert.match(user, /chief commander/);
@@ -101,18 +104,18 @@ test("searches Tavily, then asks the Hugging Face model about only what was foun
 
 test("no search results means no model call", async () => {
   const sent = stubFetch([{ status: 200, body: { results: [] } }]);
-  const out = await script.callTavilyGptOss(CTX, KEYS);
+  const out = await script.callTavilyGptOss(CTX, KEY);
   assert.deepEqual(out, []);
   assert.equal(sent.length, 1);
 });
 
 test("errors name the service that failed", async () => {
   stubFetch([{ status: 401, body: { detail: { error: "Unauthorized: missing or invalid API key." } } }]);
-  await assert.rejects(script.callTavilyGptOss(CTX, KEYS), /^Error: Tavily API 401/);
+  await assert.rejects(script.callTavilyGptOss(CTX, KEY), /^Error: Tavily API 401/);
 
   stubFetch([TAVILY_OK, { status: 402, body: { error: "You have exceeded your monthly included credits." } }]);
   await assert.rejects(
-    script.callTavilyGptOss(CTX, KEYS),
-    /Hugging Face API 402: You have exceeded your monthly included credits/,
+    script.callTavilyGptOss(CTX, KEY),
+    /Hugging Face \(via proxy\) 402: You have exceeded your monthly included credits/,
   );
 });
