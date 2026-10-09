@@ -42,6 +42,7 @@ const EXPOSED = [
   "loadWikiCorpus",
   "taggedSentenceRange",
   "callClaude",
+  "callTavilyGptOss",
   "checkArchiveCandidates",
   "archiveSourceContent",
   "toArchiveVerdict",

@@ -3,7 +3,10 @@
 /**
  * CNfirmed user script — finds and verifies sources for {{citation needed}}
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
- * the user's own API key (stored in localStorage). Internet Archive passages
+ * the user's own API key (stored in localStorage) — or by searching with
+ * Tavily and judging the results with GPT-OSS on Hugging Face, which takes a
+ * key for each (window.cnfirmedModelHf picks another model on the Hugging
+ * Face router, e.g. 'openai/gpt-oss-20b'). Internet Archive passages
  * are checked against the claim by the Verify API
  * (https://citation-verifier.toolforge.org), which needs no key.
  *
@@ -24,7 +27,6 @@
  *   - "Verify all" runs the whole article (with a confirm prompt — costs scale
  *     linearly with the number of claims).
  *
- * Reuses User:Polygnotus/Helpers/Sidebar.js for portlet plumbing.
  */
 /* eslint-disable */
 (function () {
@@ -39,9 +41,6 @@
   var WG_ACTION = mw.config.get('wgAction');
   if (WG_ACTION !== 'view' && WG_ACTION !== 'edit' && WG_ACTION !== 'submit') return;
   if (!/wikipedia\.org$/.test(mw.config.get('wgServer') || '')) return;
-
-  var SIDEBAR_HELPER_URL =
-    'https://en.wikipedia.org/w/index.php?title=User:Polygnotus/Helpers/Sidebar.js&action=raw&ctype=text/javascript';
 
   // ---- Providers --------------------------------------------------------
 
@@ -70,8 +69,26 @@
       defaultModel: 'gpt-5-mini',
       modelOverride: 'cnfirmedModelOpenAI',
       run: callOpenAI
+    },
+    // Two services, so two keys: Tavily does the searching, and an open-weight
+    // model served by Hugging Face reads what it found. The model never
+    // searches on its own.
+    tavilyhf: {
+      name: 'Tavily + GPT-OSS',
+      keys: [
+        { id: 'tavily', storage: 'cnfirmed-key-tavily', label: 'Tavily API key', service: 'Tavily' },
+        { id: 'hf', storage: 'cnfirmed-key-hf', label: 'Hugging Face token', service: 'Hugging Face' }
+      ],
+      defaultModel: 'openai/gpt-oss-120b',
+      modelOverride: 'cnfirmedModelHf',
+      run: callTavilyGptOss
     }
   };
+
+  function keySlots(providerId) {
+    var p = PROVIDERS[providerId];
+    return p.keys || [{ id: 'key', storage: p.keyStorage, label: p.name + ' API key', service: p.name }];
+  }
 
   function getProvider() {
     var p = localStorage.getItem('cnfirmed-provider') || 'claude';
@@ -83,14 +100,27 @@
     localStorage.setItem('cnfirmed-provider', p);
   }
 
+  // '' unless every key the provider needs is set. A one-key provider gets its
+  // key as a string; a several-key provider gets an object keyed by slot id.
   function getKey(providerId) {
-    return localStorage.getItem(PROVIDERS[providerId].keyStorage) || '';
+    var slots = keySlots(providerId);
+    var keys = {};
+    for (var i = 0; i < slots.length; i++) {
+      var v = localStorage.getItem(slots[i].storage) || '';
+      if (!v) return '';
+      keys[slots[i].id] = v;
+    }
+    return slots.length === 1 ? keys[slots[0].id] : keys;
   }
 
-  function setKey(providerId, value) {
+  function setSlotKey(slot, value) {
     var key = (value || '').trim();
-    if (key) localStorage.setItem(PROVIDERS[providerId].keyStorage, key);
-    else localStorage.removeItem(PROVIDERS[providerId].keyStorage);
+    if (key) localStorage.setItem(slot.storage, key);
+    else localStorage.removeItem(slot.storage);
+  }
+
+  function clearKeys(providerId) {
+    keySlots(providerId).forEach(function (slot) { setSlotKey(slot, ''); });
   }
 
   function modelFor(providerId) {
@@ -319,7 +349,7 @@
     '  border-left: 3px solid #c8ccd1; padding: 4px 8px;',
     '  margin: 6px 0; font-size: 0.9em;',
     '}',
-    '.cnfirmed-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }',
+    '.cnfirmed-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }',
     '.cnfirmed-note { font-size: 0.85em; color: #54595d; margin-top: 4px; }',
     '.cnfirmed-wiki {',
     '  border-left: 3px solid #3056a9; padding-left: 8px; margin-bottom: 10px;',
@@ -364,7 +394,7 @@
   var state = {};         // { [index]: { status, result?, error?, provider? } }
   var wikiState = {};     // { [index]: { status, candidates?, warnings?, error? } }
   var archiveState = {};  // { [index]: { status, candidates?, funnel?, error? } }
-  var helper = null;      // SidebarHelper instance
+  var helper = null;      // sidebar box handle, see createSidebarBox()
   var popup = null;       // self-managed floating panel { $element, $body, $title }
 
   // ---- Boot sequence ----------------------------------------------------
@@ -392,9 +422,6 @@
 
     mw.loader.using(['mediawiki.util', 'oojs-ui-windows', 'oojs-ui-core', 'oojs-ui-widgets'])
       .then(function () {
-        return loadSidebarHelper();
-      })
-      .then(function () {
         bootstrap();
       })
       .catch(function (err) {
@@ -405,9 +432,7 @@
   function buildEmptyPortlet() {
     if (!mw.util || !mw.util.addPortletLink) return;
     if (document.getElementById('p-cnfirmed')) return;
-    if (typeof mw.util.addPortlet === 'function') {
-      mw.util.addPortlet('p-cnfirmed', 'CNfirmed');
-    }
+    if (!ensurePortlet('CNfirmed')) return;
     mw.util.addPortletLink(
       'p-cnfirmed',
       'https://en.wikipedia.org/wiki/Category:All_articles_with_unsourced_statements',
@@ -459,9 +484,56 @@
     return false;
   }
 
-  function loadSidebarHelper() {
-    if (window.SidebarHelper) return Promise.resolve();
-    return mw.loader.getScript(SIDEBAR_HELPER_URL);
+  // The sidebar box. It used to come from User:Polygnotus/Helpers/Sidebar.js;
+  // that page was deleted, which silently took the box (and with it the
+  // provider and key controls) away, so the script now builds it itself.
+  //
+  // mw.util.addPortlet() leaves placement to the caller unless given a
+  // sibling to go before, so the box is appended after the last section of
+  // the main menu, wherever the skin keeps it.
+  function ensurePortlet(label) {
+    var el = document.getElementById('p-cnfirmed');
+    if (el) return el;
+    if (!mw.util || typeof mw.util.addPortlet !== 'function') return null;
+    el = mw.util.addPortlet('p-cnfirmed', label);
+    if (!el) return null;
+    if (!el.parentNode) {
+      var anchor = document.getElementById('p-interaction') ||
+        document.getElementById('p-navigation') ||
+        document.getElementById('p-tb');
+      if (!anchor || !anchor.parentNode) return null;
+      anchor.parentNode.appendChild(el);
+    }
+    return el;
+  }
+
+  function portletHeading(portlet) {
+    return portlet.querySelector('.vector-menu-heading-label, .vector-menu-heading, h3, label');
+  }
+
+  function createSidebarBox(label) {
+    var portlet = ensurePortlet(label);
+    if (!portlet) return null;
+    return {
+      replaceRows: function (ul) {
+        var old = portlet.querySelector('ul');
+        if (old) {
+          ul.className = (old.className + ' ' + ul.className).trim();
+          old.parentNode.replaceChild(ul, old);
+        } else {
+          (portlet.querySelector('.vector-menu-content') || portlet).appendChild(ul);
+        }
+      },
+      setHeadingLabel: function (text) {
+        var heading = portletHeading(portlet);
+        if (!heading) return;
+        heading.textContent = text;
+        // Rewriting the text drops the docs link, and the button too when the
+        // heading has no separate label element.
+        linkifyPortletHeading();
+        addVerifyAllButton();
+      }
+    };
   }
 
   function insertBadges() {
@@ -636,16 +708,12 @@
   // ---- Sidebar ----------------------------------------------------------
 
   function buildSidebar() {
-    if (!window.SidebarHelper) return;
-    helper = window.SidebarHelper({
-      id: 'p-cnfirmed',
-      storageKey: 'cnfirmed-collapsed',
-      heading: 'CNfirmed (' + cnSups.length + ')',
-      btnClass: 'cnfirmed-collapse-btn',
-      onExpand: function () {}
-    });
+    helper = createSidebarBox('CNfirmed (' + cnSups.length + ')');
+    if (!helper) {
+      console.warn('[CNfirmed] no sidebar to attach to; the popover still works');
+      return;
+    }
     helper.replaceRows(buildSidebarUl());
-    if (helper.markDataLoaded) helper.markDataLoaded();
     ensureControlsBar();
     addVerifyAllButton();
     linkifyPortletHeading();
@@ -830,10 +898,10 @@
       rmBtn.textContent = 'Remove';
       rmBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (!confirm('Remove the stored ' + PROVIDERS[providerId].name + ' API key?')) return;
-        setKey(providerId, '');
+        if (!confirm('Remove the stored ' + PROVIDERS[providerId].name + ' API key(s)?')) return;
+        clearKeys(providerId);
         renderControlsBar();
-        toast(PROVIDERS[providerId].name + ' API key removed');
+        toast(PROVIDERS[providerId].name + ' API key(s) removed');
       });
       row2.appendChild(rmBtn);
     }
@@ -859,32 +927,36 @@
 
   function promptForKey(providerId) {
     var p = PROVIDERS[providerId];
-    var existing = getKey(providerId);
+    var slots = keySlots(providerId);
     return new Promise(function (resolve) {
-      var $input = $('<input>').attr({
-        type: 'password',
-        placeholder: p.name + ' API key',
-        autocomplete: 'off',
-        spellcheck: 'false'
-      }).val(existing).css({
-        width: '100%', padding: '4px 6px', 'box-sizing': 'border-box',
-        'font-family': 'monospace'
+      var $msg = $('<div>');
+      var inputs = slots.map(function (slot) {
+        var $input = $('<input>').attr({
+          type: 'password',
+          placeholder: slot.label,
+          autocomplete: 'off',
+          spellcheck: 'false'
+        }).val(localStorage.getItem(slot.storage) || '').css({
+          width: '100%', padding: '4px 6px', 'box-sizing': 'border-box',
+          'font-family': 'monospace'
+        });
+        $msg.append(
+          $('<p>').text(slot.label + ' (stored in this browser\'s localStorage):'),
+          $input,
+          $('<p>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '6px' })
+            .text('Sent only to ' + slot.service + '\'s API. Leave blank and Save to remove it.')
+        );
+        return $input;
       });
-      var $msg = $('<div>').append(
-        $('<p>').text(p.name + ' API key (stored in this browser\'s localStorage):'),
-        $input,
-        $('<p>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '6px' })
-          .text('The key is sent only to ' + p.name + '\'s API. Leave blank and Save to remove it.')
-      );
       OO.ui.confirm($msg, {
-        title: 'Set ' + p.name + ' API key',
+        title: 'Set ' + p.name + (slots.length > 1 ? ' API keys' : ' API key'),
         actions: [
           { action: 'reject', label: 'Cancel', flags: 'safe' },
           { action: 'accept', label: 'Save', flags: ['primary', 'progressive'] }
         ]
       }).done(function (confirmed) {
         if (confirmed) {
-          setKey(providerId, $input.val());
+          slots.forEach(function (slot, k) { setSlotKey(slot, inputs[k].val()); });
           renderControlsBar();
           resolve(true);
         } else {
@@ -897,8 +969,9 @@
   function addVerifyAllButton() {
     var portlet = document.getElementById('p-cnfirmed');
     if (!portlet) return;
-    var heading = portlet.querySelector('.vector-menu-heading');
+    var heading = portlet.querySelector('.vector-menu-heading, h3, label');
     if (!heading || heading.querySelector('.cnfirmed-verify-all')) return;
+    heading.style.position = 'relative';
     var btn = document.createElement('button');
     btn.className = 'cnfirmed-verify-all';
     btn.textContent = 'Verify all';
@@ -3453,6 +3526,110 @@
     return parts.join('\n');
   }
 
+  // ---- Tavily search + an open-weight model on Hugging Face ---------------
+  // The model has no search tool here, so the search happens first and the
+  // model only judges what came back. It is told to cite only those URLs, and
+  // any other URL it names is dropped: it cannot have read it.
+
+  var TAVILY_MAX_QUERY = 400;       // Tavily rejects longer queries
+  var TAVILY_MAX_RESULTS = 6;
+  var TAVILY_SOURCE_CHARS = 6000;   // per result, of the page text sent on
+
+  var RESULTS_ADDENDUM = [
+    '',
+    'You have no search tool. The user message ends with SEARCH RESULTS that',
+    'were retrieved for you, each with its URL and the text read from that',
+    'page. Judge only those results, using only their text. Every "url" you',
+    'return must be copied exactly from one of them. Quote only from the text',
+    'given. If none of them substantiates the claim, return {"suggestions": []}.'
+  ].join('\n');
+
+  function tavilyQuery(ctx) {
+    var q = pageTitle.replace(/_/g, ' ') + ': ' + ctx.claim.replace(/\s+/g, ' ').trim();
+    return q.length > TAVILY_MAX_QUERY ? q.slice(0, TAVILY_MAX_QUERY) : q;
+  }
+
+  function tavilySearch(ctx, apiKey) {
+    return fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        query: tavilyQuery(ctx),
+        search_depth: 'advanced',
+        chunks_per_source: 3,
+        max_results: TAVILY_MAX_RESULTS,
+        include_raw_content: 'text',
+        // Wikipedia and its mirrors would make the citation circular.
+        exclude_domains: ['wikipedia.org', 'wikiwand.com', 'kiddle.co', 'dbpedia.org']
+      })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        if (!res.ok) throw new Error('Tavily API ' + res.status + ': ' + truncate(t, 200));
+        var data = JSON.parse(t);
+        return (data.results || []).filter(function (r) {
+          return r && typeof r.url === 'string' && !isUnreliableDomain(r.url);
+        });
+      });
+    });
+  }
+
+  function formatSearchResults(results) {
+    function clean(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
+    // The excerpts are the passages Tavily matched to the query, so they go
+    // first; the page text after them is cut, and may stop before the part
+    // that matters.
+    return results.map(function (r, k) {
+      var page = clean(r.raw_content);
+      if (page.length > TAVILY_SOURCE_CHARS) page = page.slice(0, TAVILY_SOURCE_CHARS) + ' […]';
+      return '[' + (k + 1) + '] ' + r.url + '\nTitle: ' + (r.title || '') +
+        '\nExcerpts: ' + clean(r.content) +
+        (page ? '\nPage text: ' + page : '');
+    }).join('\n\n');
+  }
+
+  function callHfChat(system, user, apiKey) {
+    return fetch('https://router.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: modelFor('tavilyhf'),
+        // gpt-oss reasons before it answers, and that counts against this.
+        max_tokens: 8000,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user }
+        ]
+      })
+    }).then(function (res) {
+      return res.text().then(function (t) {
+        var data;
+        try { data = JSON.parse(t); } catch (e) { data = null; }
+        if (!res.ok) {
+          var err = data && data.error;
+          var msg = (err && (err.message || (typeof err === 'string' ? err : ''))) || truncate(t, 200);
+          throw new Error('Hugging Face API ' + res.status + ': ' + msg);
+        }
+        var m = data && data.choices && data.choices[0] && data.choices[0].message;
+        return (m && m.content) || '';
+      });
+    });
+  }
+
+  function callTavilyGptOss(ctx, keys) {
+    return tavilySearch(ctx, keys.tavily).then(function (results) {
+      if (!results.length) return [];
+      var user = buildUserMessage(ctx) + '\n\nSEARCH RESULTS:\n\n' + formatSearchResults(results);
+      return callHfChat(SYSTEM_PROMPT + '\n' + RESULTS_ADDENDUM, user, keys.hf).then(function (text) {
+        // Trailing slashes and fragments differ harmlessly between copies.
+        function urlKey(u) { return u.trim().replace(/#.*$/, '').replace(/\/+$/, ''); }
+        var seen = Object.create(null);
+        results.forEach(function (r) { seen[urlKey(r.url)] = true; });
+        return parseSuggestions(text).filter(function (s) { return seen[urlKey(s.source.url)]; });
+      });
+    });
+  }
+
   // ---- Suggestion JSON parsing ------------------------------------------
 
   function parseSuggestions(raw) {
@@ -3658,7 +3835,8 @@
       renderProgressInto($el, { phase: 'verifying', provider: s.provider });
     } else if (s.status === 'error') {
       $el.append($('<div>').css({ color: '#b32424', 'margin-top': '8px' })
-        .text('Web search error: ' + s.error));
+        .text((s.provider && PROVIDERS[s.provider] ? PROVIDERS[s.provider].name + ' w' : 'W') +
+          'eb search error: ' + s.error));
       renderWebSearchCta($el, i, 'Try the web search again');
     } else if (s.status === 'done' && s.result) {
       renderResultInto($el, i, s.result);
@@ -3928,20 +4106,39 @@
     return $row;
   }
 
+  // The provider picker is repeated here because the sidebar box that also
+  // holds it can be missing (a skin with no main menu to attach to); the
+  // popover is the one place a user hitting a provider error is guaranteed
+  // to be looking.
   function renderWebSearchCta($el, i, label) {
     var providerId = getProvider();
     var hasKey = !!getKey(providerId);
+    var $select = $('<select class="cnfirmed-popover-provider">')
+      .attr('aria-label', 'Web search provider');
+    Object.keys(PROVIDERS).forEach(function (id) {
+      $select.append($('<option>').val(id).text(PROVIDERS[id].name)
+        .prop('selected', id === providerId));
+    });
+    $select.on('change', function () {
+      setProvider($select.val());
+      renderControlsBar();
+      renderPanel(i);
+    });
     var $cta = $('<div class="cnfirmed-toolbar">');
     $cta.append(
       $('<button>')
-        .text(label || ('Search the web with ' + PROVIDERS[providerId].name))
-        .on('click', function () { runOne(i); })
+        .text((label || 'Search the web') + ' with')
+        .on('click', function () { runOne(i); }),
+      $select
     );
     $el.append($cta);
     $el.append($('<div class="cnfirmed-note">').text(
       hasKey
-        ? 'One API call, billed to your key.'
-        : 'Needs a ' + PROVIDERS[providerId].name + ' API key — you will be asked for one.'
+        ? (keySlots(providerId).length > 1
+          ? 'One call to each service, billed to your keys.'
+          : 'One API call, billed to your key.')
+        : 'Needs ' + keySlots(providerId).map(function (s) { return 'a ' + s.label; }).join(' and ') +
+          ' — you will be asked.'
     ));
   }
 
