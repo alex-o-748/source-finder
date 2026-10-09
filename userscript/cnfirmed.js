@@ -4,9 +4,9 @@
  * CNfirmed user script — finds and verifies sources for {{citation needed}}
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
  * the user's own API key (stored in localStorage) — or by searching with
- * Tavily and judging the results with GPT-OSS on Hugging Face, which takes a
- * key for each (window.cnfirmedModelHf picks another model on the Hugging
- * Face router, e.g. 'openai/gpt-oss-20b'). Internet Archive passages
+ * Tavily (the user's Tavily key) and judging the results with GPT-OSS on
+ * Hugging Face, both through the publicai-proxy Worker, since Wikipedia's CSP
+ * blocks those services. Internet Archive passages
  * are checked against the claim by the Verify API
  * (https://citation-verifier.toolforge.org), which needs no key.
  *
@@ -70,24 +70,25 @@
       modelOverride: 'cnfirmedModelOpenAI',
       run: callOpenAI
     },
-    // Two services, so two keys: Tavily does the searching, and an open-weight
-    // model served by Hugging Face reads what it found. The model never
-    // searches on its own.
+    // Tavily does the searching and an open-weight model on Hugging Face reads
+    // what it found; the model never searches on its own. Both go through
+    // the Worker (Wikipedia's CSP blocks the services themselves), which
+    // pays for the model, so the only key is the user's Tavily key.
     tavilyhf: {
       name: 'Tavily + GPT-OSS',
-      keys: [
-        { id: 'tavily', storage: 'cnfirmed-key-tavily', label: 'Tavily API key', service: 'Tavily' },
-        { id: 'hf', storage: 'cnfirmed-key-hf', label: 'Hugging Face token', service: 'Hugging Face' }
-      ],
-      defaultModel: 'openai/gpt-oss-120b',
+      keyStorage: 'cnfirmed-key-tavily',
+      keyLabel: 'Tavily API key',
+      keyService: 'Tavily',
+      // Must be in the Worker's HF_ALLOWED_MODELS.
+      defaultModel: 'openai/gpt-oss-20b',
       modelOverride: 'cnfirmedModelHf',
       run: callTavilyGptOss
     }
   };
 
-  function keySlots(providerId) {
+  function keyLabel(providerId) {
     var p = PROVIDERS[providerId];
-    return p.keys || [{ id: 'key', storage: p.keyStorage, label: p.name + ' API key', service: p.name }];
+    return p.keyLabel || p.name + ' API key';
   }
 
   function getProvider() {
@@ -100,27 +101,14 @@
     localStorage.setItem('cnfirmed-provider', p);
   }
 
-  // '' unless every key the provider needs is set. A one-key provider gets its
-  // key as a string; a several-key provider gets an object keyed by slot id.
   function getKey(providerId) {
-    var slots = keySlots(providerId);
-    var keys = {};
-    for (var i = 0; i < slots.length; i++) {
-      var v = localStorage.getItem(slots[i].storage) || '';
-      if (!v) return '';
-      keys[slots[i].id] = v;
-    }
-    return slots.length === 1 ? keys[slots[0].id] : keys;
+    return localStorage.getItem(PROVIDERS[providerId].keyStorage) || '';
   }
 
-  function setSlotKey(slot, value) {
+  function setKey(providerId, value) {
     var key = (value || '').trim();
-    if (key) localStorage.setItem(slot.storage, key);
-    else localStorage.removeItem(slot.storage);
-  }
-
-  function clearKeys(providerId) {
-    keySlots(providerId).forEach(function (slot) { setSlotKey(slot, ''); });
+    if (key) localStorage.setItem(PROVIDERS[providerId].keyStorage, key);
+    else localStorage.removeItem(PROVIDERS[providerId].keyStorage);
   }
 
   function modelFor(providerId) {
@@ -898,10 +886,10 @@
       rmBtn.textContent = 'Remove';
       rmBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (!confirm('Remove the stored ' + PROVIDERS[providerId].name + ' API key(s)?')) return;
-        clearKeys(providerId);
+        if (!confirm('Remove the stored ' + keyLabel(providerId) + '?')) return;
+        setKey(providerId, '');
         renderControlsBar();
-        toast(PROVIDERS[providerId].name + ' API key(s) removed');
+        toast(keyLabel(providerId) + ' removed');
       });
       row2.appendChild(rmBtn);
     }
@@ -927,36 +915,35 @@
 
   function promptForKey(providerId) {
     var p = PROVIDERS[providerId];
-    var slots = keySlots(providerId);
+    var label = keyLabel(providerId);
+    var existing = getKey(providerId);
     return new Promise(function (resolve) {
-      var $msg = $('<div>');
-      var inputs = slots.map(function (slot) {
-        var $input = $('<input>').attr({
-          type: 'password',
-          placeholder: slot.label,
-          autocomplete: 'off',
-          spellcheck: 'false'
-        }).val(localStorage.getItem(slot.storage) || '').css({
-          width: '100%', padding: '4px 6px', 'box-sizing': 'border-box',
-          'font-family': 'monospace'
-        });
-        $msg.append(
-          $('<p>').text(slot.label + ' (stored in this browser\'s localStorage):'),
-          $input,
-          $('<p>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '6px' })
-            .text('Sent only to ' + slot.service + '\'s API. Leave blank and Save to remove it.')
-        );
-        return $input;
+      var $input = $('<input>').attr({
+        type: 'password',
+        placeholder: label,
+        autocomplete: 'off',
+        spellcheck: 'false'
+      }).val(existing).css({
+        width: '100%', padding: '4px 6px', 'box-sizing': 'border-box',
+        'font-family': 'monospace'
       });
+      var $msg = $('<div>').append(
+        $('<p>').text(label + ' (stored in this browser\'s localStorage):'),
+        $input,
+        $('<p>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '6px' })
+          .text('The key is sent only to ' + (p.keyService || p.name) + '\'s API' +
+            (p.keyService ? ' (through the CNfirmed proxy)' : '') +
+            '. Leave blank and Save to remove it.')
+      );
       OO.ui.confirm($msg, {
-        title: 'Set ' + p.name + (slots.length > 1 ? ' API keys' : ' API key'),
+        title: 'Set ' + label,
         actions: [
           { action: 'reject', label: 'Cancel', flags: 'safe' },
           { action: 'accept', label: 'Save', flags: ['primary', 'progressive'] }
         ]
       }).done(function (confirmed) {
         if (confirmed) {
-          slots.forEach(function (slot, k) { setSlotKey(slot, inputs[k].val()); });
+          setKey(providerId, $input.val());
           renderControlsBar();
           resolve(true);
         } else {
@@ -3527,6 +3514,12 @@
   }
 
   // ---- Tavily search + an open-weight model on Hugging Face ---------------
+  // Both calls go through the CNfirmed Cloudflare Worker: Wikipedia's
+  // Content-Security-Policy blocks api.tavily.com and router.huggingface.co,
+  // and the Worker is on its allowlist.
+  var PROXY_BASE = String(window.cnfirmedProxyUrl || 'https://publicai-proxy.alaexis.workers.dev')
+    .replace(/\/+$/, '');
+
   // The model has no search tool here, so the search happens first and the
   // model only judges what came back. It is told to cite only those URLs, and
   // any other URL it names is dropped: it cannot have read it.
@@ -3550,7 +3543,7 @@
   }
 
   function tavilySearch(ctx, apiKey) {
-    return fetch('https://api.tavily.com/search', {
+    return fetch(PROXY_BASE + '/tavily', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
       body: JSON.stringify({
@@ -3587,10 +3580,10 @@
     }).join('\n\n');
   }
 
-  function callHfChat(system, user, apiKey) {
-    return fetch('https://router.huggingface.co/v1/chat/completions', {
+  function callHfChat(system, user) {
+    return fetch(PROXY_BASE + '/hf', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: modelFor('tavilyhf'),
         // gpt-oss reasons before it answers, and that counts against this.
@@ -3608,7 +3601,7 @@
         if (!res.ok) {
           var err = data && data.error;
           var msg = (err && (err.message || (typeof err === 'string' ? err : ''))) || truncate(t, 200);
-          throw new Error('Hugging Face API ' + res.status + ': ' + msg);
+          throw new Error('Hugging Face (via proxy) ' + res.status + ': ' + msg);
         }
         var m = data && data.choices && data.choices[0] && data.choices[0].message;
         return (m && m.content) || '';
@@ -3616,11 +3609,11 @@
     });
   }
 
-  function callTavilyGptOss(ctx, keys) {
-    return tavilySearch(ctx, keys.tavily).then(function (results) {
+  function callTavilyGptOss(ctx, tavilyKey) {
+    return tavilySearch(ctx, tavilyKey).then(function (results) {
       if (!results.length) return [];
       var user = buildUserMessage(ctx) + '\n\nSEARCH RESULTS:\n\n' + formatSearchResults(results);
-      return callHfChat(SYSTEM_PROMPT + '\n' + RESULTS_ADDENDUM, user, keys.hf).then(function (text) {
+      return callHfChat(SYSTEM_PROMPT + '\n' + RESULTS_ADDENDUM, user).then(function (text) {
         // Trailing slashes and fragments differ harmlessly between copies.
         function urlKey(u) { return u.trim().replace(/#.*$/, '').replace(/\/+$/, ''); }
         var seen = Object.create(null);
@@ -4134,11 +4127,8 @@
     $el.append($cta);
     $el.append($('<div class="cnfirmed-note">').text(
       hasKey
-        ? (keySlots(providerId).length > 1
-          ? 'One call to each service, billed to your keys.'
-          : 'One API call, billed to your key.')
-        : 'Needs ' + keySlots(providerId).map(function (s) { return 'a ' + s.label; }).join(' and ') +
-          ' — you will be asked.'
+        ? 'One API call, billed to your key.'
+        : 'Needs a ' + keyLabel(providerId) + ' — you will be asked for one.'
     ));
   }
 
