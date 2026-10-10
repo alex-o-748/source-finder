@@ -283,6 +283,7 @@
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue","Liberation Sans",sans-serif;' +
       'font-size:14px;line-height:1.45}',
     '#cnfirmed-panel[hidden],#cnfirmed-panel [hidden]{display:none !important}',
+    'html.cnfirmed-panel-open body{margin-right:var(--cnfirmed-panel-width,400px) !important}',
     '#cnfirmed-panel *{box-sizing:border-box}',
     '#cnfirmed-panel button{font:inherit;color:inherit}',
     '#cnfirmed-panel a{color:var(--cnf-link)}',
@@ -3841,10 +3842,16 @@
   }
 
   // On a narrow screen the panel covers the page instead.
+  // The room is made by a stylesheet rule, not an inline style: Source
+  // Verifier, while its own panel is closed, sets the body's right margin to
+  // 0 !important, which beats any inline margin and left the article running
+  // under this panel. The rule here is more specific, so it wins.
   function applyBodyMargin() {
     if (!panel) return;
+    var root = document.documentElement;
     var make = panelVisible() && window.innerWidth > NARROW_SCREEN;
-    document.body.style.marginRight = make ? panel.root.style.width : '';
+    root.classList.toggle('cnfirmed-panel-open', make);
+    if (make) root.style.setProperty('--cnfirmed-panel-width', panel.root.style.width);
   }
 
   function panelVisible() {
