@@ -4422,11 +4422,20 @@
     return sectionEditLinksCache;
   }
 
-  function buildLeadEditUrl() {
-    if (mw.util && typeof mw.util.getUrl === 'function') {
-      return mw.util.getUrl(pageTitle, { action: 'edit' });
+  // The source editor for a claim's section (the whole page for the lead).
+  // action=submit, not the section link's action=edit: for anyone whose
+  // editing preference is the visual editor, action=edit opens VisualEditor,
+  // which ignores the wikitext box the <ref> is written into.
+  function sourceEditorUrl(sectionLink) {
+    var params = { action: 'submit' };
+    if (sectionLink) {
+      try {
+        var section = new URL(sectionLink, location.href).searchParams.get('section');
+        if (section !== null) params.section = section;
+      } catch (e) { /* the whole page, then */ }
     }
-    return '/w/index.php?title=' + encodeURIComponent(pageTitle) + '&action=edit';
+    if (mw.util && typeof mw.util.getUrl === 'function') return mw.util.getUrl(pageTitle, params);
+    return '/w/index.php?title=' + encodeURIComponent(pageTitle) + '&' + new URLSearchParams(params).toString();
   }
 
   function appendQueryParam(url, key, value) {
@@ -4443,7 +4452,7 @@
     var link = links[i];
     var k = 0;
     for (var j = 0; j < i; j++) if (links[j] === link) k++;
-    var editUrl = link || buildLeadEditUrl();
+    var editUrl = sourceEditorUrl(link);
 
     var payload = {
       pageTitle: pageTitle,
@@ -4480,22 +4489,38 @@
 
     if (!payload || !payload.ref) return;
 
-    mw.loader.using(['mediawiki.util']).then(function () { applyPendingInsertion(payload); });
+    mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
+      applyPendingInsertion(payload);
+    }, function () {
+      applyPendingInsertion(payload);
+    });
+  }
+
+  // Best effort: a browser may refuse the clipboard to a page that was not
+  // just clicked, and the banner already says what to do.
+  function copyQuietly(text) {
+    try { navigator.clipboard.writeText(text).catch(function () {}); } catch (e) { /* ignore */ }
   }
 
   function applyPendingInsertion(payload) {
     var ta = document.getElementById('wpTextbox1');
-    if (!ta) {
+    if (!ta || ta.readOnly) {
       showEditBanner(
-        'CNfirmed: source editor textarea not found. Switch to the wikitext editor and try again — '
-        + 'your <ref> snippet is on the clipboard if you need to paste it manually.',
+        (ta ? 'CNfirmed: this page cannot be edited from your account here. '
+          : 'CNfirmed: source editor not found. Switch to the wikitext editor and try again. ') +
+        'Your <ref> snippet is on the clipboard if you need to paste it manually.',
         'warn'
       );
-      try { navigator.clipboard.writeText(payload.ref); } catch (e) {}
+      copyQuietly(payload.ref);
       return;
     }
 
-    var text = ta.value;
+    // Through jQuery.textSelection when it is there: syntax highlighting
+    // (CodeMirror) keeps its own copy of the text and only hears about
+    // changes made this way, so writing ta.value alone was lost on save.
+    var $ta = $(ta);
+    var api = typeof $ta.textSelection === 'function';
+    var text = api ? $ta.textSelection('getContents') : ta.value;
     var result = replaceNthCitationNeeded(text, payload.cnIndexInSection || 0, payload.ref);
     if (!result.replaced) {
       showEditBanner(
@@ -4503,27 +4528,33 @@
         + 'the page may have changed. Your <ref> snippet has been copied to the clipboard.',
         'warn'
       );
-      try { navigator.clipboard.writeText(payload.ref); } catch (e) {}
+      copyQuietly(payload.ref);
       return;
     }
 
-    ta.value = result.text;
-    try {
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-      ta.dispatchEvent(new Event('change', { bubbles: true }));
-    } catch (e) {}
-
-    try {
-      ta.focus();
-      ta.setSelectionRange(result.replacementStart, result.replacementStart + payload.ref.length);
-      ta.scrollTop = Math.max(0, ta.scrollHeight * (result.replacementStart / Math.max(1, result.text.length)) - 100);
-    } catch (e) {}
+    var start = result.replacementStart;
+    var end = start + payload.ref.length;
+    if (api) {
+      $ta.textSelection('setContents', result.text);
+      try {
+        $ta.textSelection('setSelection', { start: start, end: end });
+        $ta.textSelection('scrollToCaretPosition');
+      } catch (e) { /* the text is in; the selection is a nicety */ }
+    } else {
+      ta.value = result.text;
+      try {
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        ta.focus();
+        ta.setSelectionRange(start, end);
+      } catch (e) {}
+    }
 
     showEditBanner(
       'CNfirmed: <ref> inserted in place of the {{citation needed}} tag — review and save.',
       'ok'
     );
   }
+
 
   // Aliases that all redirect to {{Citation needed}} on en.wikipedia and render
   // as <sup class="Template-Fact">. Compared after stripping subst:/safesubst:
