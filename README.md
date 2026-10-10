@@ -39,13 +39,10 @@ Need an article to test on? [Category:All articles with unsourced statements](ht
 
 ### Usage
 
-- A 🔍 badge appears next to every `[citation needed]` superscript.
-- A **CNfirmed** portlet appears in the sidebar with a provider dropdown, an API-key control, a free **Find sources on Wikipedia** button, and one row per citation-needed claim.
-- Click a 🔍 badge or a sidebar row to work on a single claim. The free wiki-local stage runs first; if it finds a citation, you get it without an API call. If it finds nothing and you have a key set, the web search runs as before.
-- Click **Verify all** to scan every claim on wiki for free, then confirm a web search for whatever is left — the dialog tells you how many claims Wikipedia already answered and how many API calls the rest would cost.
-- An API key is only needed for the web search. Keys are stored in `localStorage` and you're prompted the first time you ask for one.
-
-The script reuses [`User:Polygnotus/Helpers/Sidebar.js`](https://en.wikipedia.org/wiki/User:Polygnotus/Helpers/Sidebar.js) for the sidebar portlet.
+- A small badge appears next to every `[citation needed]` superscript. Its colour is the claim's status: green when a source supports it, blue when there are leads to check.
+- Click a badge to open that claim in a panel docked to the right edge of the page (the article moves over to make room; drag the panel's edge to resize it). Both free searches start at once: citations already on Wikipedia, and Internet Archive books, whose passages the Verify API then checks. The web search starts by itself only when both find nothing and you have a key set; otherwise it waits for a click.
+- The **CNfirmed (N)** link beside the page tabs (in the tools menu on other skins) opens the list of all the page's claims with their status. **Find sources for all (free)** runs both free searches for every claim; when they are done, a button offers a web search for the claims still left with nothing, and says how many searches that is. **‹ 1 of N ›** in the panel's header steps through the claims, and clicking the count opens the list.
+- The provider and API key are behind the panel's gear. A key is only needed for the web search, and is kept in `localStorage`.
 
 ### Providers
 
@@ -59,22 +56,18 @@ Each provider is invoked with its built-in web-search tool (Anthropic `web_searc
 
 ### Output
 
-For each claim the script renders a popover in two parts.
+For each claim, the panel shows one list of sources, best first, whatever search found it:
 
-**Already on Wikipedia** — the free stage's leads, each with:
+- **Supports the claim** / **Supports part of the claim**: something read the source against the claim (the Verify API for a book's passages, the model for a web page).
+- **Lead, not checked**: a citation an editor attached to a sentence like yours, in this article (`already cited in this article`, with that sentence) or on another language edition (`cited on de.wikipedia`, with the sentence there). *Leads, not verdicts*: read the source before you paste it.
+- **Probably copied from Wikipedia**: a web page whose quote repeats the article's sentence word for word (WP:CIRCULAR). Listed last, with a warning. Pages on sites anyone can upload to (Scribd and the like) carry a warning too, as does a web source the model judged of low reliability for the claim.
 
-- Where it came from: `this article` (with the sentence it is already cited for) or `de.wiki` / `fr.wiki` (with the sentence on that wiki, and the anchors that matched).
-- A **Copy `<ref>`** / **Insert `<ref>` in editor** pair. A same-article lead pastes as `<ref name="existing" />`, re-using the citation already on the page — the smallest possible edit.
+Sources checked and found not to state the claim are not listed, only counted. Click a source to open it: the passage or quote, any warning, and
 
-These are *leads, not verdicts*: a human editor cited that source for a sentence like yours. Read it before you paste it.
+- **Insert in editor**, which opens the section's source editor with the `<ref>` in place of the `{{citation needed}}` tag and a pre-filled edit summary linking to [[User:Alaexis/CNfirmed]]. Review the diff and save. A same-article lead inserts as `<ref name="existing" />`, re-using the citation already on the page — the smallest possible edit.
+- **Copy `<ref>`**, which puts the same `<ref>` on the clipboard.
 
-**From the web** — the model's verified candidates (run on demand, or automatically when the free stage found nothing):
-
-- **Substantiation verdict** — `SUPPORTED` / `PARTIALLY SUPPORTED` / `NOT SUPPORTED` / `SOURCE UNAVAILABLE`, with a 0–100 confidence score.
-- **Reliability** — `high` / `medium` / `low` / `n/a`, judged in context (BLP, medical, news, history…).
-- The relevant quote from the source.
-- A **Copy `<ref>`** button that puts a ready-to-paste `<ref>{{cite ...}}</ref>` snippet on the clipboard.
-- An **Insert `<ref>` in editor** button that opens the section's source editor with the chosen `<ref>` already substituted in for the `{{citation needed}}` tag, and a pre-filled edit summary linking to [[User:Alaexis/CNfirmed]]. Review the diff and save.
+Under the list, **Searched** says what each search (Wikipedia, books, web) found, or that it is still running, and holds the button for any search not yet run or failed.
 
 ## Node CLI
 
@@ -202,7 +195,7 @@ Deliberately out of scope: **Wikidata statements and their references.** This wa
 
 ## Books on the Internet Archive (experimental)
 
-A second free stage, in both the user script (a **Search Internet Archive books** button in each claim's popover) and the CLI (`cnfirmed archive`). It looks for the claim in the OCR text of digitised books, with no model. A book counts if an editor can read the passage: an open one, or one in the lending library, which anyone with a free archive.org account can borrow.
+A second free stage, in both the user script (it runs whenever a claim is opened, alongside the Wikipedia search) and the CLI (`cnfirmed archive`). It looks for the claim in the OCR text of digitised books, with no model. A book counts if an editor can read the passage: an open one, or one in the lending library, which anyone with a free archive.org account can borrow.
 
 The search matches words, so on its own it cannot tell a passage that states the claim from one that only shares its words, and most do not state it (18% of its leads do, on the evaluation set). In the user script, the passages it finds are then checked against the claim by the Verify API (step 6), which needs no key.
 
@@ -219,7 +212,7 @@ The search matches words, so on its own it cannot tell a passage that states the
    The two rankings are taken in turn.
 4. **Dedupe and look up** — one book per work: the same main title and a creator sharing a name (scans spell creators differently; a different author under the same title is a different work). On a tie, an open book ranks above a borrowable one. Then item metadata for the four kept: publisher and ISBN for the citation, and whether the book has been withdrawn.
 5. **Whole text (CLI only for now)** — with `--full-text`, the CLI reads the whole OCR text of up to five open books (`archive.org/stream/{id}/{file}_djvu.txt`, the volume that matched) and shows the best ~450-character stretch — most claim units, centred — instead of the ~100-character highlights, adding up to two books whose highlights showed nothing. Lending-library texts are not public. The user script has the same code behind `window.cnfirmedArchiveFullText = true`, off by default: archive.org sends no CORS header on that page, so a browser refuses to hand the text to a script on a Wikipedia page. It can also be set to the URL prefix of a proxy that relays those pages.
-6. **Check (user script, free)** — each lead's passages go to the Verify API (`POST /v1/verify` at `citation-verifier.toolforge.org`, the same claim-vs-source check `cnfirmed verify` uses) as the source text, with the claim: one call per book, one after another. Each book gets a verdict — *states the claim*, *states part of it*, *does not state it* — with a comment and, when the API located one, the words from the passage that back it (its `verified_text`), judged on the passages alone. The popover shows the first two and folds the rest behind a button. It runs by itself after the search; if it fails, the leads are shown marked *not checked*, with a button to try again. The service allows 30 requests a minute across all its callers, and a 429 is waited out. `npx tsx eval/run.ts --check` measures the check against the hand labels in `eval/labels.json`. The CLI does not run it. Set `window.cnfirmedVerifyUrl` before the script loads to use another host.
+6. **Check (user script, free)** — each lead's passages go to the Verify API (`POST /v1/verify` at `citation-verifier.toolforge.org`, the same claim-vs-source check `cnfirmed verify` uses) as the source text, with the claim: one call per book, one after another. Each book gets a verdict — *states the claim*, *states part of it*, *does not state it* — with a comment and, when the API located one, the words from the passage that back it (its `verified_text`), judged on the passages alone. The panel lists the books that state the claim or part of it, and only counts the rest. It runs by itself after the search; if it fails, the leads are shown marked *not checked*, with a button to try again. The service allows 30 requests a minute across all its callers, and a 429 is waited out. `npx tsx eval/run.ts --check` measures the check against the hand labels in `eval/labels.json`. The CLI does not run it. Set `window.cnfirmedVerifyUrl` before the script loads to use another host.
 
 That is two to seven searches (two families in parallel) and at most six metadata requests per claim, plus up to five whole texts with `--full-text`, and one Verify API call per lead to check them. Each lead comes with its passages, the anchors they matched, a link that opens the book with the match searched, and a `{{cite book … |via=Internet Archive}}` — with `|url-access=registration` for a borrowable book, as InternetArchiveBot writes it. The page number is not known: the editor adds `|page=` after checking the passage. Old sources can be outdated or primary (WP:AGEMATTERS).
 
@@ -227,7 +220,7 @@ That is two to seven searches (two families in parallel) and at most six metadat
 
 **Periodicals.** The search surfaces many digitised magazines and journal volumes (*Scientific American*, *Engineering*), which are good sources, but every page of an 1889 issue prints "1889" in its masthead. For an item in the `periodicals` collection, its own year is therefore not counted as a matched number: a claim whose only number is that year gets nothing from that issue. Without this rule, an *Engineering* index line — "JULY 19, 1889 … Electricity on the Eiffel Tower, 702, 703" — scored 0.85 for "The tower opened to visitors in 1889", higher than any genuine passage.
 
-**Measuring it.** The funnel line — `4 queries → 41 books → 38 readable (29 to borrow) (dropped: 3 print-disabled readers only) → 4 with a matching passage, 3 by claim phrases → 4 lead(s)` — is shown under the results, logged to the browser console, and printed by the CLI, which can also save the raw responses with `--record <dir>`. It is not part of `find` or "Verify all" until those numbers say it earns its place.
+**Measuring it.** The funnel line — `4 queries → 41 books → 38 readable (29 to borrow) (dropped: 3 print-disabled readers only) → 4 with a matching passage, 3 by claim phrases → 4 lead(s)` — is shown when you hover over the panel's Books line, logged to the browser console, and printed by the CLI, which can also save the raw responses with `--record <dir>`. It is not part of the CLI's `find` until those numbers say it earns its place.
 
 ## Policy handling (three layers)
 
