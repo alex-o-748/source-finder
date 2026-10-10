@@ -20,12 +20,16 @@
  * provider you chose.
  *
  * UX:
- *   - A small 🔍 badge appears next to every [citation needed] superscript.
- *     Click it to verify that one claim.
- *   - A "CNfirmed" portlet in the sidebar holds the provider/key controls and
- *     one row per CN tag with live status. Click a row to scroll to the badge.
- *   - "Verify all" runs the whole article (with a confirm prompt — costs scale
- *     linearly with the number of claims).
+ *   - A small badge appears next to every [citation needed] superscript.
+ *     Click it to open that claim in a panel docked to the right edge. Both
+ *     free searches start at once (citations already on Wikipedia, and
+ *     Internet Archive books); the paid web search starts by itself only when
+ *     both find nothing and a key is set.
+ *   - The panel lists every source found, best first, whatever found it, and
+ *     under it what was searched, with a button for each search not yet run.
+ *   - A "CNfirmed (N)" link opens the list of all claims, with "Find sources
+ *     for all (free)" and, for the claims left with nothing, a web search.
+ *   - Provider and key are behind the panel's gear.
  *
  */
 /* eslint-disable */
@@ -229,142 +233,180 @@
   ].join('\n');
 
   // ---- CSS --------------------------------------------------------------
+  // Colours are tokens on :root, redefined under the skin's own night-mode
+  // classes, so the panel and the badges follow the reader's theme. Every
+  // control is styled here rather than left to the browser, which in night
+  // mode draws native buttons dark on whatever background they sit on.
+
+  var LIGHT_TOKENS = [
+    '--cnf-bg:#ffffff', '--cnf-bg2:#f8f9fa', '--cnf-ink:#202122', '--cnf-ink2:#404244',
+    '--cnf-ink3:#54595d', '--cnf-line:#dadde3', '--cnf-line2:#eaecf0', '--cnf-line3:#a2a9b1',
+    '--cnf-link:#3366cc', '--cnf-hdr:#3056a9', '--cnf-pri:#3366cc', '--cnf-ok:#177860',
+    '--cnf-warn:#7a5a1c', '--cnf-warnbg:#fdf2d5', '--cnf-err:#bf3c2c', '--cnf-hl:#fdf2d5',
+    '--cnf-toast:#202122', '--cnf-toastink:#ffffff'
+  ].join(';');
+  var DARK_TOKENS = [
+    '--cnf-bg:#101418', '--cnf-bg2:#1b1f24', '--cnf-ink:#eaecf0', '--cnf-ink2:#c8ccd1',
+    '--cnf-ink3:#a2a9b1', '--cnf-line:#353a40', '--cnf-line2:#262a2f', '--cnf-line3:#5f656c',
+    '--cnf-link:#88a3e8', '--cnf-hdr:#2a4b8d', '--cnf-pri:#3a65c9', '--cnf-ok:#4cb593',
+    '--cnf-warn:#e2b45c', '--cnf-warnbg:#3a2d12', '--cnf-err:#fd7865', '--cnf-hl:#3d3317',
+    '--cnf-toast:#eaecf0', '--cnf-toastink:#101418'
+  ].join(';');
 
   mw.util.addCSS([
-    '.cnfirmed-badge {',
-    '  display: inline-block;',
-    '  margin-left: 2px;',
-    '  font-size: 0.85em;',
-    '  cursor: pointer;',
-    '  user-select: none;',
-    '  opacity: 0.55;',
-    '  transition: opacity 0.15s;',
-    '  vertical-align: baseline;',
-    '}',
-    '.cnfirmed-badge:hover, .cnfirmed-badge:focus { opacity: 1; outline: none; }',
-    '.cnfirmed-badge.cnfirmed-running { opacity: 1; animation: cnfirmed-spin 1.2s linear infinite; }',
-    '.cnfirmed-badge[data-cnfirmed-status="SUPPORTED"] { color: #14866d; opacity: 1; }',
-    '.cnfirmed-badge[data-cnfirmed-status="PARTIALLY SUPPORTED"] { color: #b08800; opacity: 1; }',
-    '.cnfirmed-badge[data-cnfirmed-status="NOT SUPPORTED"] { color: #b32424; opacity: 1; }',
-    '.cnfirmed-badge[data-cnfirmed-status="SOURCE UNAVAILABLE"] { color: #72777d; opacity: 1; }',
-    '.cnfirmed-badge[data-cnfirmed-status="error"] { color: #b32424; opacity: 1; }',
-    '.cnfirmed-badge[data-cnfirmed-status="wiki"] { color: #3056a9; opacity: 1; }',
-    '@keyframes cnfirmed-spin { to { transform: rotate(360deg); } }',
+    ':root{' + LIGHT_TOKENS + '}',
+    'html.skin-theme-clientpref-night{' + DARK_TOKENS + '}',
+    '@media (prefers-color-scheme: dark){html.skin-theme-clientpref-os{' + DARK_TOKENS + '}}',
+    '@keyframes cnfirmed-spin{to{transform:rotate(360deg)}}',
+    '.cnfirmed-spin{animation:cnfirmed-spin 0.9s linear infinite}',
 
-    '#p-cnfirmed .cnfirmed-tool-link {',
-    '  color: inherit; text-decoration: none;',
-    '  border-bottom: 1px dotted currentColor;',
-    '}',
-    '#p-cnfirmed .cnfirmed-tool-link:hover,',
-    '#p-cnfirmed .cnfirmed-tool-link:focus { color: #36c; }',
+    '#p-cnfirmed .cnfirmed-tool-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}',
+    '#p-cnfirmed .cnfirmed-tool-link:hover,#p-cnfirmed .cnfirmed-tool-link:focus{color:#36c}',
 
-    '#p-cnfirmed .cnfirmed-controls {',
-    '  padding: 4px 6px 8px 6px; border-bottom: 1px solid #eaecf0;',
-    '  margin-bottom: 4px; font-size: 0.85em;',
-    '}',
-    '#p-cnfirmed .cnfirmed-controls-row {',
-    '  display: flex; align-items: center; gap: 4px; margin-bottom: 4px;',
-    '}',
-    '#p-cnfirmed .cnfirmed-controls-row:last-child { margin-bottom: 0; }',
-    '#p-cnfirmed .cnfirmed-provider-select { flex: 1; font-size: 0.95em; padding: 1px 2px; }',
-    '#p-cnfirmed .cnfirmed-key-btn {',
-    '  font-size: 0.85em; padding: 1px 6px; cursor: pointer;',
-    '  background: #f8f9fa; border: 1px solid #c8ccd1; border-radius: 2px;',
-    '}',
-    '#p-cnfirmed .cnfirmed-key-btn:hover { background: #eaecf0; }',
-    '#p-cnfirmed .cnfirmed-key-status { font-size: 0.85em; color: #54595d; }',
-    '#p-cnfirmed .cnfirmed-key-status.cnfirmed-key-set { color: #14866d; }',
-    '#p-cnfirmed .cnfirmed-key-status.cnfirmed-key-missing { color: #b08800; }',
-    '#p-cnfirmed .cnfirmed-wiki-btn { flex: 1; text-align: center; }',
+    // The badge after each [citation needed]. An SVG, not an emoji: CSS
+    // cannot recolour an emoji, so its status colour never showed.
+    '.cnfirmed-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;' +
+      'margin-left:2px;padding:0;vertical-align:-3px;border:1px solid var(--cnf-line);border-radius:4px;' +
+      'background:var(--cnf-bg);color:var(--cnf-ink3);cursor:pointer;line-height:1}',
+    '.cnfirmed-badge:hover,.cnfirmed-badge:focus-visible{border-color:var(--cnf-link);outline:none}',
+    '.cnfirmed-badge svg{display:block;width:12px;height:12px}',
+    '.cnfirmed-badge[data-status="found"]{color:var(--cnf-ok)}',
+    '.cnfirmed-badge[data-status="partial"]{color:var(--cnf-warn)}',
+    '.cnfirmed-badge[data-status="leads"],.cnfirmed-badge[data-status="running"]{color:var(--cnf-link)}',
+    '.cnfirmed-badge[data-status="error"]{color:var(--cnf-err)}',
+    'sup.cnfirmed-active{background:var(--cnf-hl);box-shadow:0 0 0 2px var(--cnf-hl);border-radius:2px}',
+    '.cnfirmed-flash{background:var(--cnf-hl) !important;transition:background 0.4s}',
 
-    '#p-cnfirmed .cnfirmed-row { cursor: pointer; padding: 2px 0; }',
-    '#p-cnfirmed .cnfirmed-row:hover { background: rgba(0,0,0,0.04); }',
-    '#p-cnfirmed .cnfirmed-row-claim {',
-    '  display: block; font-size: 0.85em; line-height: 1.3;',
-    '  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
-    '  max-width: 100%;',
-    '}',
-    '#p-cnfirmed .cnfirmed-row-meta { display: flex; gap: 4px; align-items: center; font-size: 0.75em; }',
-    '.cnfirmed-pill {',
-    '  display: inline-block; padding: 0 4px; border-radius: 3px;',
-    '  font-size: 0.75em; line-height: 1.4; font-weight: bold;',
-    '}',
-    '.cnfirmed-pill[data-status="idle"] { background: #eaecf0; color: #54595d; }',
-    '.cnfirmed-pill[data-status="running"] { background: #36c; color: #fff; }',
-    '.cnfirmed-pill[data-status="SUPPORTED"] { background: #14866d; color: #fff; }',
-    '.cnfirmed-pill[data-status="PARTIALLY SUPPORTED"] { background: #b08800; color: #fff; }',
-    '.cnfirmed-pill[data-status="NOT SUPPORTED"] { background: #b32424; color: #fff; }',
-    '.cnfirmed-pill[data-status="SOURCE UNAVAILABLE"] { background: #72777d; color: #fff; }',
-    '.cnfirmed-pill[data-status="error"] { background: #b32424; color: #fff; }',
-    '.cnfirmed-pill[data-status="wiki"] { background: #3056a9; color: #fff; }',
-    '.cnfirmed-rel { font-size: 0.75em; color: #72777d; }',
-    '.cnfirmed-rel[data-rel="high"] { color: #14866d; }',
-    '.cnfirmed-rel[data-rel="medium"] { color: #b08800; }',
-    '.cnfirmed-rel[data-rel="low"] { color: #b32424; }',
+    '#cnfirmed-panel{position:fixed;top:0;right:0;z-index:10001;display:flex;flex-direction:column;' +
+      'width:400px;height:100vh;box-sizing:border-box;background:var(--cnf-bg);color:var(--cnf-ink);' +
+      'border-left:1px solid var(--cnf-line);box-shadow:-2px 0 8px rgba(0,0,0,0.12);' +
+      'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue","Liberation Sans",sans-serif;' +
+      'font-size:14px;line-height:1.45}',
+    '#cnfirmed-panel[hidden],#cnfirmed-panel [hidden]{display:none !important}',
+    '#cnfirmed-panel *{box-sizing:border-box}',
+    '#cnfirmed-panel button{font:inherit;color:inherit}',
+    '#cnfirmed-panel a{color:var(--cnf-link)}',
+    '#cnfirmed-panel :focus-visible{outline:2px solid var(--cnf-link);outline-offset:1px}',
+    '#cnfirmed-panel .cnf-resize{position:absolute;left:-3px;top:0;width:6px;height:100%;cursor:ew-resize;z-index:1}',
+    '#cnfirmed-panel .cnf-resize:hover{background:var(--cnf-link);opacity:0.4}',
 
-    '.cnfirmed-flash { background: #fef6e7 !important; transition: background 0.4s; }',
+    '#cnfirmed-panel .cnf-head{flex:none;display:flex;align-items:center;gap:2px;height:48px;' +
+      'padding:0 6px 0 16px;background:var(--cnf-hdr);color:#fff}',
+    '#cnfirmed-panel .cnf-brand{font-size:15px;font-weight:700;color:#fff;text-decoration:none}',
+    '#cnfirmed-panel .cnf-brand:hover{text-decoration:underline}',
+    '#cnfirmed-panel .cnf-spacer{flex:1}',
+    '#cnfirmed-panel .cnf-title{padding:0 8px;font-size:13px;font-weight:600}',
+    '#cnfirmed-panel .cnf-ib{display:inline-flex;align-items:center;justify-content:center;min-width:32px;' +
+      'height:36px;padding:0 6px;border:0;border-radius:6px;background:transparent;color:#fff;cursor:pointer;' +
+      'font-size:13px;font-weight:600;white-space:nowrap}',
+    '#cnfirmed-panel .cnf-ib:hover,#cnfirmed-panel .cnf-ib[aria-pressed="true"]{background:rgba(255,255,255,0.18)}',
+    '#cnfirmed-panel .cnf-ib:disabled{opacity:0.4;cursor:default;background:transparent}',
+    '#cnfirmed-panel .cnf-ib svg{display:block;width:16px;height:16px}',
+    '#cnfirmed-panel .cnf-ib svg.cnf-gear{width:18px;height:18px}',
 
-    '.cnfirmed-panel {',
-    '  position: fixed; z-index: 9999;',
-    '  bottom: 12px; left: 50%; transform: translateX(-50%);',
-    '  width: 420px; max-width: calc(100vw - 16px);',
-    '  background: #fff; color: #202122;',
-    '  border: 1px solid #a2a9b1; border-radius: 4px;',
-    '  box-shadow: 0 4px 18px rgba(0,0,0,0.25);',
-    '  font-size: 14px; line-height: 1.4; display: none;',
-    '}',
-    '.cnfirmed-panel.cnfirmed-panel-visible { display: block; }',
-    '.cnfirmed-panel-header {',
-    '  display: flex; align-items: center; gap: 6px;',
-    '  padding: 5px 6px 5px 10px;',
-    '  background: #f8f9fa; border-bottom: 1px solid #eaecf0;',
-    '  border-radius: 4px 4px 0 0; user-select: none;',
-    '}',
-    '.cnfirmed-panel-title {',
-    '  flex: 1; font-weight: bold; font-size: 0.85em; color: #54595d;',
-    '  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;',
-    '}',
-    '.cnfirmed-panel-close {',
-    '  flex: none; border: none; background: transparent; cursor: pointer;',
-    '  font-size: 18px; line-height: 1; padding: 0 4px; color: #54595d;',
-    '}',
-    '.cnfirmed-panel-close:hover { color: #202122; }',
-    '.cnfirmed-panel-body { padding: 8px 10px; max-height: 70vh; overflow: auto; }',
+    '#cnfirmed-panel .cnf-claim{flex:none;padding:14px 16px 12px;background:var(--cnf-bg2);border-bottom:1px solid var(--cnf-line)}',
+    '#cnfirmed-panel .cnf-section,#cnfirmed-panel .cnf-label{font-size:11.5px;font-weight:600;' +
+      'letter-spacing:0.06em;text-transform:uppercase;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-label{margin:0 0 4px;padding:0;border:0;font-family:inherit;line-height:1.45}',
+    '#cnfirmed-panel .cnf-claim-text{margin:4px 0 6px;max-height:6.5em;overflow:auto;font-size:14.5px;line-height:1.5}',
+    '#cnfirmed-panel .cnf-linkbtn{padding:0;border:0;background:none;color:var(--cnf-link);font-size:12.5px;' +
+      'cursor:pointer;text-decoration:underline;text-underline-offset:2px}',
+    '#cnfirmed-panel .cnf-body{flex:1 1 auto;min-height:0;overflow-y:auto}',
+    '#cnfirmed-panel .cnf-pad{display:flex;flex-direction:column;gap:18px;padding:16px 16px 72px}',
+    '#cnfirmed-panel .cnf-headline{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}',
+    '#cnfirmed-panel .cnf-headline svg{flex:none;width:16px;height:16px;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-headline[data-busy] svg{color:var(--cnf-link)}',
 
-    '.cnfirmed-popover { max-width: 380px; }',
-    '.cnfirmed-quote {',
-    '  font-style: italic; color: #54595d;',
-    '  border-left: 3px solid #c8ccd1; padding: 4px 8px;',
-    '  margin: 6px 0; font-size: 0.9em;',
-    '}',
-    '.cnfirmed-toolbar { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }',
-    '.cnfirmed-note { font-size: 0.85em; color: #54595d; margin-top: 4px; }',
-    '.cnfirmed-wiki {',
-    '  border-left: 3px solid #3056a9; padding-left: 8px; margin-bottom: 10px;',
-    '}',
-    '.cnfirmed-wiki-head {',
-    '  font-size: 0.8em; font-weight: bold; text-transform: uppercase;',
-    '  letter-spacing: 0.04em; color: #54595d; margin-bottom: 4px;',
-    '}',
-    '.cnfirmed-wiki-row + .cnfirmed-wiki-row {',
-    '  margin-top: 8px; padding-top: 8px; border-top: 1px solid #eaecf0;',
-    '}',
-    '.cnfirmed-origin {',
-    '  display: inline-block; padding: 0 4px; border-radius: 3px;',
-    '  font-size: 0.7em; font-weight: bold; text-transform: uppercase;',
-    '  background: #eaecf0; color: #54595d; vertical-align: 2px;',
-    '}',
-    '.cnfirmed-origin[data-origin="sister-wiki"] { background: #3056a9; color: #fff; }',
-    '.cnfirmed-origin[data-origin="same-article"] { background: #14866d; color: #fff; }',
-    '.cnfirmed-origin[data-origin="internet-archive"] { background: #6b4ba1; color: #fff; }',
-    '.cnfirmed-archive { border-left-color: #6b4ba1; }',
-    '.cnfirmed-toast {',
-    '  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);',
-    '  background: #202122; color: #fff; padding: 6px 12px; border-radius: 3px;',
-    '  font-size: 0.9em; z-index: 10000; opacity: 0;',
-    '  transition: opacity 0.2s; max-width: 80vw;',
-    '}',
-    '.cnfirmed-toast.cnfirmed-toast-visible { opacity: 1; }'
+    // One shape for every source, whatever found it. --cnf-v is the verdict colour.
+    '#cnfirmed-panel .cnf-item{--cnf-v:var(--cnf-link);border-top:1px solid var(--cnf-line2)}',
+    '#cnfirmed-panel .cnf-item[data-tier="supports"]{--cnf-v:var(--cnf-ok)}',
+    '#cnfirmed-panel .cnf-item[data-tier="partial"],#cnfirmed-panel .cnf-item[data-tier="flag"]{--cnf-v:var(--cnf-warn)}',
+    '#cnfirmed-panel .cnf-item[data-open]{margin:6px 0;border:1px solid var(--cnf-line);border-radius:8px;' +
+      'box-shadow:0 1px 3px rgba(0,0,0,0.08)}',
+    '#cnfirmed-panel .cnf-row{display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px 8px;border:0;' +
+      'border-radius:6px;background:transparent;text-align:left;cursor:pointer}',
+    '#cnfirmed-panel .cnf-row:hover{background:var(--cnf-bg2)}',
+    '#cnfirmed-panel .cnf-glyph{flex:none;display:inline-flex;margin-top:2px;color:var(--cnf-v)}',
+    '#cnfirmed-panel .cnf-glyph svg,#cnfirmed-panel .cnf-chev svg{display:block;width:16px;height:16px}',
+    '#cnfirmed-panel .cnf-row-main{flex:1;min-width:0}',
+    '#cnfirmed-panel .cnf-row-title{display:block;font-size:14px;font-weight:600;line-height:1.35;' +
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '#cnfirmed-panel .cnf-item[data-open] .cnf-row-title{white-space:normal;overflow-wrap:anywhere}',
+    '#cnfirmed-panel .cnf-row-meta{display:block;margin-top:2px;font-size:12.5px;line-height:1.4;' +
+      'color:var(--cnf-ink3);overflow-wrap:anywhere}',
+    '#cnfirmed-panel .cnf-verdict{font-weight:600;color:var(--cnf-v)}',
+    '#cnfirmed-panel .cnf-chev{flex:none;display:inline-flex;margin-top:2px;color:var(--cnf-ink3);transition:transform 0.15s}',
+    '#cnfirmed-panel .cnf-item[data-open] .cnf-chev{transform:rotate(90deg)}',
+    '#cnfirmed-panel .cnf-detail{padding:0 12px 14px 34px}',
+    '#cnfirmed-panel .cnf-quote{padding:10px 12px;border-radius:6px;background:var(--cnf-bg2);font-size:13.5px;' +
+      'line-height:1.5;color:var(--cnf-ink2);overflow-wrap:anywhere;unicode-bidi:plaintext}',
+    '#cnfirmed-panel .cnf-quote-label{display:block;margin-bottom:2px;font-size:12px;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-warnbox{display:flex;gap:8px;margin-top:10px;padding:9px 11px;border-radius:6px;' +
+      'background:var(--cnf-warnbg);color:var(--cnf-warn);font-size:12.5px;line-height:1.45}',
+    '#cnfirmed-panel .cnf-warnbox svg{flex:none;width:16px;height:16px;margin-top:1px}',
+    '#cnfirmed-panel .cnf-note{margin:8px 0 0;font-size:12.5px;line-height:1.45;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}',
+    '#cnfirmed-panel .cnf-btn{display:inline-flex;align-items:center;min-height:34px;padding:0 12px;' +
+      'border:1px solid var(--cnf-line3);border-radius:6px;background:transparent;color:var(--cnf-ink);' +
+      'font-size:13.5px;font-weight:600;cursor:pointer}',
+    '#cnfirmed-panel .cnf-btn:hover{background:var(--cnf-bg2)}',
+    '#cnfirmed-panel .cnf-btn:disabled{opacity:0.6;cursor:default}',
+    '#cnfirmed-panel .cnf-btn-pri{border-color:var(--cnf-pri);background:var(--cnf-pri);color:#fff}',
+    '#cnfirmed-panel .cnf-btn-pri:hover{background:var(--cnf-pri);filter:brightness(1.1)}',
+    '#cnfirmed-panel .cnf-btn-sm{flex:none;min-height:30px;padding:0 10px;font-size:12.5px}',
+    '#cnfirmed-panel .cnf-open{display:inline-flex;align-items:center;gap:4px;margin-left:auto;font-size:13px}',
+    '#cnfirmed-panel .cnf-open svg{width:13px;height:13px}',
+
+    // Where it looked: one row per search, with its state.
+    '#cnfirmed-panel .cnf-src{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--cnf-line2)}',
+    '#cnfirmed-panel .cnf-src-icon{flex:none;display:inline-flex;margin-top:2px;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-src-icon svg{display:block;width:16px;height:16px}',
+    '#cnfirmed-panel .cnf-src[data-state="done"] .cnf-src-icon{color:var(--cnf-ok)}',
+    '#cnfirmed-panel .cnf-src[data-state="running"] .cnf-src-icon{color:var(--cnf-link)}',
+    '#cnfirmed-panel .cnf-src[data-state="error"] .cnf-src-icon,' +
+      '#cnfirmed-panel .cnf-src[data-state="error"] .cnf-src-result{color:var(--cnf-err)}',
+    '#cnfirmed-panel .cnf-src-main{flex:1;min-width:0}',
+    '#cnfirmed-panel .cnf-src-name{display:block;font-size:13.5px}',
+    '#cnfirmed-panel .cnf-src-name b{font-weight:600}',
+    '#cnfirmed-panel .cnf-src-where{color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-src-result{display:block;margin-top:1px;font-size:12.5px;line-height:1.4;' +
+      'color:var(--cnf-ink3);overflow-wrap:anywhere}',
+
+    '#cnfirmed-panel .cnf-ov-title{font-size:16px;font-weight:600}',
+    '#cnfirmed-panel .cnf-ov-summary,#cnfirmed-panel .cnf-box p{margin:2px 0 0;font-size:12.5px;line-height:1.45;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-ov-row{--cnf-v:var(--cnf-ink3);display:flex;align-items:flex-start;gap:10px;width:100%;' +
+      'padding:12px 8px;border:0;border-top:1px solid var(--cnf-line2);background:transparent;text-align:left;cursor:pointer}',
+    '#cnfirmed-panel .cnf-ov-row:hover,#cnfirmed-panel .cnf-ov-row[aria-current="true"]{background:var(--cnf-bg2)}',
+    '#cnfirmed-panel .cnf-ov-row[data-kind="found"]{--cnf-v:var(--cnf-ok)}',
+    '#cnfirmed-panel .cnf-ov-row[data-kind="partial"]{--cnf-v:var(--cnf-warn)}',
+    '#cnfirmed-panel .cnf-ov-row[data-kind="leads"],#cnfirmed-panel .cnf-ov-row[data-kind="running"]{--cnf-v:var(--cnf-link)}',
+    '#cnfirmed-panel .cnf-ov-row[data-kind="error"]{--cnf-v:var(--cnf-err)}',
+    '#cnfirmed-panel .cnf-ov-text{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;' +
+      'overflow:hidden;font-size:13.5px;line-height:1.45}',
+    '#cnfirmed-panel .cnf-ov-status{display:block;margin-top:3px;font-size:12.5px;font-weight:600;color:var(--cnf-v)}',
+    '#cnfirmed-panel .cnf-box{padding:14px;border:1px solid var(--cnf-line);border-radius:8px}',
+    '#cnfirmed-panel .cnf-box p{margin-bottom:10px}',
+    '#cnfirmed-panel .cnf-box-title{font-size:14px;font-weight:600}',
+
+    '#cnfirmed-panel .cnf-field{margin:0;padding:0;border:0;min-width:0}',
+    '#cnfirmed-panel .cnf-field-label{display:block;margin:0 0 8px;padding:0;font-size:14px;font-weight:600}',
+    '#cnfirmed-panel .cnf-radio{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;padding:10px 12px;' +
+      'border:1px solid var(--cnf-line);border-radius:8px;cursor:pointer}',
+    '#cnfirmed-panel .cnf-radio[data-checked]{border-color:var(--cnf-link);background:var(--cnf-bg2)}',
+    '#cnfirmed-panel .cnf-radio input{margin:3px 0 0}',
+    '#cnfirmed-panel .cnf-radio-name{display:block;font-size:13.5px;font-weight:600}',
+    '#cnfirmed-panel .cnf-radio-desc{display:block;font-size:12.5px;line-height:1.4;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-keyrow{display:flex;gap:8px}',
+    '#cnfirmed-panel .cnf-input{flex:1;min-width:0;height:34px;padding:0 10px;border:1px solid var(--cnf-line3);' +
+      'border-radius:6px;background:var(--cnf-bg);color:var(--cnf-ink);font:inherit;font-size:13.5px}',
+    '#cnfirmed-panel .cnf-free{padding:12px 14px;border-radius:8px;background:var(--cnf-bg2)}',
+    '#cnfirmed-panel .cnf-free b{display:block;font-size:13.5px}',
+    '@media (max-width:720px){#cnfirmed-panel{width:100% !important}}',
+
+    '.cnfirmed-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:10002;' +
+      'max-width:80vw;padding:8px 14px;border-radius:6px;background:var(--cnf-toast);color:var(--cnf-toastink);' +
+      'font-size:0.9em;opacity:0;transition:opacity 0.2s}',
+    '.cnfirmed-toast.cnfirmed-toast-visible{opacity:1}'
   ].join('\n'));
 
   // ---- State ------------------------------------------------------------
@@ -377,13 +419,12 @@
   var archiveCacheKey = 'cnfirmed:ia:' + lang + ':' + pageTitle + ':' + revid;
 
   var cnSups = [];        // rendered <sup> nodes, in document order
-  var badges = [];        // matching <span class="cnfirmed-badge"> nodes
+  var badges = [];        // matching <button class="cnfirmed-badge"> nodes
   var claimContexts = []; // { claim, context, section, links } per CN
   var state = {};         // { [index]: { status, result?, error?, provider? } }
   var wikiState = {};     // { [index]: { status, candidates?, warnings?, error? } }
   var archiveState = {};  // { [index]: { status, candidates?, funnel?, error? } }
-  var helper = null;      // sidebar box handle, see createSidebarBox()
-  var popup = null;       // self-managed floating panel { $element, $body, $title }
+  var booted = false;     // claims extracted and caches read; see bootstrap()
 
   // ---- Boot sequence ----------------------------------------------------
 
@@ -408,7 +449,7 @@
 
     insertBadges();
 
-    mw.loader.using(['mediawiki.util', 'oojs-ui-windows', 'oojs-ui-core', 'oojs-ui-widgets'])
+    mw.loader.using(['mediawiki.util'])
       .then(function () {
         bootstrap();
       })
@@ -472,11 +513,8 @@
     return false;
   }
 
-  // The sidebar box. It used to come from User:Polygnotus/Helpers/Sidebar.js;
-  // that page was deleted, which silently took the box (and with it the
-  // provider and key controls) away, so the script now builds it itself.
-  //
-  // mw.util.addPortlet() leaves placement to the caller unless given a
+  // The sidebar box, now only for pages without a tag (everything else lives
+  // in the panel). mw.util.addPortlet() leaves placement to the caller unless given a
   // sibling to go before, so the box is appended after the last section of
   // the main menu, wherever the skin keeps it.
   function ensurePortlet(label) {
@@ -495,67 +533,60 @@
     return el;
   }
 
-  function portletHeading(portlet) {
-    return portlet.querySelector('.vector-menu-heading-label, .vector-menu-heading, h3, label');
-  }
+  // Inline icons. Constants only: nothing from a page or a response is ever
+  // put through innerHTML.
+  var ICONS = {
+    search: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><path d="m10.4 10.4 3.4 3.4"/></svg>',
+    supports: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.9 8.2 7 10.3 11.2 5.9" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--cnf-bg)"/></svg>',
+    partial: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4z" fill="currentColor"/></svg>',
+    lead: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    nothing: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M5.3 8h5.4"/></svg>',
+    flag: '<svg viewBox="0 0 16 16"><path d="M8 1.5 15.2 14.2H0.8z" fill="currentColor"/><path d="M8 6.2v3.7M8 11.9v.1" fill="none" stroke-width="1.7" stroke-linecap="round" style="stroke:var(--cnf-bg)"/></svg>',
+    info: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.3v3.9M8 4.9v.2"/></svg>',
+    spin: '<svg class="cnfirmed-spin" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6" opacity="0.25"/><path d="M14 8a6 6 0 0 0-6-6"/></svg>',
+    check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 8.4 6.5 11.6 12.8 4.6"/></svg>',
+    prev: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5 5.5 8 10 12.5"/></svg>',
+    next: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5 10.5 8 6 12.5"/></svg>',
+    close: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+    gear: '<svg class="cnf-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h8.6M17.4 6H20M4 12h2.6M11.4 12H20M4 18h10.6M19.4 18H20"/><circle cx="15" cy="6" r="2.4"/><circle cx="9" cy="12" r="2.4"/><circle cx="17" cy="18" r="2.4"/></svg>',
+    external: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5h4v4M13.5 2.5 8 8M12 9.5v3a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3"/></svg>'
+  };
 
-  function createSidebarBox(label) {
-    var portlet = ensurePortlet(label);
-    if (!portlet) return null;
-    return {
-      replaceRows: function (ul) {
-        var old = portlet.querySelector('ul');
-        if (old) {
-          ul.className = (old.className + ' ' + ul.className).trim();
-          old.parentNode.replaceChild(ul, old);
-        } else {
-          (portlet.querySelector('.vector-menu-content') || portlet).appendChild(ul);
-        }
-      },
-      setHeadingLabel: function (text) {
-        var heading = portletHeading(portlet);
-        if (!heading) return;
-        heading.textContent = text;
-        // Rewriting the text drops the docs link, and the button too when the
-        // heading has no separate label element.
-        linkifyPortletHeading();
-        addVerifyAllButton();
-      }
-    };
+  function icon(name) {
+    var holder = document.createElement('span');
+    holder.innerHTML = ICONS[name] || ICONS.lead;
+    var svg = holder.firstChild;
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    return svg;
   }
 
   function insertBadges() {
     cnSups.forEach(function (sup, i) {
-      var badge = document.createElement('span');
+      var badge = document.createElement('button');
+      badge.type = 'button';
       badge.className = 'cnfirmed-badge';
-      badge.setAttribute('role', 'button');
-      badge.setAttribute('tabindex', '0');
       badge.setAttribute('data-cn-index', String(i));
-      badge.setAttribute('title', 'Find sources with CNfirmed');
-      badge.textContent = '🔍';
+      badge.setAttribute('aria-label', 'Find sources for this claim (CNfirmed)');
+      badge.title = 'Find sources with CNfirmed';
+      badge.appendChild(icon('search'));
       sup.parentNode.insertBefore(badge, sup.nextSibling);
       badges.push(badge);
     });
 
     document.addEventListener('click', onBadgeActivate);
     document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      if (!e.target || !e.target.classList || !e.target.classList.contains('cnfirmed-badge')) return;
-      e.preventDefault();
-      onBadgeActivate(e);
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && panelVisible()) closePopover();
+      if (e.key === 'Escape' && panelVisible()) closePanel();
     });
   }
 
   function onBadgeActivate(e) {
-    var t = e.target;
-    if (!t || !t.classList || !t.classList.contains('cnfirmed-badge')) return;
+    var t = e.target && e.target.closest ? e.target.closest('.cnfirmed-badge') : null;
+    if (!t) return;
     var idx = parseInt(t.getAttribute('data-cn-index'), 10);
     if (isNaN(idx)) return;
     e.preventDefault();
-    onBadgeClick(idx);
+    openClaim(idx);
   }
 
   function bootstrap() {
@@ -563,8 +594,31 @@
     hydrateWikiCache();
     hydrateArchiveCache();
     extractAllClaims();
-    buildSidebar();
+    booted = true;
+    addEntryLink();
     for (var i = 0; i < cnSups.length; i++) renderBadge(i);
+  }
+
+  // One link to open the panel on the list of claims, where Source Verifier
+  // puts its own: beside the page tabs, or in the tools menu on other skins.
+  function addEntryLink() {
+    if (!mw.util || typeof mw.util.addPortletLink !== 'function') return;
+    var portlet = {
+      'vector-2022': 'p-associated-pages', vector: 'p-cactions',
+      monobook: 'p-cactions', timeless: 'p-associated-pages'
+    }[mw.config.get('skin')] || 'p-tb';
+    var label = 'CNfirmed (' + cnSups.length + ')';
+    var tip = 'Find sources for the ' + cnSups.length + ' citation-needed tag(s) on this page';
+    var link = mw.util.addPortletLink(portlet, '#', label, 'ca-cnfirmed', tip) ||
+      mw.util.addPortletLink('p-tb', '#', label, 'ca-cnfirmed', tip);
+    if (!link) {
+      console.warn('[CNfirmed] nowhere to put the panel link; the badges still open it');
+      return;
+    }
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      togglePanel();
+    });
   }
 
   function hydrateFromCache() {
@@ -574,6 +628,11 @@
       var parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') state = parsed;
     } catch (e) { /* ignore */ }
+    // A search still running when another claim's result was saved is not
+    // running any more.
+    Object.keys(state).forEach(function (k) {
+      if (state[k] && state[k].status === 'running') delete state[k];
+    });
   }
 
   function persist() {
@@ -693,318 +752,52 @@
     return (c.textContent || '').trim() || null;
   }
 
-  // ---- Sidebar ----------------------------------------------------------
+  // ---- Finding sources --------------------------------------------------
 
-  function buildSidebar() {
-    helper = createSidebarBox('CNfirmed (' + cnSups.length + ')');
-    if (!helper) {
-      console.warn('[CNfirmed] no sidebar to attach to; the popover still works');
-      return;
-    }
-    helper.replaceRows(buildSidebarUl());
-    ensureControlsBar();
-    addVerifyAllButton();
-    linkifyPortletHeading();
-  }
+  // Free first, paid second. Opening a claim runs both free searches at once:
+  // the citations Wikipedia already holds, and Internet Archive books (whose
+  // passages the Verify API then checks). The paid web search only starts by
+  // itself when both came back empty and a key is set; otherwise it waits for
+  // a click.
+  var autoWebConsidered = {};
 
-  function buildSidebarUl() {
-    var ul = document.createElement('ul');
-    for (var i = 0; i < cnSups.length; i++) {
-      ul.appendChild(buildRow(i));
-    }
-    return ul;
-  }
-
-  function buildRow(i) {
-    var li = document.createElement('li');
-    li.className = 'cnfirmed-row';
-    li.setAttribute('data-cn-index', String(i));
-
-    var c = claimContexts[i];
-    var s = state[i] || { status: 'idle' };
-
-    var claimSpan = document.createElement('span');
-    claimSpan.className = 'cnfirmed-row-claim';
-    claimSpan.textContent = c && c.claim ? truncate(c.claim, 80) : '(claim)';
-
-    var meta = document.createElement('span');
-    meta.className = 'cnfirmed-row-meta';
-
-    var pill = document.createElement('span');
-    pill.className = 'cnfirmed-pill';
-    var w = wikiState[i] || {};
-    var pillStatus = s.status;
-    if (s.status === 'done' && s.result && s.result.suggestions[0]) {
-      pillStatus = s.result.suggestions[0].verdict.verdict;
-    } else if (w.status === 'running' && s.status === 'idle') {
-      pillStatus = 'running';
-    } else if (w.status === 'done' && w.candidates && w.candidates.length &&
-               s.status !== 'running') {
-      pillStatus = 'wiki';
-    }
-    pill.setAttribute('data-status', pillStatus);
-    pill.textContent = pillLabel(pillStatus);
-    meta.appendChild(pill);
-
-    if (s.status === 'done' && s.result && s.result.suggestions[0]) {
-      var rel = document.createElement('span');
-      rel.className = 'cnfirmed-rel';
-      var relValue = s.result.suggestions[0].verdict.reliability;
-      rel.setAttribute('data-rel', relValue);
-      rel.textContent = relValue;
-      meta.appendChild(rel);
-    }
-
-    li.appendChild(claimSpan);
-    li.appendChild(meta);
-
-    li.addEventListener('click', function () {
-      var sup = cnSups[i];
-      if (sup) {
-        sup.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        flash(sup);
-      }
-      onBadgeClick(i);
-    });
-    return li;
-  }
-
-  function pillLabel(status) {
-    switch (status) {
-      case 'idle': return 'idle';
-      case 'running': return 'running…';
-      case 'wiki': return '\u25c8 on wiki';
-      case 'SUPPORTED': return '✓ supported';
-      case 'PARTIALLY SUPPORTED': return '~ partial';
-      case 'NOT SUPPORTED': return '✗ not supported';
-      case 'SOURCE UNAVAILABLE': return '? unavailable';
-      case 'error': return 'error';
-      default: return status;
-    }
-  }
-
-  function renderRow(i) {
-    var ul = document.querySelector('#p-cnfirmed ul');
-    if (!ul) return;
-    var existing = ul.querySelector('li[data-cn-index="' + i + '"]');
-    var fresh = buildRow(i);
-    if (existing) ul.replaceChild(fresh, existing);
-    else ul.appendChild(fresh);
-  }
-
-  function renderBadge(i) {
-    var badge = badges[i];
-    if (!badge) return;
-    var s = state[i] || { status: 'idle' };
-    badge.classList.remove('cnfirmed-running');
-    if (s.status === 'running') {
-      badge.classList.add('cnfirmed-running');
-      badge.removeAttribute('data-cnfirmed-status');
-      return;
-    }
-    var w = wikiState[i] || {};
-    if (s.status === 'done' && s.result && s.result.suggestions[0]) {
-      badge.setAttribute('data-cnfirmed-status', s.result.suggestions[0].verdict.verdict);
-    } else if (s.status === 'error') {
-      badge.setAttribute('data-cnfirmed-status', 'error');
-    } else if (w.status === 'done' && w.candidates && w.candidates.length) {
-      badge.setAttribute('data-cnfirmed-status', 'wiki');
-    } else {
-      badge.removeAttribute('data-cnfirmed-status');
-    }
-  }
-
-  function ensureControlsBar() {
-    var portlet = document.getElementById('p-cnfirmed');
-    if (!portlet) return;
-    if (portlet.querySelector('.cnfirmed-controls')) {
-      renderControlsBar();
-      return;
-    }
-    var bar = document.createElement('div');
-    bar.className = 'cnfirmed-controls';
-    var ul = portlet.querySelector('ul');
-    if (ul) ul.parentNode.insertBefore(bar, ul);
-    else portlet.appendChild(bar);
-    renderControlsBar();
-  }
-
-  function renderControlsBar() {
-    var bar = document.querySelector('#p-cnfirmed .cnfirmed-controls');
-    if (!bar) return;
-    bar.innerHTML = '';
-
-    var providerId = getProvider();
-    var hasKey = !!getKey(providerId);
-
-    // Row 1: provider <select>
-    var row1 = document.createElement('div');
-    row1.className = 'cnfirmed-controls-row';
-    var label = document.createElement('span');
-    label.textContent = 'Provider:';
-    row1.appendChild(label);
-    var select = document.createElement('select');
-    select.className = 'cnfirmed-provider-select';
-    Object.keys(PROVIDERS).forEach(function (id) {
-      var opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = PROVIDERS[id].name;
-      if (id === providerId) opt.selected = true;
-      select.appendChild(opt);
-    });
-    select.addEventListener('change', function () {
-      setProvider(select.value);
-      renderControlsBar();
-    });
-    row1.appendChild(select);
-    bar.appendChild(row1);
-
-    // Row 2: key status + buttons
-    var row2 = document.createElement('div');
-    row2.className = 'cnfirmed-controls-row';
-    var status = document.createElement('span');
-    status.className = 'cnfirmed-key-status ' + (hasKey ? 'cnfirmed-key-set' : 'cnfirmed-key-missing');
-    status.textContent = hasKey ? 'API key: set' : 'API key: not set';
-    row2.appendChild(status);
-
-    var spacer = document.createElement('span');
-    spacer.style.flex = '1';
-    row2.appendChild(spacer);
-
-    var setBtn = document.createElement('button');
-    setBtn.className = 'cnfirmed-key-btn';
-    setBtn.textContent = hasKey ? 'Change' : 'Set key';
-    setBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      promptForKey(providerId);
-    });
-    row2.appendChild(setBtn);
-
-    if (hasKey) {
-      var rmBtn = document.createElement('button');
-      rmBtn.className = 'cnfirmed-key-btn';
-      rmBtn.textContent = 'Remove';
-      rmBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (!confirm('Remove the stored ' + keyLabel(providerId) + '?')) return;
-        setKey(providerId, '');
-        renderControlsBar();
-        toast(keyLabel(providerId) + ' removed');
-      });
-      row2.appendChild(rmBtn);
-    }
-
-    bar.appendChild(row2);
-
-    // Row 3: the free stage. Deliberately outside the API-key controls — it
-    // needs no key, and that is the point.
-    var row3 = document.createElement('div');
-    row3.className = 'cnfirmed-controls-row';
-    var wikiBtn = document.createElement('button');
-    wikiBtn.className = 'cnfirmed-key-btn cnfirmed-wiki-btn';
-    wikiBtn.textContent = 'Find sources on Wikipedia (free)';
-    wikiBtn.title = 'Look for citations in this article and on other language ' +
-      'editions. No API key, no cost.';
-    wikiBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      findWikiSourcesForAll();
-    });
-    row3.appendChild(wikiBtn);
-    bar.appendChild(row3);
-  }
-
-  function promptForKey(providerId) {
-    var p = PROVIDERS[providerId];
-    var label = keyLabel(providerId);
-    var existing = getKey(providerId);
-    return new Promise(function (resolve) {
-      var $input = $('<input>').attr({
-        type: 'password',
-        placeholder: label,
-        autocomplete: 'off',
-        spellcheck: 'false'
-      }).val(existing).css({
-        width: '100%', padding: '4px 6px', 'box-sizing': 'border-box',
-        'font-family': 'monospace'
-      });
-      var $msg = $('<div>').append(
-        $('<p>').text(label + ' (stored in this browser\'s localStorage):'),
-        $input,
-        $('<p>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '6px' })
-          .text('The key is sent only to ' + (p.keyService || p.name) + '\'s API' +
-            (p.keyService ? ' (through the CNfirmed proxy)' : '') +
-            '. Leave blank and Save to remove it.')
-      );
-      OO.ui.confirm($msg, {
-        title: 'Set ' + label,
-        actions: [
-          { action: 'reject', label: 'Cancel', flags: 'safe' },
-          { action: 'accept', label: 'Save', flags: ['primary', 'progressive'] }
-        ]
-      }).done(function (confirmed) {
-        if (confirmed) {
-          setKey(providerId, $input.val());
-          renderControlsBar();
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      });
-    });
-  }
-
-  function addVerifyAllButton() {
-    var portlet = document.getElementById('p-cnfirmed');
-    if (!portlet) return;
-    var heading = portlet.querySelector('.vector-menu-heading, h3, label');
-    if (!heading || heading.querySelector('.cnfirmed-verify-all')) return;
-    heading.style.position = 'relative';
-    var btn = document.createElement('button');
-    btn.className = 'cnfirmed-verify-all';
-    btn.textContent = 'Verify all';
-    btn.title = 'Check Wikipedia\u2019s own sources for every claim (free), then ' +
-      'offer to web-search the ones it could not answer.';
-    btn.style.cssText = 'position:absolute;top:50%;right:24px;transform:translateY(-50%);' +
-      'font-size:10px;padding:1px 6px;cursor:pointer;background:#36c;color:#fff;' +
-      'border:none;border-radius:2px;';
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      verifyAll();
-    });
-    heading.appendChild(btn);
-  }
-
-  // ---- Verification orchestration ---------------------------------------
-
-  // Free first, paid second. The wiki-local stage needs no API key, so a badge
-  // click always does something useful; the web search is only reached when
-  // Wikipedia's own sources come up empty, or the user asks for it.
-  function onBadgeClick(i) {
-    openPopover(i);
-    var s = state[i] || { status: 'idle' };
-    if (s.status === 'running') return;
-    var alreadySearched = s.status === 'done' || s.status === 'error';
-
-    // The free stage runs on every click — it is cached, so this is a no-op
-    // the second time — and only then is the paid search considered.
-    runWikiStage(i).then(function (w) {
+  function startClaim(i) {
+    var wiki = runWikiStage(i);
+    var books = runBooks(i);
+    renderPanel(i);
+    return Promise.all([wiki, books]).then(function () {
       renderPanel(i);
-      if (alreadySearched) return;
-      if (w.status === 'done' && w.candidates && w.candidates.length > 0) return;
-      // Nothing on wiki. Fall through to the paid path, as before, but only
-      // when a key is already set — never prompt for one unasked.
-      if (getKey(getProvider())) runOne(i);
+      maybeAutoWeb(i);
     });
+  }
+
+  function runBooks(i) {
+    if (archiveQueriesFor(i).length === 0) return Promise.resolve(null);
+    return runArchiveStage(i).then(function (a) {
+      // Leads cached before their check finished are checked now.
+      if (a && a.status === 'done' && (a.candidates || []).length && !a.check) {
+        return checkArchiveStage(i);
+      }
+      return a;
+    });
+  }
+
+  function maybeAutoWeb(i) {
+    if (autoWebConsidered[i]) return;
+    autoWebConsidered[i] = true;
+    var s = state[i];
+    if (s && s.status !== 'idle') return;
+    if (collectItems(i).items.length > 0) return;
+    if (!getKey(getProvider())) return;
+    runOne(i);
   }
 
   function runOne(i) {
     var providerId = getProvider();
     var key = getKey(providerId);
     if (!key) {
-      toast('Set your ' + PROVIDERS[providerId].name + ' API key first');
-      promptForKey(providerId).then(function (ok) {
-        if (ok && getKey(providerId)) runOne(i);
-      });
+      toast('Add your ' + keyLabel(providerId) + ' first');
+      openSettings();
       return;
     }
 
@@ -1012,112 +805,76 @@
     if (!ctx || !ctx.claim) {
       var msg = 'Could not extract a claim from the surrounding text.';
       state[i] = { status: 'error', error: msg, provider: providerId };
-      renderRow(i); renderBadge(i); persist(); renderPanel(i);
+      persist(); renderPanel(i);
       return;
     }
 
     state[i] = { status: 'running', provider: providerId };
-    renderRow(i); renderBadge(i); renderPanel(i);
+    renderPanel(i);
 
     PROVIDERS[providerId].run(ctx, key)
       .then(function (suggestions) {
         var ranked = rankSuggestions(suggestions);
         var result = { claim: ctx, suggestions: ranked, provider: providerId };
         state[i] = { status: 'done', result: result, provider: providerId };
-        persist(); renderRow(i); renderBadge(i); renderPanel(i);
+        persist(); renderPanel(i);
       })
       .catch(function (err) {
         var msg = (err && err.message) ? err.message : String(err);
         state[i] = { status: 'error', error: msg, provider: providerId };
-        persist(); renderRow(i); renderBadge(i); renderPanel(i);
+        persist(); renderPanel(i);
       });
   }
 
-  // Runs the free wiki-local stage over every claim. No key, no model, no
-  // confirmation needed — nothing here costs anything.
-  function scanWikiAll() {
-    var pending = [];
-    for (var i = 0; i < cnSups.length; i++) {
-      var w = wikiState[i];
-      if (!w || w.status !== 'done') pending.push(i);
-    }
-    if (pending.length === 0) return Promise.resolve();
-    toast('Checking Wikipedia sources for ' + pending.length + ' claim(s)…');
-    // The corpus is fetched once; everything after that is local, so a plain
-    // sequential walk is both simple and fast.
-    return pending.reduce(function (chain, index) {
-      return chain.then(function () { return runWikiStage(index); });
+  // "Find sources for all": both free searches for every claim, one claim at
+  // a time — the Wikipedia corpus is fetched once, and the Archive check
+  // shares the Verify API's 30 requests a minute with everyone else.
+  var batch = null; // { done, total, promise } while it runs
+
+  function findAllFree() {
+    if (batch) return batch.promise;
+    var indexes = [];
+    for (var i = 0; i < cnSups.length; i++) indexes.push(i);
+    batch = { done: 0, total: indexes.length };
+    renderPanel();
+    batch.promise = indexes.reduce(function (chain, index) {
+      return chain.then(function () {
+        return runWikiStage(index)
+          .then(function () { return runBooks(index); })
+          .catch(function (err) { console.error('[CNfirmed] search failed for claim', index, ':', err); })
+          .then(function () { batch.done++; renderPanel(index); });
+      });
     }, Promise.resolve()).then(function () {
-      renderPanel(popoverIndex);
+      batch = null;
+      renderPanel();
+      toast('CNfirmed: free search finished');
     });
+    return batch.promise;
   }
 
-  function wikiHitCount() {
-    var hits = 0;
+  // Claims both free searches came back empty for, not yet searched on the web.
+  function claimsForWeb() {
+    var out = [];
     for (var i = 0; i < cnSups.length; i++) {
-      var w = wikiState[i];
-      if (w && w.status === 'done' && w.candidates && w.candidates.length) hits++;
+      var ctx = claimContexts[i];
+      var s = state[i];
+      if (!ctx || !ctx.claim || (s && s.status !== 'idle')) continue;
+      if (claimStatus(i).kind === 'nothing') out.push(i);
     }
-    return hits;
+    return out;
   }
 
-  function findWikiSourcesForAll() {
-    return scanWikiAll().then(function () {
-      var hits = wikiHitCount();
-      toast('CNfirmed: ' + hits + '/' + cnSups.length +
-        ' claim(s) have a source already on Wikipedia');
-    }).catch(function (err) {
-      toast('Wiki lookup failed: ' + ((err && err.message) || err));
-    });
-  }
-
-  // "Verify all" now means: free stage everywhere, then pay only for the
-  // claims Wikipedia could not answer.
-  function verifyAll() {
-    return scanWikiAll().then(function () {
-      var queue = [];
-      var onWiki = 0;
-      for (var i = 0; i < cnSups.length; i++) {
-        if (state[i] && state[i].status === 'done') continue;
-        var w = wikiState[i];
-        if (w && w.status === 'done' && w.candidates && w.candidates.length) {
-          onWiki++;
-          continue;
-        }
-        queue.push(i);
-      }
-
-      if (queue.length === 0) {
-        toast(onWiki > 0
-          ? 'Every remaining claim already has a source on Wikipedia'
-          : 'All claims already verified (clear cache to re-run)');
-        return;
-      }
-
-      var providerId = getProvider();
-      if (!getKey(providerId)) {
-        toast('Set your ' + PROVIDERS[providerId].name + ' API key first');
-        return promptForKey(providerId).then(function (ok) {
-          if (ok && getKey(providerId)) return verifyAll();
-        });
-      }
-
-      var msg = (onWiki > 0
-        ? onWiki + ' claim(s) already have a source on Wikipedia, for free.\n\n'
-        : '') +
-        'Search the web for the remaining ' + queue.length + ' claim(s) using ' +
-        PROVIDERS[providerId].name + '? That is ' + queue.length +
-        ' API call(s) — costs scale linearly.';
-      if (!confirm(msg)) return;
-      return runWebSearchQueue(queue, providerId);
-    });
+  function searchWebForNothing() {
+    var providerId = getProvider();
+    if (!getKey(providerId)) {
+      openSettings();
+      return;
+    }
+    var queue = claimsForWeb();
+    if (queue.length) runWebSearchQueue(queue, providerId);
   }
 
   function runWebSearchQueue(queue, providerId) {
-    if (helper && helper.setHeadingLabel) {
-      helper.setHeadingLabel('CNfirmed (0/' + queue.length + ')');
-    }
-    var done = 0;
     var concurrency = 2;
     var inFlight = 0;
     var idx = 0;
@@ -1127,7 +884,7 @@
           var i = queue[idx++];
           inFlight++;
           state[i] = { status: 'running', provider: providerId };
-          renderRow(i); renderBadge(i);
+          renderPanel(i);
           (function (k) {
             PROVIDERS[providerId].run(claimContexts[k], getKey(providerId))
               .then(function (suggestions) {
@@ -1146,16 +903,10 @@
                 };
               })
               .then(function () {
-                inFlight--; done++;
-                persist(); renderRow(k); renderBadge(k); renderPanel(k);
-                if (helper && helper.setHeadingLabel) {
-                  helper.setHeadingLabel('CNfirmed (' + done + '/' + queue.length + ')');
-                }
+                inFlight--;
+                persist(); renderPanel(k);
                 if (idx >= queue.length && inFlight === 0) {
-                  if (helper && helper.setHeadingLabel) {
-                    helper.setHeadingLabel('CNfirmed (' + cnSups.length + ')');
-                  }
-                  toast('CNfirmed: web search complete');
+                  toast('CNfirmed: web search finished');
                   resolve();
                 } else {
                   next();
@@ -3776,479 +3527,834 @@
     return { template: template, ref: '<ref>' + template + '</ref>', kind: kind };
   }
 
-  // ---- Popover (OOUI) ---------------------------------------------------
+  // ---- What was found, in one list ---------------------------------------
+  // Every search's results become the same kind of item, ranked by how sure
+  // we are that the source states the claim — not by which search found it:
+  //   supports  checked against the claim and states it
+  //   partial   checked, states part of it
+  //   lead      not checked: cited for a similar sentence, or no verdict
+  //   flag      "supports" it, but repeats the article word for word
+  // Sources checked and found not to state the claim are only counted.
 
-  var popoverIndex = null;
+  var TIER_ORDER = { supports: 0, partial: 1, lead: 2, flag: 3 };
 
-  // Self-managed floating panel. We deliberately do NOT use OO.ui.PopupWidget
-  // here: its FloatableElement/ClippableElement/autoClose machinery proved
-  // flaky without a configured anchor container — the popover frequently
-  // failed to appear at all (the badge would spin, verification would finish,
-  // but nothing showed), or snapped to the top of the article. This panel is a
-  // plain DOM dialog docked to the bottom of the viewport (position: fixed), so
-  // it stays in a stable, predictable place as the article scrolls and is
-  // always visible while you look at the tag. It stays open until the user
-  // dismisses it (× button, Escape, or opening a different claim).
-  function ensurePopover() {
-    if (popup) return popup;
-    var $el = $('<div class="cnfirmed-panel" role="dialog" aria-label="CNfirmed">');
-    var $header = $('<div class="cnfirmed-panel-header">');
-    var $title = $('<span class="cnfirmed-panel-title">').text('CNfirmed');
-    var $close = $('<button type="button" class="cnfirmed-panel-close" aria-label="Close">×</button>');
-    $close.on('click', closePopover);
-    $header.append($title, $close);
-    var $body = $('<div class="cnfirmed-panel-body cnfirmed-popover">');
-    $el.append($header, $body);
-    $(document.body).append($el);
-    popup = { $element: $el, $body: $body, $title: $title };
-    return popup;
+  // Hosts of documents anyone can upload: worth a warning, not a block.
+  var USER_UPLOAD_HOSTS = ['scribd.com', 'issuu.com', 'yumpu.com', 'pdfcoffee.com', 'dokumen.pub'];
+
+  function isUserUploadHost(url) {
+    var host = hostOf(url);
+    return USER_UPLOAD_HOSTS.some(function (d) { return host === d || host.endsWith('.' + d); });
   }
 
-  function openPopover(i) {
-    popoverIndex = i;
-    var p = ensurePopover();
-    var ctx = claimContexts[i];
-    p.$title.text(ctx && ctx.claim ? truncate(ctx.claim, 60) : 'CNfirmed');
-    renderPanel(i);
-    p.$element.addClass('cnfirmed-panel-visible');
+  function copyCompare(text) {
+    return String(text || '').toLowerCase()
+      .replace(/[‘’“”"'`]/g, '')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   }
 
-  // One renderer for the whole panel: the free wiki-local leads on top, then
-  // whatever the paid web search has to say (or the button that starts it).
-  function renderPanel(i) {
-    if (i === null || i === undefined) return;
-    if (popoverIndex !== i || !popup) return;
-    var $el = popup.$body;
-    $el.empty();
-    renderWikiInto($el, i, wikiState[i] || { status: 'idle' });
-    renderArchiveInto($el, i, archiveState[i] || { status: 'idle' });
+  // A page that "supports" the claim by repeating the article's sentence word
+  // for word is almost always a copy of Wikipedia (WP:CIRCULAR).
+  function copiesClaim(claim, text) {
+    var c = copyCompare(claim);
+    return c.length >= 40 && copyCompare(text).indexOf(c) !== -1;
+  }
 
+  function plural(n, word) {
+    return n + ' ' + word + (n === 1 ? '' : 's');
+  }
+
+  function webItem(ctx, s, key) {
+    var v = s.verdict || {};
+    var tier, verdictText;
+    if (v.verdict === 'SUPPORTED') { tier = 'supports'; verdictText = 'Supports the claim'; }
+    else if (v.verdict === 'PARTIALLY SUPPORTED') { tier = 'partial'; verdictText = 'Supports part of the claim'; }
+    else if (v.verdict === 'SOURCE UNAVAILABLE') { tier = 'lead'; verdictText = 'Could not be read'; }
+    else return null;
+    var url = s.source.url;
+    var host = hostOf(url);
+    var warnings = [];
+    if (tier !== 'lead' && copiesClaim(ctx.claim, v.comments)) {
+      tier = 'flag';
+      verdictText = 'Probably copied from Wikipedia';
+      warnings.push('The page repeats the article’s sentence word for word, so it is probably ' +
+        'copied from Wikipedia (WP:CIRCULAR). Look for the source it came from.');
+    }
+    if (isUserUploadHost(url)) {
+      warnings.push(host + ' hosts documents anyone can upload. Cite the original publication instead.');
+    }
+    if (v.reliability === 'low') {
+      warnings.push('Reliability for this claim: low. ' + (v.reliabilityReason || ''));
+    }
+    return {
+      key: key,
+      tier: tier,
+      verdictText: verdictText,
+      title: s.source.title || url,
+      url: url,
+      meta: host + ' · web search',
+      quoteLabel: 'From the page:',
+      quote: v.comments || '',
+      warnings: warnings,
+      note: v.reliability === 'medium' && v.reliabilityReason
+        ? 'Reliability for this claim: medium. ' + v.reliabilityReason : '',
+      ref: s.citation && s.citation.ref
+    };
+  }
+
+  function archiveItem(c, verdict, checkDone, key) {
+    var ev = c.evidence || {};
+    var tier = verdict === 'supports' ? 'supports' : verdict === 'partial' ? 'partial' : 'lead';
+    var verdictText = verdict === 'supports' ? 'Supports the claim'
+      : verdict === 'partial' ? 'Supports part of the claim'
+      : checkDone ? 'Lead, the check gave no verdict' : 'Lead, not checked';
+    var words = c.check && c.check.quote;
+    var notes = [];
+    if (c.check && c.check.reason) notes.push(c.check.reason);
+    notes.push('Find the page in the book and add |page= to the citation.');
+    if (ev.year && new Date().getUTCFullYear() - ev.year > 100) {
+      notes.push('Old sources can be outdated (WP:AGEMATTERS).');
+    }
+    return {
+      key: key,
+      tier: tier,
+      verdictText: verdictText,
+      title: c.title,
+      url: ev.viewerUrl || c.url,
+      meta: ['Internet Archive', ev.year,
+        ev.access === 'borrow' ? 'borrow with a free account' : 'free to read'].filter(Boolean).join(' · '),
+      quoteLabel: words ? 'The words that state it:' : 'Passage:',
+      // A passage from the whole text is already cut with "…".
+      quote: words || (ev.fullText ? c.snippet : '…' + c.snippet + '…'),
+      warnings: [],
+      note: notes.join(' '),
+      ref: c.citation && c.citation.ref
+    };
+  }
+
+  function wikiItem(c, key) {
+    var ev = c.evidence || {};
+    var same = ev.origin === 'same-article';
+    var host = c.url ? hostOf(c.url) : '';
+    var where = same ? 'already cited in this article' : 'cited on ' + ev.lang + '.wikipedia';
+    return {
+      key: key,
+      tier: 'lead',
+      verdictText: 'Lead, not checked',
+      title: c.title,
+      url: c.url || null,
+      meta: (host ? host + ' · ' : '') + where,
+      quoteLabel: same ? 'Cited in this article for:' : 'Cited on ' + ev.lang + '.wikipedia for:',
+      quote: truncate(ev.sentence || c.snippet || '', 400),
+      warnings: [],
+      note: same && /^<ref name=/.test(c.ref || '')
+        ? 'Insert re-uses the citation already in the article.' : '',
+      ref: c.ref
+    };
+  }
+
+  // Each search's state for a claim: idle | running | done | error, and
+  // 'none' for books when the claim has nothing to search on.
+  function stageStates(i) {
+    var w = wikiState[i] || { status: 'idle' };
+    var a = archiveState[i] || { status: 'idle' };
     var s = state[i] || { status: 'idle' };
-    if (s.status === 'running') {
-      renderProgressInto($el, { phase: 'verifying', provider: s.provider });
-    } else if (s.status === 'error') {
-      $el.append($('<div>').css({ color: '#b32424', 'margin-top': '8px' })
-        .text((s.provider && PROVIDERS[s.provider] ? PROVIDERS[s.provider].name + ' w' : 'W') +
-          'eb search error: ' + s.error));
-      renderWebSearchCta($el, i, 'Try the web search again');
-    } else if (s.status === 'done' && s.result) {
-      renderResultInto($el, i, s.result);
-    } else {
-      renderWebSearchCta($el, i, null);
-    }
+    var books;
+    if (archiveQueriesFor(i).length === 0) books = 'none';
+    else if (a.status !== 'done') books = a.status;
+    else if ((a.candidates || []).length && (!a.check || a.check.status === 'running')) books = 'running';
+    else books = 'done';
+    return { wiki: w.status, books: books, web: s.status };
   }
 
-  // The free stage: citations Wikipedia already holds for a sentence like this
-  // one. Evidence, not a verdict — the editor reads the source and decides.
-  function renderWikiInto($el, i, w) {
-    var $section = $('<div class="cnfirmed-wiki">');
-    if (w.status === 'running' || w.status === 'idle') {
-      $section.append($('<div>').text('Checking sources already on Wikipedia…'));
-      $section.append($('<div class="cnfirmed-note">')
-        .text('This article\u2019s own references, and the same fact on other language editions. Free, no API key.'));
-      $el.append($section);
-      return;
-    }
-    if (w.status === 'error') {
-      $section.append($('<div class="cnfirmed-note">')
-        .css('color', '#b32424').text('Wiki lookup failed: ' + w.error));
-      $el.append($section);
-      return;
+  function collectItems(i) {
+    var ctx = claimContexts[i] || {};
+    var all = [];
+    var counts = { web: null, books: null };
+
+    var s = state[i];
+    if (s && s.status === 'done' && s.result) {
+      var wc = { total: 0, supports: 0, partial: 0, copies: 0, rejected: 0 };
+      (s.result.suggestions || []).forEach(function (sg, k) {
+        wc.total++;
+        var item = webItem(ctx, sg, 'web' + k);
+        if (!item) { wc.rejected++; return; }
+        if (item.tier === 'supports') wc.supports++;
+        else if (item.tier === 'partial') wc.partial++;
+        else if (item.tier === 'flag') wc.copies++;
+        all.push(item);
+      });
+      counts.web = wc;
     }
 
-    var candidates = w.candidates || [];
-    if (candidates.length === 0) {
-      $section.append($('<div class="cnfirmed-note">')
-        .text('No citation on Wikipedia matches this claim.'));
-      $el.append($section);
-      return;
+    // Books are listed once checked, or if the check failed; while it runs
+    // they would only flicker in and out.
+    var a = archiveState[i];
+    if (a && a.status === 'done' && a.check && a.check.status !== 'running') {
+      var checkDone = a.check.status === 'done';
+      var bc = { total: 0, supports: 0, partial: 0, rejected: 0, unclear: 0 };
+      (a.candidates || []).forEach(function (c, k) {
+        bc.total++;
+        var verdict = checkDone && c.check ? c.check.verdict : null;
+        if (verdict && !archiveCheckWanted(verdict)) { bc.rejected++; return; }
+        if (verdict === 'supports') bc.supports++;
+        else if (verdict === 'partial') bc.partial++;
+        else bc.unclear++;
+        all.push(archiveItem(c, verdict, checkDone, 'ia' + k));
+      });
+      counts.books = bc;
     }
 
-    $section.append(
-      $('<div class="cnfirmed-wiki-head">').text('Already on Wikipedia (' + candidates.length + ')')
-    );
-    candidates.slice(0, 3).forEach(function (c) {
-      $section.append(renderWikiCandidate(i, c));
+    var w = wikiState[i];
+    if (w && w.status === 'done') {
+      (w.candidates || []).forEach(function (c, k) { all.push(wikiItem(c, 'wiki' + k)); });
+    }
+
+    all.sort(function (x, y) { return TIER_ORDER[x.tier] - TIER_ORDER[y.tier]; });
+    var seen = Object.create(null);
+    var items = all.filter(function (item) {
+      var k = item.url ? urlKeyOf(item.url) : item.key;
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
     });
-    if (candidates.length > 3) {
-      $section.append($('<button>').text('Show all (' + candidates.length + ')')
-        .css('margin-top', '4px')
-        .on('click', function () { showAllWikiDialog(i, candidates); }));
-    }
-    (w.warnings || []).forEach(function (warning) {
-      $section.append($('<div class="cnfirmed-note">').text('! ' + warning));
-    });
-    $el.append($section);
+    return { items: items, counts: counts };
   }
 
-  function renderWikiCandidate(i, c) {
-    var $row = $('<div class="cnfirmed-wiki-row">');
-    var origin = c.evidence.origin;
-    $row.append(
-      $('<span class="cnfirmed-origin">').attr('data-origin', origin)
-        .text(origin === 'sister-wiki' ? c.evidence.lang + '.wiki' : 'this article'),
-      ' ',
-      c.url
-        ? $('<a>').attr({ href: c.url, target: '_blank', rel: 'noopener' }).text(c.title)
-        : $('<span>').text(c.title)
-    );
-    if (c.url) {
-      var domain = hostOf(c.url);
-      if (domain) {
-        $row.append($('<span class="cnfirmed-note">').text(' — ' + domain));
-      }
+  // One line per claim, for its badge and the list of claims.
+  function claimStatus(i) {
+    var st = stageStates(i);
+    var items = collectItems(i).items;
+    var top = items[0];
+    var running = st.wiki === 'running' || st.books === 'running' || st.web === 'running';
+    if (top && top.tier === 'supports') return { kind: 'found', text: 'Supported: ' + truncate(top.title, 60) };
+    if (running) {
+      return { kind: 'running', text: 'Searching…' + (items.length ? ' ' + plural(items.length, 'lead') + ' so far' : '') };
     }
-    $row.append($('<div class="cnfirmed-quote">').text(c.relevance));
-    if (c.evidence.matchedAnchors && c.evidence.matchedAnchors.length) {
-      $row.append($('<div class="cnfirmed-note">')
-        .text('matched: ' + c.evidence.matchedAnchors.join(', ')));
+    if (top && top.tier === 'partial') return { kind: 'partial', text: 'Supported in part: ' + truncate(top.title, 50) };
+    if (items.length) return { kind: 'leads', text: plural(items.length, 'lead') + ' to check' };
+    if (st.wiki === 'error' || st.books === 'error' || st.web === 'error') return { kind: 'error', text: 'A search failed' };
+    if (st.wiki === 'done' && (st.books === 'done' || st.books === 'none')) {
+      return { kind: 'nothing', text: st.web === 'done' ? 'Nothing found' : 'Nothing on Wikipedia or in books' };
     }
-
-    var $tools = $('<div class="cnfirmed-toolbar">');
-    $tools.append($('<button>').text('Copy <ref>').on('click', function () {
-      navigator.clipboard.writeText(c.ref).then(function () {
-        toast('Copied <ref> to clipboard');
-      }, function () { toast('Copy failed'); });
-    }));
-    $tools.append(
-      $('<button>').text('Insert <ref> in editor')
-        .attr('title', 'Open the source editor with this <ref> substituted in for the {{citation needed}} tag')
-        .on('click', function () {
-          openEditorWithRef(i, { citation: { ref: c.ref } });
-        })
-    );
-    $row.append($tools);
-    return $row;
+    return { kind: 'idle', text: 'Not searched yet' };
   }
 
-  function showAllWikiDialog(i, candidates) {
-    var $list = $('<div>');
-    candidates.forEach(function (c) {
-      $list.append(renderWikiCandidate(i, c).css({
-        'border-bottom': '1px solid #eaecf0', padding: '6px 0'
-      }));
-    });
-    OO.ui.alert($list, {
-      title: 'Sources already on Wikipedia: ' + truncate(claimContexts[i].claim, 60),
-      size: 'large'
-    });
-  }
-
-  // The second free stage: books on the Internet Archive. Run on
-  // request for now — experimental, and every click is a request to a donated
-  // service — rather than on every badge click like the wiki stage.
-  function renderArchiveInto($el, i, a) {
-    if (archiveQueriesFor(i).length === 0) return;
-    var $section = $('<div class="cnfirmed-wiki cnfirmed-archive">');
-    $section.append($('<div class="cnfirmed-wiki-head">').text('Books (Internet Archive)'));
-
-    if (a.status === 'running') {
-      $section.append($('<div>').text('Searching the Internet Archive…'));
-      $el.append($section);
-      return;
-    }
-    if (a.status === 'idle' || a.status === 'error') {
-      if (a.status === 'error') {
-        $section.append($('<div class="cnfirmed-note">').css('color', '#b32424')
-          .text('Internet Archive search failed: ' + a.error));
-      }
-      $section.append($('<div class="cnfirmed-toolbar">').append(
-        $('<button>').text(a.status === 'error' ? 'Try again' : 'Search Internet Archive books (free)')
-          .on('click', function () { runArchiveStage(i); })
-      ));
-      $section.append($('<div class="cnfirmed-note">').text(
-        'Full-text search of digitised books. Free. Experimental. ' +
-        'Some need a free archive.org account to borrow. ' +
-        'The passages found are then checked against the claim with the Verify API, also free.'));
-      $el.append($section);
-      return;
-    }
-
-    var candidates = a.candidates || [];
-    var funnel = a.funnel || null;
-    if (candidates.length === 0) {
-      $section.append($('<div class="cnfirmed-note">')
-        .text('No book on the Internet Archive matches this claim.'));
-    }
-    renderArchiveCheckedInto($section, i, a, candidates);
-    if (funnel && funnel.queries.length) {
-      $section.append($('<div class="cnfirmed-note">').css('font-size', '0.75em')
-        .attr('title', funnel.queries.join('\n'))
-        .text(archiveFunnelLine(funnel)));
-    }
-    $el.append($section);
-  }
-
-  // The leads, as the check left them: the books it found stating the claim
-  // (or part of it) first, the others folded away. Unchecked, every lead is
-  // shown, with a plain warning and the button that checks them.
-  var ARCHIVE_VERDICT_LABELS = {
-    supports: { text: 'States the claim', status: 'SUPPORTED' },
-    partial: { text: 'States part of it', status: 'PARTIALLY SUPPORTED' },
-    unsupported: { text: 'Does not state it', status: 'NOT SUPPORTED' },
-    topic: { text: 'Same subject, another fact', status: 'NOT SUPPORTED' },
-    unrelated: { text: 'Only shares words', status: 'NOT SUPPORTED' }
+  var BADGE_ICON = {
+    found: 'supports', partial: 'partial', leads: 'search', running: 'spin',
+    error: 'search', nothing: 'search', idle: 'search'
   };
 
-  function renderArchiveCheckedInto($section, i, a, candidates) {
-    if (candidates.length === 0) return;
-    var check = a.check || null;
-    // Checks cached from before the Verify API carry the provider they ran on.
-    var checker = check && check.provider && PROVIDERS[check.provider]
-      ? PROVIDERS[check.provider].name + (check.model ? ' (' + check.model + ')' : '')
-      : 'the Verify API';
-    if (!check || check.status !== 'done') {
-      if (check && check.status === 'running') {
-        $section.append($('<div class="cnfirmed-note">')
-          .text('Checking the passages against the claim with ' + checker + '…'));
-      } else {
-        if (check && check.status === 'error') {
-          $section.append($('<div class="cnfirmed-note">').css('color', '#b32424')
-            .text('Check failed: ' + check.error));
-        }
-        $section.append($('<div class="cnfirmed-note">').text(
-          'Not checked: these passages share words with the claim, but nothing has read ' +
-          'them for whether they state it. Most do not.'));
-        $section.append($('<div class="cnfirmed-toolbar">').append(
-          $('<button>').text('Check them with the Verify API')
-            .attr('title', 'Free: one Verify API call per book')
-            .on('click', function () { checkArchiveStage(i); })
-        ));
+  function renderBadge(i) {
+    var badge = badges[i];
+    if (!badge || !booted) return;
+    var st = claimStatus(i);
+    badge.title = 'CNfirmed: ' + st.text;
+    // Swapping the icon restarts the spinner, so only on a change.
+    if (badge.getAttribute('data-status') === st.kind) return;
+    badge.setAttribute('data-status', st.kind);
+    badge.textContent = '';
+    badge.appendChild(icon(BADGE_ICON[st.kind]));
+  }
+
+  // ---- The panel --------------------------------------------------------
+  // Docked to the right edge, as Source Verifier's is: the article moves over
+  // to make room instead of being covered. Three views share its header: one
+  // claim, all claims, and settings.
+
+  var PANEL_MIN_WIDTH = 320;
+  var NARROW_SCREEN = 720;
+  var panel = null;            // { root, head, claimBox, body, drawn }
+  var panelView = 'claim';     // 'claim' | 'overview' | 'settings'
+  var viewBeforeSettings = 'claim';
+  var currentIndex = null;
+  var openItemKey = {};        // claim → the expanded source; unset = the first
+  var showAllItems = {};
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function button(className, text, onClick, title) {
+    var b = el('button', className, text);
+    b.type = 'button';
+    if (title) b.title = title;
+    if (onClick) b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function iconButton(name, label, onClick) {
+    var b = button('cnf-ib', null, onClick, label);
+    b.setAttribute('aria-label', label);
+    b.appendChild(icon(name));
+    return b;
+  }
+
+  function storedPanelWidth() {
+    var w = parseInt(localStorage.getItem('cnfirmed-panel-width'), 10);
+    if (!(w >= PANEL_MIN_WIDTH)) w = 400;
+    return Math.min(w, Math.round(window.innerWidth * 0.8));
+  }
+
+  function ensurePanel() {
+    if (panel) return panel;
+    var root = el('aside');
+    root.id = 'cnfirmed-panel';
+    root.setAttribute('aria-label', 'CNfirmed');
+    root.hidden = true;
+    var handle = el('div', 'cnf-resize');
+    handle.title = 'Drag to resize';
+    var head = el('div', 'cnf-head');
+    var claimBox = el('div', 'cnf-claim');
+    var body = el('div', 'cnf-body');
+    root.appendChild(handle);
+    root.appendChild(head);
+    root.appendChild(claimBox);
+    root.appendChild(body);
+    document.body.appendChild(root);
+    makeResizable(handle, root);
+    window.addEventListener('resize', applyBodyMargin);
+    panel = { root: root, head: head, claimBox: claimBox, body: body, drawn: null };
+    return panel;
+  }
+
+  function makeResizable(handle, root) {
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      function move(ev) {
+        var w = Math.max(PANEL_MIN_WIDTH, Math.min(window.innerWidth - ev.clientX, window.innerWidth * 0.8));
+        root.style.width = Math.round(w) + 'px';
+        applyBodyMargin();
       }
-      candidates.forEach(function (c) { $section.append(renderArchiveCandidate(i, c)); });
-      return;
-    }
-
-    var rank = function (c) {
-      var v = c.check && c.check.verdict;
-      return v === 'supports' ? 0 : v === 'partial' ? 1 : v ? 3 : 2;
-    };
-    var ordered = candidates.map(function (c, k) { return { c: c, k: k }; })
-      .sort(function (x, y) { return rank(x.c) - rank(y.c) || x.k - y.k; })
-      .map(function (x) { return x.c; });
-    // A book the model gave no verdict for stays in view, unchecked.
-    var shown = ordered.filter(function (c) { return !c.check || archiveCheckWanted(c.check.verdict); });
-    var folded = ordered.filter(function (c) { return c.check && !archiveCheckWanted(c.check.verdict); });
-    if (!shown.some(function (c) { return c.check; })) {
-      $section.append($('<div class="cnfirmed-note">').text(
-        'Checked with ' + checker + ': no passage found states the claim.'));
-    }
-    shown.forEach(function (c) { $section.append(renderArchiveCandidate(i, c)); });
-    if (folded.length) {
-      var $folded = $('<div>').hide();
-      folded.forEach(function (c) { $folded.append(renderArchiveCandidate(i, c)); });
-      $section.append($('<div class="cnfirmed-toolbar">').append(
-        $('<button>').text('Show ' + folded.length + ' more, judged not to state it')
-          .on('click', function () { $(this).parent().remove(); $folded.show(); })
-      ));
-      $section.append($folded);
-    }
-    $section.append($('<div class="cnfirmed-note">').text(
-      'Checked by ' + checker + ' on the passages alone. ' +
-      'Read the passage in the book before citing it.'));
-  }
-
-  function renderArchiveCandidate(i, c) {
-    var $row = $('<div class="cnfirmed-wiki-row">');
-    $row.append(
-      $('<span class="cnfirmed-origin">').attr('data-origin', 'internet-archive')
-        .text('archive.org' + (c.evidence.year ? ' · ' + c.evidence.year : '')),
-      ' ',
-      $('<a>').attr({
-        href: c.evidence.viewerUrl, target: '_blank', rel: 'noopener',
-        title: 'Open the book with the match highlighted'
-      }).text(c.title)
-    );
-    if (c.evidence.access === 'borrow') {
-      $row.append($('<span class="cnfirmed-note">')
-        .text(' — borrow with a free archive.org account'));
-    }
-    var label = c.check && ARCHIVE_VERDICT_LABELS[c.check.verdict];
-    if (label) {
-      $row.append(' ', $('<span class="cnfirmed-pill">').attr('data-status', label.status).text(label.text));
-    }
-    // A passage from the whole text is already cut with "…".
-    var snippet = c.evidence.fullText ? c.snippet : '…' + c.snippet + '…';
-    $row.append($('<div class="cnfirmed-quote">').text(snippet));
-    if (c.check && (c.check.quote || c.check.reason)) {
-      $row.append($('<div class="cnfirmed-note">').text(
-        (c.check.quote ? '\u201c' + c.check.quote + '\u201d ' : '') + c.check.reason));
-    }
-    if (c.evidence.matchedAnchors.length) {
-      $row.append($('<div class="cnfirmed-note">')
-        .text('matched: ' + c.evidence.matchedAnchors.join(', ') +
-          (c.evidence.fullText ? ' (in the book\'s full text)' : '')));
-    }
-    $row.append($('<div class="cnfirmed-note">').text(
-      'Check the passage in the book, and add |page= to the citation. ' +
-      (c.evidence.year && new Date().getUTCFullYear() - c.evidence.year > 100
-        ? 'Old sources can be outdated (WP:AGEMATTERS).' : '')));
-
-    var $tools = $('<div class="cnfirmed-toolbar">');
-    $tools.append($('<button>').text('Copy <ref>').on('click', function () {
-      navigator.clipboard.writeText(c.citation.ref).then(function () {
-        toast('Copied <ref> to clipboard');
-      }, function () { toast('Copy failed'); });
-    }));
-    $tools.append(
-      $('<button>').text('Insert <ref> in editor')
-        .attr('title', 'Open the source editor with this <ref> substituted in for the {{citation needed}} tag')
-        .on('click', function () { openEditorWithRef(i, c); })
-    );
-    $row.append($tools);
-    return $row;
-  }
-
-  // The provider picker is repeated here because the sidebar box that also
-  // holds it can be missing (a skin with no main menu to attach to); the
-  // popover is the one place a user hitting a provider error is guaranteed
-  // to be looking.
-  function renderWebSearchCta($el, i, label) {
-    var providerId = getProvider();
-    var hasKey = !!getKey(providerId);
-    var $select = $('<select class="cnfirmed-popover-provider">')
-      .attr('aria-label', 'Web search provider');
-    Object.keys(PROVIDERS).forEach(function (id) {
-      $select.append($('<option>').val(id).text(PROVIDERS[id].name)
-        .prop('selected', id === providerId));
+      function up() {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        try {
+          localStorage.setItem('cnfirmed-panel-width', String(parseInt(root.style.width, 10)));
+        } catch (err) { /* ignore */ }
+      }
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
     });
-    $select.on('change', function () {
-      setProvider($select.val());
-      renderControlsBar();
-      renderPanel(i);
-    });
-    var $cta = $('<div class="cnfirmed-toolbar">');
-    $cta.append(
-      $('<button>')
-        .text((label || 'Search the web') + ' with')
-        .on('click', function () { runOne(i); }),
-      $select
-    );
-    $el.append($cta);
-    $el.append($('<div class="cnfirmed-note">').text(
-      hasKey
-        ? 'One API call, billed to your key.'
-        : 'Needs a ' + keyLabel(providerId) + ' — you will be asked for one.'
-    ));
   }
 
-  function closePopover() {
-    popoverIndex = null;
-    if (popup) popup.$element.removeClass('cnfirmed-panel-visible');
+  // On a narrow screen the panel covers the page instead.
+  function applyBodyMargin() {
+    if (!panel) return;
+    var make = panelVisible() && window.innerWidth > NARROW_SCREEN;
+    document.body.style.marginRight = make ? panel.root.style.width : '';
   }
 
   function panelVisible() {
-    return !!popup && popup.$element.hasClass('cnfirmed-panel-visible');
+    return !!panel && !panel.root.hidden;
   }
 
-  function renderProgressInto($el, progress) {
-    var providerName = progress && progress.provider
-      ? PROVIDERS[progress.provider].name
-      : PROVIDERS[getProvider()].name;
-    $el.append($('<div>').text('Searching with ' + providerName + '…'));
-    $el.append($('<div>').css({ 'font-size': '0.85em', color: '#54595d', 'margin-top': '4px' })
-      .text('Finding and verifying candidate sources. This usually takes 10–30 seconds.'));
+  function showPanel() {
+    ensurePanel();
+    if (panel.root.hidden) {
+      panel.root.style.width = storedPanelWidth() + 'px';
+      panel.root.hidden = false;
+    }
+    applyBodyMargin();
   }
 
-  function renderResultInto($el, i, result) {
-    $el.append($('<div class="cnfirmed-wiki-head">')
-      .text('From the web (' + PROVIDERS[result.provider || getProvider()].name + ')'));
-    if (!result.suggestions || result.suggestions.length === 0) {
-      $el.append($('<div>').text('No suitable sources found.'));
-      $el.append($('<div class="cnfirmed-note">')
-        .text('The model did not return any candidates that pass the WP:RSP filter.'));
-      return;
+  function closePanel() {
+    if (!panel) return;
+    panel.root.hidden = true;
+    applyBodyMargin();
+    setActive(null);
+  }
+
+  function togglePanel() {
+    if (panelVisible()) closePanel();
+    else openOverview();
+  }
+
+  function setActive(i) {
+    cnSups.forEach(function (sup, k) { sup.classList.toggle('cnfirmed-active', k === i); });
+  }
+
+  function openClaim(i, scroll) {
+    if (!booted || !cnSups[i]) return;
+    currentIndex = i;
+    panelView = 'claim';
+    showPanel();
+    setActive(i);
+    if (scroll) {
+      cnSups[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      flash(cnSups[i]);
     }
-    var top = result.suggestions[0];
-    var verdict = top.verdict.verdict;
-    var rel = top.verdict.reliability;
+    drawPanel();
+    startClaim(i);
+  }
 
-    var $head = $('<div>').css({ 'margin-bottom': '6px' });
-    $head.append(
-      $('<span class="cnfirmed-pill">').attr('data-status', verdict).text(pillLabel(verdict))
-    );
-    $head.append(' ');
-    $head.append(
-      $('<span class="cnfirmed-rel">').attr('data-rel', rel).text('reliability: ' + rel)
-    );
-    $head.append(
-      $('<span>').css({ float: 'right', 'font-size': '0.8em', color: '#54595d' })
-        .text('confidence ' + top.verdict.confidence + '/100')
-    );
-    $el.append($head);
+  function openOverview() {
+    if (!booted) return;
+    panelView = 'overview';
+    showPanel();
+    drawPanel();
+  }
 
-    var $title = $('<div>').css({ 'font-weight': 'bold' });
-    var $a = $('<a>').attr({ href: top.source.url, target: '_blank', rel: 'noopener' })
-      .text(top.source.title || top.source.url);
-    $title.append($a);
-    var domain = hostOf(top.source.url);
-    if (domain) $title.append($('<span>').css({ color: '#72777d', 'font-weight': 'normal', 'font-size': '0.85em' }).text(' — ' + domain));
-    $el.append($title);
+  function openSettings() {
+    if (panelView !== 'settings') viewBeforeSettings = panelView;
+    panelView = 'settings';
+    showPanel();
+    drawPanel();
+  }
 
-    if (top.verdict.comments) {
-      $el.append($('<div class="cnfirmed-quote">').text(top.verdict.comments));
+  function closeSettings() {
+    panelView = viewBeforeSettings === 'claim' && currentIndex === null ? 'overview' : viewBeforeSettings;
+    drawPanel();
+  }
+
+  // Called whenever something about claim i changed (or, with no claim,
+  // anything at all): redraws its badge and whatever the panel shows of it.
+  function renderPanel(i) {
+    var one = i !== undefined && i !== null;
+    if (one) renderBadge(i);
+    if (!panelVisible()) return;
+    if (panelView === 'settings' && one) return; // never under someone typing a key
+    if (panelView === 'claim' && one && i !== currentIndex) return;
+    drawPanel();
+  }
+
+  // The pipeline calls this, as it did when each claim had a sidebar row.
+  function renderRow(i) {
+    renderPanel(i);
+  }
+
+  function drawPanel() {
+    if (!panel) return;
+    var where = panelView + ':' + currentIndex;
+    var scroll = panel.body.scrollTop;
+    drawHeader();
+    drawClaimBox();
+    panel.body.textContent = '';
+    var pad = el('div', 'cnf-pad');
+    if (panelView === 'claim' && currentIndex !== null) drawClaimView(pad, currentIndex);
+    else if (panelView === 'settings') drawSettings(pad);
+    else drawOverview(pad);
+    panel.body.appendChild(pad);
+    panel.body.scrollTop = panel.drawn === where ? scroll : 0;
+    panel.drawn = where;
+  }
+
+  function drawHeader() {
+    var head = panel.head;
+    head.textContent = '';
+    var brand = el('a', 'cnf-brand', 'CNfirmed');
+    brand.href = (mw.util && typeof mw.util.getUrl === 'function')
+      ? mw.util.getUrl('User:Alaexis/CNfirmed') : '/wiki/User:Alaexis/CNfirmed';
+    brand.title = 'About CNfirmed';
+    head.appendChild(brand);
+    head.appendChild(el('span', 'cnf-spacer'));
+
+    if (panelView === 'claim' && currentIndex !== null) {
+      var i = currentIndex;
+      var prev = iconButton('prev', 'Previous claim', function () { openClaim(i - 1, true); });
+      prev.disabled = i === 0;
+      var count = button('cnf-ib', (i + 1) + ' of ' + cnSups.length, openOverview, 'All claims on this page');
+      count.setAttribute('aria-label', 'Claim ' + (i + 1) + ' of ' + cnSups.length + '. Show all claims');
+      var next = iconButton('next', 'Next claim', function () { openClaim(i + 1, true); });
+      next.disabled = i === cnSups.length - 1;
+      head.appendChild(prev);
+      head.appendChild(count);
+      head.appendChild(next);
+    } else {
+      head.appendChild(el('span', 'cnf-title', panelView === 'settings' ? 'Settings' : 'All claims'));
     }
-    if (top.verdict.reliabilityReason && rel === 'low') {
-      $el.append(
-        $('<div>').css({ 'font-size': '0.85em', color: '#b32424' })
-          .text('⚠ ' + top.verdict.reliabilityReason)
-      );
-    }
 
-    var $tools = $('<div class="cnfirmed-toolbar">');
-    var $copy = $('<button>').text('Copy <ref>').on('click', function () {
-      navigator.clipboard.writeText(top.citation.ref).then(function () {
-        toast('Copied <ref> to clipboard');
-      }, function () {
-        toast('Copy failed');
-      });
+    var gear = iconButton('gear', 'Settings', function () {
+      if (panelView === 'settings') closeSettings();
+      else openSettings();
     });
-    $tools.append($copy);
-    var $insert = $('<button>')
-      .text('Insert <ref> in editor')
-      .attr('title', 'Open the source editor with this <ref> already substituted in for the {{citation needed}} tag')
-      .on('click', function () { openEditorWithRef(i, top); });
-    $tools.append($insert);
-    if (result.suggestions.length > 1) {
-      var $more = $('<button>').text('Show all (' + result.suggestions.length + ')')
-        .on('click', function () { showAllDialog(i, result); });
-      $tools.append($more);
-    }
-    $el.append($tools);
+    gear.setAttribute('aria-pressed', panelView === 'settings' ? 'true' : 'false');
+    head.appendChild(gear);
+    head.appendChild(iconButton('close', 'Close', closePanel));
   }
 
-  function showAllDialog(i, result) {
-    var $list = $('<div>');
-    result.suggestions.forEach(function (s) {
-      var $row = $('<div>').css({
-        'border-bottom': '1px solid #eaecf0',
-        padding: '6px 0'
-      });
-      $row.append($('<div>').append(
-        $('<span class="cnfirmed-pill">').attr('data-status', s.verdict.verdict).text(pillLabel(s.verdict.verdict)),
-        ' ',
-        $('<span class="cnfirmed-rel">').attr('data-rel', s.verdict.reliability).text(s.verdict.reliability),
-        ' ',
-        $('<a>').attr({ href: s.source.url, target: '_blank', rel: 'noopener' }).text(s.source.title || s.source.url)
-      ));
-      if (s.verdict.comments) {
-        $row.append($('<div class="cnfirmed-quote">').text(s.verdict.comments));
+  function drawClaimBox() {
+    var box = panel.claimBox;
+    box.textContent = '';
+    box.hidden = !(panelView === 'claim' && currentIndex !== null);
+    if (box.hidden) return;
+    var i = currentIndex;
+    var ctx = claimContexts[i] || {};
+    if (ctx.section) box.appendChild(el('div', 'cnf-section', ctx.section));
+    box.appendChild(el('p', 'cnf-claim-text', ctx.claim || '(no claim text found)'));
+    box.appendChild(button('cnf-linkbtn', 'Show in article', function () {
+      cnSups[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      flash(cnSups[i]);
+    }));
+  }
+
+  function drawClaimView(pad, i) {
+    var found = collectItems(i);
+    var items = found.items;
+    var st = stageStates(i);
+    var running = st.wiki === 'running' || st.wiki === 'idle' || st.books === 'running' || st.web === 'running';
+
+    var headline = null;
+    if (!(items.length && items[0].tier === 'supports')) {
+      if (running) {
+        headline = { busy: true, text: items.length ? 'Still searching. ' + plural(items.length, 'lead') + ' so far.' : 'Searching…' };
+      } else if (items.length) {
+        headline = {
+          text: items[0].tier === 'partial' ? 'Nothing supports the whole claim yet.'
+            : 'No confirmed source yet. ' + plural(items.length, 'lead') + ' to check.'
+        };
+      } else {
+        headline = { text: st.web === 'done' ? 'Nothing found for this claim.' : 'Nothing on Wikipedia or in books.' };
       }
-      var $copy = $('<button>').text('Copy <ref>').css('margin-top', '4px').on('click', function () {
-        navigator.clipboard.writeText(s.citation.ref).then(function () { toast('Copied'); });
+    }
+    if (headline) {
+      var h = el('div', 'cnf-headline');
+      if (headline.busy) h.setAttribute('data-busy', '');
+      h.appendChild(icon(headline.busy ? 'spin' : 'info'));
+      h.appendChild(el('span', null, headline.text));
+      pad.appendChild(h);
+    }
+
+    if (items.length) {
+      var section = el('section');
+      section.setAttribute('aria-label', 'Sources found');
+      section.appendChild(el('h2', 'cnf-label', 'Found · ' + items.length));
+      var openKey = Object.prototype.hasOwnProperty.call(openItemKey, i) ? openItemKey[i] : items[0].key;
+      var limit = showAllItems[i] ? items.length : 5;
+      items.slice(0, limit).forEach(function (item) {
+        section.appendChild(drawItem(i, item, item.key === openKey));
       });
-      $row.append($copy);
-      var $insertRow = $('<button>')
-        .text('Insert <ref> in editor')
-        .css({ 'margin-top': '4px', 'margin-left': '4px' })
-        .on('click', function () { openEditorWithRef(i, s); });
-      $row.append($insertRow);
-      $list.append($row);
+      if (items.length > limit) {
+        section.appendChild(button('cnf-linkbtn', 'Show ' + (items.length - limit) + ' more', function () {
+          showAllItems[i] = true;
+          drawPanel();
+        }));
+      }
+      pad.appendChild(section);
+    }
+
+    pad.appendChild(drawSearched(i, st, found.counts));
+  }
+
+  function drawItem(i, item, isOpen) {
+    var wrap = el('div', 'cnf-item');
+    wrap.setAttribute('data-tier', item.tier);
+    if (isOpen) wrap.setAttribute('data-open', '');
+
+    var row = button('cnf-row', null, function () {
+      openItemKey[i] = isOpen ? null : item.key;
+      drawPanel();
     });
-    OO.ui.alert($list, {
-      title: 'CNfirmed candidates: ' + truncate(result.claim.claim, 60),
-      size: 'large'
+    row.setAttribute('aria-expanded', String(isOpen));
+    var glyph = el('span', 'cnf-glyph');
+    glyph.appendChild(icon(item.tier));
+    var main = el('span', 'cnf-row-main');
+    main.appendChild(el('span', 'cnf-row-title', item.title));
+    var meta = el('span', 'cnf-row-meta');
+    meta.appendChild(el('span', 'cnf-verdict', item.verdictText));
+    meta.appendChild(document.createTextNode(' · ' + item.meta));
+    main.appendChild(meta);
+    var chev = el('span', 'cnf-chev');
+    chev.appendChild(icon('next'));
+    row.appendChild(glyph);
+    row.appendChild(main);
+    row.appendChild(chev);
+    wrap.appendChild(row);
+    if (!isOpen) return wrap;
+
+    var detail = el('div', 'cnf-detail');
+    if (item.quote) {
+      var quote = el('div', 'cnf-quote');
+      quote.appendChild(el('span', 'cnf-quote-label', item.quoteLabel));
+      quote.appendChild(document.createTextNode(item.quote));
+      detail.appendChild(quote);
+    }
+    item.warnings.forEach(function (text) {
+      var box = el('div', 'cnf-warnbox');
+      box.appendChild(icon('flag'));
+      box.appendChild(el('span', null, text));
+      detail.appendChild(box);
     });
+    if (item.note) detail.appendChild(el('p', 'cnf-note', item.note));
+
+    var actions = el('div', 'cnf-actions');
+    if (item.ref) {
+      actions.appendChild(button('cnf-btn cnf-btn-pri', 'Insert in editor', function () {
+        openEditorWithRef(i, { citation: { ref: item.ref } });
+      }, 'Open the section editor with this <ref> in place of the {{citation needed}} tag'));
+      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { copyRef(item.ref); }));
+    }
+    if (item.url) {
+      var open = el('a', 'cnf-open', 'Open source');
+      open.href = item.url;
+      open.target = '_blank';
+      open.rel = 'noopener';
+      open.appendChild(icon('external'));
+      actions.appendChild(open);
+    }
+    detail.appendChild(actions);
+    wrap.appendChild(detail);
+    return wrap;
+  }
+
+  function copyRef(ref) {
+    navigator.clipboard.writeText(ref).then(function () {
+      toast('Copied <ref> to clipboard');
+    }, function () { toast('Copy failed'); });
+  }
+
+  function sourceRow(name, where, stateName, result, actionLabel, onAction, title) {
+    var row = el('div', 'cnf-src');
+    row.setAttribute('data-state', stateName);
+    if (title) row.title = title;
+    var mark = el('span', 'cnf-src-icon');
+    mark.appendChild(icon({ done: 'check', running: 'spin', error: 'info' }[stateName] || 'lead'));
+    var main = el('span', 'cnf-src-main');
+    var nameLine = el('span', 'cnf-src-name');
+    nameLine.appendChild(el('b', null, name));
+    nameLine.appendChild(el('span', 'cnf-src-where', ' · ' + where));
+    main.appendChild(nameLine);
+    main.appendChild(el('span', 'cnf-src-result', result));
+    row.appendChild(mark);
+    row.appendChild(main);
+    if (actionLabel) row.appendChild(button('cnf-btn cnf-btn-sm', actionLabel, onAction));
+    return row;
+  }
+
+  function webCostNote(providerId) {
+    return providerId === 'tavilyhf' ? 'One search, billed to your Tavily key' : 'One API call, billed to your key';
+  }
+
+  // Where it looked, and the only place a search is started by hand.
+  function drawSearched(i, st, counts) {
+    var section = el('section');
+    section.setAttribute('aria-label', 'Where CNfirmed looked');
+    section.appendChild(el('h2', 'cnf-label', 'Searched'));
+    var retry = function () { startClaim(i); };
+
+    var w = wikiState[i] || {};
+    var wikiWhere = 'this article and other languages';
+    if (st.wiki === 'done') {
+      var n = (w.candidates || []).length;
+      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'done',
+        n ? plural(n, 'lead') : 'Nothing in this article or other languages'));
+    } else if (st.wiki === 'error') {
+      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'error', 'Failed: ' + w.error, 'Retry', retry));
+    } else {
+      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'running', 'Looking for citations…'));
+    }
+
+    var a = archiveState[i] || {};
+    var funnel = a.funnel ? archiveFunnelLine(a.funnel) : '';
+    if (st.books === 'none') {
+      section.appendChild(sourceRow('Books', 'Internet Archive', 'done',
+        'Nothing in the claim to search for: no number, name or key phrase'));
+    } else if (st.books === 'running') {
+      var checking = a.status === 'done';
+      section.appendChild(sourceRow('Books', 'Internet Archive', 'running', checking
+        ? 'Checking ' + plural((a.candidates || []).length, 'book') + ' against the claim…'
+        : 'Searching digitised books…', null, null, funnel));
+    } else if (st.books === 'error') {
+      section.appendChild(sourceRow('Books', 'Internet Archive', 'error', 'Failed: ' + a.error, 'Retry', function () {
+        runBooks(i).then(function () { renderPanel(i); });
+      }));
+    } else if (st.books === 'done' && a.check && a.check.status === 'error') {
+      section.appendChild(sourceRow('Books', 'Internet Archive', 'error',
+        'Found ' + plural(a.candidates.length, 'book') + ', but the check failed: ' + a.check.error,
+        'Retry', function () { checkArchiveStage(i); }, funnel));
+    } else if (st.books === 'done') {
+      var b = counts.books;
+      var parts = [];
+      if (b && b.supports) parts.push(b.supports + ' support' + (b.supports === 1 ? 's' : '') + ' it');
+      if (b && b.partial) parts.push(b.partial + ' in part');
+      if (b && b.rejected) parts.push(b.rejected + ' don’t state it');
+      if (b && b.unclear) parts.push(b.unclear + ' unclear');
+      section.appendChild(sourceRow('Books', 'Internet Archive', 'done', b && b.total
+        ? plural(b.total, 'book') + ': ' + parts.join(', ')
+        : 'No book matches the claim', null, null, funnel));
+    } else {
+      section.appendChild(sourceRow('Books', 'Internet Archive', 'idle', 'Not searched yet', 'Search', function () {
+        runBooks(i).then(function () { renderPanel(i); });
+      }));
+    }
+
+    var s = state[i] || {};
+    var providerId = st.web === 'idle' ? getProvider() : (s.provider || getProvider());
+    var webWhere = PROVIDERS[providerId] ? PROVIDERS[providerId].name : providerId;
+    if (st.web === 'running') {
+      section.appendChild(sourceRow('Web', webWhere, 'running', 'Searching the web…'));
+    } else if (st.web === 'error') {
+      section.appendChild(sourceRow('Web', webWhere, 'error', 'Failed: ' + s.error, 'Retry', function () { runOne(i); }));
+    } else if (st.web === 'done') {
+      var c = counts.web;
+      var bits = [];
+      if (c && c.supports) bits.push(c.supports + ' support' + (c.supports === 1 ? 's' : '') + ' it');
+      if (c && c.partial) bits.push(c.partial + ' in part');
+      if (c && c.copies) bits.push(c.copies + ' probably copied from Wikipedia');
+      if (c && c.rejected) bits.push(c.rejected + ' don’t support it');
+      section.appendChild(sourceRow('Web', webWhere, 'done', c && c.total
+        ? plural(c.total, 'result') + ': ' + bits.join(', ')
+        : 'No usable source found'));
+    } else if (getKey(providerId)) {
+      section.appendChild(sourceRow('Web', webWhere, 'idle', webCostNote(providerId), 'Search', function () { runOne(i); }));
+    } else {
+      section.appendChild(sourceRow('Web', webWhere, 'idle', 'Needs a ' + keyLabel(providerId), 'Add key', openSettings));
+    }
+    return section;
+  }
+
+  var OVERVIEW_ICON = {
+    found: 'supports', partial: 'partial', leads: 'lead', running: 'spin',
+    error: 'info', nothing: 'nothing', idle: 'lead'
+  };
+
+  function drawOverview(pad) {
+    var statuses = [];
+    var tally = { found: 0, partial: 0, leads: 0, running: 0, error: 0, nothing: 0, idle: 0 };
+    for (var i = 0; i < cnSups.length; i++) {
+      var st = claimStatus(i);
+      statuses.push(st);
+      tally[st.kind]++;
+    }
+
+    var head = el('div');
+    head.appendChild(el('div', 'cnf-ov-title', String(pageTitle).replace(/_/g, ' ')));
+    var bits = [];
+    if (tally.found) bits.push(tally.found + ' supported');
+    if (tally.partial) bits.push(tally.partial + ' supported in part');
+    if (tally.leads) bits.push(tally.leads + ' with leads');
+    if (tally.nothing) bits.push(tally.nothing + ' with nothing found');
+    if (tally.running) bits.push(tally.running + ' searching');
+    if (tally.error) bits.push(tally.error + ' failed');
+    if (tally.idle) bits.push(tally.idle + ' not searched yet');
+    head.appendChild(el('p', 'cnf-ov-summary', plural(cnSups.length, 'claim') +
+      (cnSups.length === 1 ? ' needs' : ' need') + ' a citation' + (bits.length ? ': ' + bits.join(', ') : '') + '.'));
+    pad.appendChild(head);
+
+    if (batch) {
+      var busy = button('cnf-btn cnf-btn-pri', 'Searching… ' + batch.done + ' of ' + batch.total);
+      busy.disabled = true;
+      pad.appendChild(busy);
+    } else if (tally.idle || tally.error) {
+      var start = el('div');
+      start.appendChild(button('cnf-btn cnf-btn-pri', 'Find sources for all (free)', findAllFree));
+      start.appendChild(el('p', 'cnf-ov-summary', 'Wikipedia and Internet Archive books. No key needed.'));
+      pad.appendChild(start);
+    }
+
+    var list = el('div');
+    statuses.forEach(function (st, k) {
+      var row = button('cnf-ov-row', null, function () { openClaim(k, true); });
+      row.setAttribute('data-kind', st.kind);
+      if (k === currentIndex) row.setAttribute('aria-current', 'true');
+      var glyph = el('span', 'cnf-glyph');
+      glyph.appendChild(icon(OVERVIEW_ICON[st.kind]));
+      var main = el('span', 'cnf-row-main');
+      main.appendChild(el('span', 'cnf-ov-text', (claimContexts[k] && claimContexts[k].claim) || '(no claim text found)'));
+      main.appendChild(el('span', 'cnf-ov-status', st.text));
+      row.appendChild(glyph);
+      row.appendChild(main);
+      list.appendChild(row);
+    });
+    pad.appendChild(list);
+
+    var forWeb = batch ? [] : claimsForWeb();
+    if (forWeb.length) {
+      var providerId = getProvider();
+      var hasKey = !!getKey(providerId);
+      var n = forWeb.length;
+      var box = el('div', 'cnf-box');
+      box.appendChild(el('div', 'cnf-box-title', 'Search the web for the ' + plural(n, 'claim') + ' with nothing'));
+      box.appendChild(el('p', null, hasKey
+        ? n + (n === 1 ? ' search' : ' searches') + ' with ' + PROVIDERS[providerId].name + ', billed to your ' +
+          (providerId === 'tavilyhf' ? 'Tavily key.' : 'API key.')
+        : 'Needs a ' + keyLabel(providerId) + '.'));
+      box.appendChild(button('cnf-btn cnf-btn-pri', hasKey ? 'Search the web (' + n + ')' : 'Add key',
+        hasKey ? searchWebForNothing : openSettings));
+      pad.appendChild(box);
+    }
+  }
+
+  var PROVIDER_BLURBS = {
+    claude: 'Anthropic. Uses your API key.',
+    gemini: 'Google. Uses your API key.',
+    openai: 'Uses your API key.',
+    tavilyhf: 'Tavily searches, GPT-OSS reads the results. Uses your Tavily key.'
+  };
+
+  function drawSettings(pad) {
+    var current = getProvider();
+
+    var field = el('fieldset', 'cnf-field');
+    field.appendChild(el('legend', 'cnf-field-label', 'Web search'));
+    Object.keys(PROVIDERS).forEach(function (id) {
+      var label = el('label', 'cnf-radio');
+      if (id === current) label.setAttribute('data-checked', '');
+      var input = el('input');
+      input.type = 'radio';
+      input.name = 'cnfirmed-provider';
+      input.value = id;
+      input.checked = id === current;
+      input.addEventListener('change', function () {
+        setProvider(id);
+        drawPanel();
+      });
+      var text = el('span');
+      text.appendChild(el('span', 'cnf-radio-name', PROVIDERS[id].name));
+      text.appendChild(el('span', 'cnf-radio-desc', PROVIDER_BLURBS[id] || ''));
+      label.appendChild(input);
+      label.appendChild(text);
+      field.appendChild(label);
+    });
+    pad.appendChild(field);
+
+    var p = PROVIDERS[current];
+    var hasKey = !!getKey(current);
+    var keyBlock = el('div');
+    var keyName = el('label', 'cnf-field-label', keyLabel(current));
+    keyName.htmlFor = 'cnfirmed-key';
+    var row = el('div', 'cnf-keyrow');
+    var input = el('input', 'cnf-input');
+    input.type = 'password';
+    input.id = 'cnfirmed-key';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.placeholder = hasKey ? 'Saved. Paste a new key to replace it' : 'Paste your key';
+    var save = button('cnf-btn cnf-btn-pri', 'Save', function () {
+      if (!input.value.trim()) { toast('Paste a key first'); return; }
+      setKey(current, input.value);
+      toast(keyLabel(current) + ' saved');
+      drawPanel();
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') save.click();
+    });
+    row.appendChild(input);
+    row.appendChild(save);
+    keyBlock.appendChild(keyName);
+    keyBlock.appendChild(row);
+    keyBlock.appendChild(el('p', 'cnf-note', 'Kept in this browser’s localStorage. Sent only to ' +
+      (p.keyService || p.name) + (p.keyService ? ', through the CNfirmed proxy.' : '.')));
+    if (hasKey) {
+      keyBlock.appendChild(button('cnf-linkbtn', 'Remove key', function () {
+        setKey(current, '');
+        toast(keyLabel(current) + ' removed');
+        drawPanel();
+      }));
+    }
+    pad.appendChild(keyBlock);
+
+    var free = el('div', 'cnf-free');
+    free.appendChild(el('b', null, 'Free, no key needed'));
+    free.appendChild(el('p', 'cnf-note', 'Citations already on Wikipedia (this article and other languages), ' +
+      'books on the Internet Archive, and the check of their passages by the Verify API.'));
+    pad.appendChild(free);
+
+    var done = el('div');
+    done.appendChild(button('cnf-btn cnf-btn-pri', 'Done', closeSettings));
+    pad.appendChild(done);
   }
 
   // ---- Helpers ----------------------------------------------------------
