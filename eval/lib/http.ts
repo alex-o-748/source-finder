@@ -165,10 +165,12 @@ export function installCassette(options: CassetteOptions): CassetteStats {
   ): Promise<{ res: Response; body: string; ms: number }> {
     const timeout = options.hostTimeouts?.[host] ?? { ms: 60_000, retryNetworkErrors: true };
     for (let attempt = 0; ; attempt++) {
+      // The slot is taken before the wait, so lanes waiting together go out
+      // one gap apart.
       const gap = options.hostMinIntervalMs?.[host] ?? minInterval / lanes;
-      const wait = (lastSent.get(host) ?? 0) + gap - Date.now();
-      if (wait > 0) await sleep(wait);
-      lastSent.set(host, Date.now());
+      const at = Math.max(Date.now(), (lastSent.get(host) ?? 0) + gap);
+      lastSent.set(host, at);
+      if (at > Date.now()) await sleep(at - Date.now());
       let res: Response;
       const started = Date.now();
       try {

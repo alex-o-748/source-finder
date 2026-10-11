@@ -256,7 +256,7 @@ export function parsePlan(text: string): ArchivePlan | null {
   if (!j) return null;
   const fact = typeof j.fact === "string" ? j.fact.replace(/\s+/g, " ").trim() : "";
   const queries = (Array.isArray(j.queries) ? j.queries : [])
-    .map((q) => (Array.isArray(q) ? q.join(" ") : String(q ?? "")))
+    .map((q) => (Array.isArray(q) ? strings(q).join(" ") : typeof q === "string" ? q : ""))
     .map(safeQuery)
     .filter((q) => q.length >= 3);
   const terms = (Array.isArray(j.terms) ? j.terms : [])
@@ -301,16 +301,40 @@ export function nameConcepts(terms: string[][]): string[][] {
   return terms.filter((g) => specificity(g) === 1);
 }
 
+/** Folded words, hyphens as spaces: "Saxe-Coburg-Gotha" holds "Saxe-Coburg". */
+function splitKey(text: string): string {
+  return fold(String(text ?? "")).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+/** A passage's words two ways, padded: hyphenation joined ("com- pleted"), and hyphens as spaces. */
+function wordingsOf(text: string): { joined: string; split: string } {
+  return { joined: ` ${quoteKey(text)} `, split: ` ${splitKey(text)} ` };
+}
+
+function wordsIn(padded: string, words: string): boolean {
+  if (!words) return false;
+  if (padded.includes(` ${words} `)) return true;
+  return /\p{L}$/u.test(words) && (padded.includes(` ${words}s `) || padded.includes(` ${words}es `));
+}
+
+/**
+ * Whether a concept's wording is in a passage as whole words, a plural
+ * allowed: "23" is not in "1923", nor "Carl" in "Carlisle".
+ */
+function mentions(t: { joined: string; split: string }, alt: string): boolean {
+  return wordsIn(t.joined, quoteKey(alt)) || wordsIn(t.split, splitKey(alt));
+}
+
 /** How many of the plan's concepts a passage mentions. */
 export function planCoverage(text: string, terms: string[][]): number {
-  const t = fold(text);
-  return terms.filter((alts) => alts.some((a) => t.includes(fold(a)))).length;
+  const t = wordingsOf(text);
+  return terms.filter((alts) => alts.some((a) => mentions(t, a))).length;
 }
 
 /** The plan's concepts a passage mentions, by their first wording. */
 export function planMatched(text: string, terms: string[][]): string[] {
-  const t = fold(text);
-  return terms.filter((alts) => alts.some((a) => t.includes(fold(a)))).map((alts) => fold(alts[0]));
+  const t = wordingsOf(text);
+  return terms.filter((alts) => alts.some((a) => mentions(t, a))).map((alts) => fold(alts[0]));
 }
 
 // ---------------------------------------------------------------------------
@@ -351,19 +375,32 @@ export function parseBooks(text: string): NamedBook[] {
   return out;
 }
 
+/** Short title words a catalogue search does without. */
+const TITLE_STOPWORDS = new Set(
+  "the and for its his her our are was who how why les des der die das und von del los las une con per".split(" "),
+);
+
 /**
  * The catalogue search that finds a named book: up to five of the title's
- * longer words, and the author's surname. Null when the title gives nothing
- * to search on.
+ * words of three letters or more (not "the" or "and": "Roman Art" needs
+ * "Art"), and the author's surname, apostrophe kept (O'Brien). Null when the
+ * title gives nothing to search on.
  */
 export function catalogueQuery(book: NamedBook): string | null {
   const words = book.title
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .split(/\s+/)
-    .filter((w) => w.length > 3)
+    .filter((w) => w.length >= 3 && !TITLE_STOPWORDS.has(w.toLowerCase()))
     .slice(0, 5);
   if (!words.length) return null;
-  const surname = (book.author ?? "").trim().split(/\s+/).pop()?.replace(/[^\p{L}-]/gu, "") ?? "";
+  const surname =
+    (book.author ?? "")
+      .trim()
+      .split(/\s+/)
+      .pop()
+      ?.replace(/[\u2018\u2019`]/g, "'")
+      .replace(/[^\p{L}'-]/gu, "")
+      .replace(/^'+|'+$/g, "") ?? "";
   return `title:(${words.join(" AND ")})${surname.length > 2 ? ` AND creator:(${surname})` : ""}`;
 }
 
@@ -467,8 +504,10 @@ export function quoteInPassages(quote: string, passages: string[]): boolean {
     .filter((p) => p.length > 0);
   if (!pieces.length) return false;
   if (pieces.join(" ").split(" ").length < 3) return false;
-  const hay = passages.map(quoteKey).join(" ");
-  return pieces.every((p) => hay.includes(p));
+  // Compared without spaces: "Saxe- Coburg" broken across OCR lines is
+  // "Saxe-Coburg" in the quote, and "Saxe Coburg" if the model drops the hyphen.
+  const hay = passages.map(quoteKey).join(" ").replace(/ /g, "");
+  return pieces.every((p) => hay.includes(p.replace(/ /g, "")));
 }
 
 /**

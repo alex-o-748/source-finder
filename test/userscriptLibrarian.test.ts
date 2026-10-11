@@ -35,6 +35,7 @@ test("the user script reads the models' replies as the core does", () => {
   const replies = [
     `ok ${JSON.stringify(PLAN)}`,
     '{"fact": "x", "queries": [["a", "b"], "  c   d ", 7, null], "terms": [[["1814"]], "Leiningen", [], [" "]]}',
+    '{"queries": [{"q": "Leiningen 1814"}, [["nested", "query"]], "a/b \\"c"], "terms": [["1814"], ["Leiningen"]]}',
     '{"queries": []}',
     "nothing",
     JSON.stringify(BOOKS),
@@ -45,7 +46,14 @@ test("the user script reads the models' replies as the core does", () => {
     assert.deepEqual(script.libParseBooks(r), lib.parseBooks(r), r);
     assert.deepEqual(script.libJsonObjectIn(r), lib.jsonObjectIn(r), r);
   }
-  for (const b of [...BOOKS.books, { title: "Of It", author: null, year: null }, { title: "Utah Place Names", author: "J. W. Van Cott", year: 1990 }]) {
+  for (const b of [
+    ...BOOKS.books,
+    { title: "Of It", author: null, year: null },
+    { title: "Utah Place Names", author: "J. W. Van Cott", year: 1990 },
+    { title: "Roman Art", author: "Eugénie Strong", year: 1928 },
+    { title: "The Great Melody", author: "Conor Cruise O\u2019Brien", year: 1992 },
+    { title: "Die Welt der Art", author: "'Quoted'", year: null },
+  ]) {
     assert.equal(script.libCatalogueQuery(b), lib.catalogueQuery(b));
   }
   assert.equal(script.iaCatalogueUrl("title:(Utah) AND creator:(Cott)", 5), catalogueUrl("title:(Utah) AND creator:(Cott)", 5));
@@ -110,9 +118,15 @@ test("the user script builds the same terms, shelf queries and planner ranking",
   }
   const ids = ["a1", "in.ernet.dli.2015.1", ...Array.from({ length: 23 }, (_, i) => `b${i}`)];
   assert.deepEqual(script.libShelfQueries("1814", ids), lib.shelfQueries("1814", ids));
-  for (const text of ["The Eiffel tower, completed in 1889", "nothing", "EIFFEL 984 feet"]) {
-    assert.equal(script.libPlanCoverage(text, PLAN.terms), lib.planCoverage(text, PLAN.terms));
-    assert.deepEqual(script.libPlanMatched(text, PLAN.terms), lib.planMatched(text, PLAN.terms));
+  const odd = [["23"], ["Carl"], ["Saxe-Coburg"], ["completed", "metre"]];
+  for (const text of [
+    "The Eiffel tower, completed in 1889", "nothing", "EIFFEL 984 feet", "Eiffel's tower, 300 metres",
+    "sold in 1923 at Carlisle", "Saxe-Coburg-Gotha, com- pleted, two metres", "23 Carl", "",
+  ]) {
+    for (const terms of [PLAN.terms, odd]) {
+      assert.equal(script.libPlanCoverage(text, terms), lib.planCoverage(text, terms), text);
+      assert.deepEqual(script.libPlanMatched(text, terms), lib.planMatched(text, terms), text);
+    }
   }
   assert.deepEqual(script.libNameConcepts(PLAN.terms), lib.nameConcepts(PLAN.terms));
   const hit = (identifier: string, highlights: string[], collections = ["americana"]) => ({
@@ -121,6 +135,9 @@ test("the user script builds the same terms, shelf queries and planner ranking",
   const lists = () => [
     [hit("two", ["Eiffel finished it in 1889."]), hit("none", ["Price list for 1889: completed orders."]), hit("dup", ["Eiffel 1889"])],
     [hit("all", ["The Eiffel tower, completed in 1889, rose 300 metres."]), hit("dup", ["Eiffel 1889 again"]), hit("closed", ["Eiffel 1889"], ["printdisabled"])],
+    // Each passage with one concept; together they pass.
+    [hit("split", ["the Eiffel tower"]), hit("two", ["Eiffel completed it"])],
+    [hit("split", ["in 1889 the tower", "the Eiffel tower, completed"])],
   ];
   for (const terms of [PLAN.terms, [], [["1889"]]]) {
     assert.deepEqual(script.rankPlannedHits(lists(), terms), rankPlannedHits(lists(), terms));
@@ -129,7 +146,11 @@ test("the user script builds the same terms, shelf queries and planner ranking",
 
 test("the user script checks quotes and reads verdicts as the core does", () => {
   const passages = ["the Prince of Leiningen, who died in 18-", "14, left her a widow; In July 1814, how- ever, Prince Charles died"];
-  for (const q of ["In July 1814, however, Prince Charles died", "Prince of Leiningen … In July 1814", "Emich Karl died in 1814", "1814", "", "[...] who died in 1814"]) {
+  passages.push("the Duke of Saxe- Coburg died");
+  for (const q of [
+    "In July 1814, however, Prince Charles died", "Prince of Leiningen … In July 1814", "Emich Karl died in 1814", "1814", "",
+    "[...] who died in 1814", "the Duke of Saxe-Coburg died", "Duke of Saxe Coburg", "Saxe-Weimar died",
+  ]) {
     assert.equal(script.libQuoteInPassages(q, passages), lib.quoteInPassages(q, passages), q);
     assert.equal(script.libQuoteKey(q), lib.quoteKey(q), q);
   }
@@ -175,6 +196,28 @@ test("the user script's librarian finds what the core's does", async () => {
     sent.map((s) => new URL(s.url).searchParams.get("user_query") ?? "").filter((q) => q.includes("identifier:(")).sort();
   assert.deepEqual(inside(scriptSent), inside(coreSent));
   assert.equal(inside(scriptSent).length, 3);
+});
+
+test("the user script runs the librarian for a claim with no word to search on", () => {
+  const page = loadUserScript({ wgTitle: "Princess Feodora of Leiningen", wgPageName: "Princess_Feodora_of_Leiningen" });
+  page.setClaimContexts([{ claim: "This was later confirmed.", context: "Her father died in 1814. This was later confirmed.", section: null, links: [] }]);
+  assert.equal(page.archiveQueriesFor(0).length, 0);
+  assert.equal(page.archiveNothingToSearch(0), false);
+  const off = loadUserScript({ wgTitle: "Princess Feodora of Leiningen" }, { window: { cnfirmedArchiveLibrarian: false } });
+  off.setClaimContexts([{ claim: "This was later confirmed.", context: "x", section: null, links: [] }]);
+  assert.equal(off.archiveNothingToSearch(0), true);
+});
+
+test("the user script's librarian adds the planner's passages to a book the search already shows", async () => {
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
+  const sent: Sent[] = [];
+  globalThis.fetch = worldFetch(sent);
+  const r = await page.findArchiveCandidates(0);
+  const shown = new Set(r.candidates.map((c: { evidence: { identifier: string } }) => c.evidence.identifier));
+  const tiss = r.candidates.find((c: { evidence: { identifier: string } }) => c.evidence.identifier === "eiffeltowerdescr00tiss");
+  assert.ok(tiss.evidence.passages.includes("Eiffel completed the tower in 1889."), "the planner's passage joins the shown book");
+  assert.ok(shown.has("tourdetroiscents00eiff"));
 });
 
 test("the user script checks every lead in one call, and falls back to the Verify API with the restated claim", async () => {

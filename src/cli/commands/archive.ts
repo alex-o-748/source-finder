@@ -113,7 +113,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
   run.results.forEach((r, i) => {
     console.log(`## [${i + 1}] ${r.claim.section ?? "(no section)"}`);
     console.log(`    claim:  ${r.claim.claim}`);
-    if (r.funnel.queries.length === 0) {
+    if (r.funnel.queries.length === 0 && !r.candidates.length && !r.funnel.librarian?.plan?.queries.length) {
       console.log("    (nothing to search for)");
       console.log();
       return;

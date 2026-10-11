@@ -772,8 +772,14 @@
     });
   }
 
+  // A claim with no word to search on still has the librarian, which reads
+  // its paragraph.
+  function archiveNothingToSearch(i) {
+    return archiveQueriesFor(i).length === 0 && !(IA_LIBRARIAN && (LIB_MODELS.planner || LIB_MODELS.books));
+  }
+
   function runBooks(i) {
-    if (archiveQueriesFor(i).length === 0) return Promise.resolve(null);
+    if (archiveNothingToSearch(i)) return Promise.resolve(null);
     return runArchiveStage(i).then(function (a) {
       // Leads cached before their check finished are checked now.
       if (a && a.status === 'done' && (a.candidates || []).length && !a.check) {
@@ -2878,16 +2884,13 @@
       var extras = [];
       var read = IA_FULL_TEXT ? readWholeBooks(hits, shortlist, extras, ctx.claim, title, funnel)
         : Promise.resolve();
-      // The librarian: the planner's books and the named ones, then a search
-      // inside every lead for the claim's telling terms.
       var added = [];
       return read.then(function () {
-        if (!IA_LIBRARIAN) return;
-        return librarianLeads(planning, naming, terms, shortlist.concat(extras), added, funnel)
-          .then(function (lib) { funnel.librarian = lib; });
-      }).then(function () {
-        funnel.lookedUp = shortlist.length + extras.length + added.length;
-        var candidates = [];
+        // Metadata for the few kept: publisher, ISBN, and whether it is still
+        // readable. The search's own leads are looked up while the
+        // librarian's models think, so its leads are judged new against the
+        // books shown.
+        var shown = [];
         function lookUp(list, cap, via) {
           var added = 0;
           return list.reduce(function (p, s) {
@@ -2901,11 +2904,11 @@
                     funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
                     return;
                   }
-                  candidates.push(toArchiveCandidate(s, details, terms, via));
+                  shown.push({ s: s, details: details, via: via });
                   added++;
                 }, function (err) {
                   funnel.errors.push('metadata ' + s.hit.identifier + ': ' + err.message);
-                  candidates.push(toArchiveCandidate(s, null, terms, via));
+                  shown.push({ s: s, details: null, via: via });
                   added++;
                 });
             });
@@ -2914,21 +2917,29 @@
         return lookUp(shortlist, IA_MAX_CANDIDATES)
           .then(function () { return lookUp(extras, IA_FULL_TEXT_LEADS); })
           .then(function () {
-            if (!funnel.librarian) return;
-            // Planner and named leads in their order, one at a time so `via` is kept.
-            var before = candidates.length;
-            var room = IA_LIBRARIAN_LEADS;
-            return added.reduce(function (p, a) {
-              return p.then(function () {
-                if (room <= 0) return;
-                var n = candidates.length;
-                return lookUp([a.s], 1, a.via).then(function () { room -= candidates.length - n; });
+            // The librarian: the planner's books and the named ones, then a
+            // search inside every lead for the claim's telling terms.
+            if (!IA_LIBRARIAN) return;
+            var shownLeads = shown.map(function (x) { return x.s; });
+            return librarianLeads(planning, naming, terms, shownLeads, added, funnel).then(function (lib) {
+              funnel.librarian = lib;
+              // Planner and named leads in their order, one at a time so `via` is kept.
+              var before = shown.length;
+              var room = IA_LIBRARIAN_LEADS;
+              return added.reduce(function (p, a) {
+                return p.then(function () {
+                  if (room <= 0) return;
+                  var n = shown.length;
+                  return lookUp([a.s], 1, a.via).then(function () { room -= shown.length - n; });
+                });
+              }, Promise.resolve()).then(function () {
+                funnel.librarian.added = shown.length - before;
               });
-            }, Promise.resolve()).then(function () {
-              funnel.librarian.added = candidates.length - before;
             });
           })
           .then(function () {
+            funnel.lookedUp = shortlist.length + extras.length + added.length;
+            var candidates = shown.map(function (x) { return toArchiveCandidate(x.s, x.details, terms, x.via); });
             funnel.candidates = candidates.length;
             return { candidates: candidates, funnel: funnel };
           });
@@ -3077,7 +3088,9 @@
   //   window.cnfirmedArchivePlannerModel  restates the claim, writes the queries
   //   window.cnfirmedArchiveBooksModel    names books likely to state it
   //   window.cnfirmedArchiveJudgeModel    checks the passages (false: the Verify API)
-  //   window.cnfirmedArchiveLibrarian = false   none of it: today's word search only
+  //   window.cnfirmedArchiveLibrarian = false   no planner, named books or search
+  //                                             inside: the word search alone (the
+  //                                             check keeps its own switch above)
 
   function libModel(name, fallback) {
     var v = window[name];
@@ -3310,7 +3323,7 @@
     if (!j) return null;
     var fact = typeof j.fact === 'string' ? j.fact.replace(/\s+/g, ' ').trim() : '';
     var queries = (Array.isArray(j.queries) ? j.queries : [])
-      .map(function (q) { return Array.isArray(q) ? q.join(' ') : String(q == null ? '' : q); })
+      .map(function (q) { return Array.isArray(q) ? libStrings(q).join(' ') : typeof q === 'string' ? q : ''; })
       .map(libSafeQuery)
       .filter(function (q) { return q.length >= 3; });
     var terms = (Array.isArray(j.terms) ? j.terms : [])
@@ -3353,17 +3366,41 @@
     return terms.filter(function (g) { return libSpecificity(g) === 1; });
   }
 
+  // Folded words, hyphens as spaces: "Saxe-Coburg-Gotha" holds "Saxe-Coburg".
+  function libSplitKey(text) {
+    return foldText(String(text == null ? '' : text)).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  }
+
+  // A passage's words two ways, padded: hyphenation joined ("com- pleted"),
+  // and hyphens as spaces.
+  function libWordingsOf(text) {
+    return { joined: ' ' + libQuoteKey(text) + ' ', split: ' ' + libSplitKey(text) + ' ' };
+  }
+
+  function libWordsIn(padded, words) {
+    if (!words) return false;
+    if (padded.indexOf(' ' + words + ' ') !== -1) return true;
+    return /\p{L}$/u.test(words) &&
+      (padded.indexOf(' ' + words + 's ') !== -1 || padded.indexOf(' ' + words + 'es ') !== -1);
+  }
+
+  // Whether a concept's wording is in a passage as whole words, a plural
+  // allowed: "23" is not in "1923", nor "Carl" in "Carlisle".
+  function libMentions(t, alt) {
+    return libWordsIn(t.joined, libQuoteKey(alt)) || libWordsIn(t.split, libSplitKey(alt));
+  }
+
   function libPlanCoverage(text, terms) {
-    var t = foldText(text);
+    var t = libWordingsOf(text);
     return terms.filter(function (alts) {
-      return alts.some(function (a) { return t.indexOf(foldText(a)) !== -1; });
+      return alts.some(function (a) { return libMentions(t, a); });
     }).length;
   }
 
   function libPlanMatched(text, terms) {
-    var t = foldText(text);
+    var t = libWordingsOf(text);
     return terms.filter(function (alts) {
-      return alts.some(function (a) { return t.indexOf(foldText(a)) !== -1; });
+      return alts.some(function (a) { return libMentions(t, a); });
     }).map(function (alts) { return foldText(alts[0]); });
   }
 
@@ -3392,11 +3429,19 @@
 
   // A named book's catalogue search: the title's longer words and the
   // author's surname.
+  // Short title words a catalogue search does without.
+  var LIB_TITLE_STOPWORDS = ('the and for its his her our are was who how why les des der die das und ' +
+    'von del los las une con per').split(' ');
+
   function libCatalogueQuery(book) {
     var words = book.title.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
-      .filter(function (w) { return w.length > 3; }).slice(0, 5);
+      .filter(function (w) { return w.length >= 3 && LIB_TITLE_STOPWORDS.indexOf(w.toLowerCase()) === -1; })
+      .slice(0, 5);
     if (!words.length) return null;
-    var surname = (String(book.author || '').trim().split(/\s+/).pop() || '').replace(/[^\p{L}-]/gu, '');
+    var surname = (String(book.author || '').trim().split(/\s+/).pop() || '')
+      .replace(/[\u2018\u2019`]/g, "'")
+      .replace(/[^\p{L}'-]/gu, '')
+      .replace(/^'+|'+$/g, '');
     return 'title:(' + words.join(' AND ') + ')' + (surname.length > 2 ? ' AND creator:(' + surname + ')' : '');
   }
 
@@ -3455,27 +3500,39 @@
   // The planner's hits, one per book, best covered first; a book must be about
   // the claim (two concepts in one passage, and one of its names when the plan
   // has any). Mirrors rankPlannedHits in src/core/archiveSources.ts.
+  // A plan with fewer than two concepts cannot tell, and adds no book. A book
+  // found by several queries is judged on all its highlights together.
   function rankPlannedHits(lists, terms) {
+    if (terms.length < 2) return [];
     var names = libNameConcepts(terms);
-    var seen = Object.create(null);
+    var byId = Object.create(null);
+    var books = [];
+    for (var i = 0; lists.some(function (l) { return i < l.length; }); i++) {
+      for (var k = 0; k < lists.length; k++) {
+        var h = lists[k][i];
+        if (!h) continue;
+        var known = byId[h.identifier];
+        if (!known) {
+          known = byId[h.identifier] = Object.assign({}, h, { highlights: h.highlights.slice() });
+          books.push(known);
+          continue;
+        }
+        h.highlights.forEach(function (t) { if (known.highlights.indexOf(t) === -1) known.highlights.push(t); });
+      }
+    }
     var out = [];
-    function take(h) {
-      if (!h || seen[h.identifier]) return;
-      seen[h.identifier] = true;
+    books.forEach(function (h) {
       var gate = archiveGate(h);
       if (!gate.ok || !h.highlights.length) return;
       var passages = h.highlights.map(function (text) {
         return { text: text, score: 0, matched: libPlanMatched(text, terms) };
       }).sort(function (a, b) { return b.matched.length - a.matched.length; });
-      if (terms.length >= 2 && passages[0].matched.length < 2) return;
+      if (passages[0].matched.length < 2) return;
       if (names.length && libPlanCoverage(h.highlights.join(' '), names) === 0) return;
       var cover = libPlanCoverage(h.highlights.join(' '), terms);
-      var score = terms.length ? Math.round((cover / terms.length) * 100) / 100 : 0;
+      var score = Math.round((cover / terms.length) * 100) / 100;
       out.push({ s: { hit: h, access: gate.access, passages: passages, score: score }, cover: cover, order: out.length });
-    }
-    for (var i = 0; lists.some(function (l) { return i < l.length; }); i++) {
-      for (var k = 0; k < lists.length; k++) take(lists[k][i]);
-    }
+    });
     return out.sort(function (a, b) { return b.cover - a.cover || a.order - b.order; })
       .map(function (x) { return x.s; });
   }
@@ -3524,13 +3581,26 @@
         found.forEach(function (f) { if (f.error) funnel.errors.push(f.error); });
         lib.namedFound = found.filter(function (f) { return f.scans.length > 0; }).length;
 
-        // One lead per work, beyond the search's own.
+        // One lead per work, beyond the search's own. A planner hit on a book
+        // already shown adds its passages to it.
         var taken = shortlist.map(function (s) { return s.hit; });
         function isNew(h) {
           return !taken.some(function (t) { return t.identifier === h.identifier || iaSameWork(t, h); });
         }
+        function addPassages(s, texts) {
+          var known = Object.create(null);
+          s.passages.forEach(function (p) { known[p.text] = true; });
+          texts.forEach(function (text) {
+            if (known[text]) return;
+            known[text] = true;
+            s.passages.push({ text: text, score: 0, matched: libPlanMatched(text, concepts) });
+          });
+        }
         var fromPlanner = 0;
-        for (var i = 0; i < planned.length && fromPlanner < IA_PLANNER_LEADS; i++) {
+        for (var i = 0; i < planned.length; i++) {
+          var same = shortlist.filter(function (x) { return x.hit.identifier === planned[i].hit.identifier; })[0];
+          if (same) addPassages(same, planned[i].passages.map(function (p) { return p.text; }));
+          if (fromPlanner >= IA_PLANNER_LEADS) continue;
           if (!isNew(planned[i].hit)) continue;
           added.push({ s: planned[i], via: 'planner' });
           taken.push(planned[i].hit);
@@ -3569,15 +3639,7 @@
               inside[h.identifier] = (inside[h.identifier] || []).concat(h.highlights);
             });
           });
-          everyone.forEach(function (s) {
-            var known = Object.create(null);
-            s.passages.forEach(function (p) { known[p.text] = true; });
-            (inside[s.hit.identifier] || []).forEach(function (text) {
-              if (known[text]) return;
-              known[text] = true;
-              s.passages.push({ text: text, score: 0, matched: libPlanMatched(text, concepts) });
-            });
-          });
+          everyone.forEach(function (s) { addPassages(s, inside[s.hit.identifier] || []); });
           // The librarian's leads show their best-covered passage first; one
           // with no passage has nothing to show or check, and a named book
           // needs only one scan.
@@ -3642,8 +3704,10 @@
       .filter(function (p) { return p.length > 0; });
     if (!pieces.length) return false;
     if (pieces.join(' ').split(' ').length < 3) return false;
-    var hay = passages.map(libQuoteKey).join(' ');
-    return pieces.every(function (p) { return hay.indexOf(p) !== -1; });
+    // Compared without spaces: "Saxe- Coburg" broken across OCR lines is
+    // "Saxe-Coburg" in the quote, and "Saxe Coburg" if the model drops the hyphen.
+    var hay = passages.map(libQuoteKey).join(' ').replace(/ /g, '');
+    return pieces.every(function (p) { return hay.indexOf(p.replace(/ /g, '')) !== -1; });
   }
 
   // A verdict per book, in order (null where the reply gives none). A
@@ -4031,20 +4095,24 @@
     }).join('\n\n');
   }
 
+  // Paced with the Internet Archive stage's calls: the Worker counts both
+  // against one limit.
   function callHfChat(system, user) {
-    return fetch(PROXY_BASE + '/hf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: modelFor('tavilyhf'),
-        // gpt-oss reasons before it answers, and that counts against this.
-        max_tokens: 8000,
-        temperature: 0,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ]
-      })
+    return workerTurn().then(function () {
+      return fetch(PROXY_BASE + '/hf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelFor('tavilyhf'),
+          // gpt-oss reasons before it answers, and that counts against this.
+          max_tokens: 8000,
+          temperature: 0,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user }
+          ]
+        })
+      });
     }).then(function (res) {
       return res.text().then(function (t) {
         var data;
@@ -4359,7 +4427,7 @@
     var a = archiveState[i] || { status: 'idle' };
     var s = state[i] || { status: 'idle' };
     var books;
-    if (archiveQueriesFor(i).length === 0) books = 'none';
+    if (archiveNothingToSearch(i)) books = 'none';
     else if (a.status !== 'done') books = a.status;
     else if ((a.candidates || []).length && (!a.check || a.check.status === 'running')) books = 'running';
     else books = 'done';

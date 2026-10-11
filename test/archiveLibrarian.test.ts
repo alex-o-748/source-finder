@@ -13,6 +13,8 @@ import {
   parseBooks,
   parseJudgement,
   parsePlan,
+  planCoverage,
+  planMatched,
   quoteInPassages,
   safeQuery,
   safeTerm,
@@ -234,6 +236,49 @@ test("rankPlannedHits: best covered first, and only books about the claim", () =
   assert.deepEqual(ranked[0].passages[0].matched, ["1889", "eiffel", "300 metres", "completed"]);
 });
 
+test("rankPlannedHits: a book's highlights from every query are judged together; one concept adds nothing", () => {
+  const h = (identifier: string, highlights: string[]): ArchiveHit => ({
+    identifier, title: identifier, creator: null, year: null, mediatype: "texts", collections: ["americana"], file: null, highlights, rank: 0, query: "q",
+  });
+  const terms = [["1814"], ["Emich Carl"], ["died", "death"]];
+  // Neither of the first query's passages has two concepts; the second query's does.
+  const lists = [[h("x", ["Emich Carl, Prince of Leiningen", "in the year 1814 the"])], [h("x", ["Emich Carl, Prince of Leiningen, died in 1814"])]];
+  for (const order of [lists, [...lists].reverse()]) {
+    const ranked = rankPlannedHits(order, terms);
+    assert.deepEqual(ranked.map((s) => s.hit.identifier), ["x"]);
+    assert.equal(ranked[0].passages.length, 3);
+    assert.equal(ranked[0].passages[0].text, "Emich Carl, Prince of Leiningen, died in 1814");
+  }
+  assert.deepEqual(rankPlannedHits([[h("cookery", ["Boil the eggs."])]], []), []);
+  assert.deepEqual(rankPlannedHits([[h("one", ["Emich Carl"])]], [["Emich Carl"]]), []);
+});
+
+test("planMatched and planCoverage: a concept counts as whole words, a plural allowed", () => {
+  const terms = [["23"], ["Goodrich"], ["price", "cost"]];
+  assert.deepEqual(planMatched("Goodrich sold the company in 1923", terms), ["goodrich"]);
+  assert.deepEqual(planMatched("Goodrich's price was 23 dollars", terms), ["23", "goodrich", "price"]);
+  assert.equal(planCoverage("the road to Carlisle", [["Carl"]]), 0);
+  assert.equal(planCoverage("of the house of Saxe-Coburg-Gotha", [["Saxe-Coburg"]]), 1);
+  assert.equal(planCoverage("the tower was com- pleted that year", [["completed"]]), 1);
+  assert.equal(planCoverage("it rose three hundred metres", [["metre"]]), 1);
+  assert.equal(planCoverage("ÉMICH CARL died", [["Emich Carl"]]), 1);
+});
+
+test("quoteInPassages: a compound broken across OCR lines, or quoted without its hyphen, is still found", () => {
+  assert.ok(quoteInPassages("the Duke of Saxe-Coburg died in 1814", ["the Duke of Saxe- Coburg died in 1814"]));
+  assert.ok(quoteInPassages("the Duke of Saxe Coburg died", ["the Duke of Saxe-Coburg died in 1814"]));
+  assert.ok(!quoteInPassages("the Duke of Saxe-Weimar died", ["the Duke of Saxe-Coburg died in 1814"]));
+});
+
+test("catalogueQuery: short title words but not 'the', and a surname's apostrophe", () => {
+  assert.equal(catalogueQuery({ title: "Roman Art", author: "Eugénie Strong", year: 1928 }), "title:(Roman AND Art) AND creator:(Strong)");
+  assert.equal(
+    catalogueQuery({ title: "The Great Melody", author: "Conor Cruise O\u2019Brien", year: 1992 }),
+    "title:(Great AND Melody) AND creator:(O'Brien)",
+  );
+  assert.equal(catalogueQuery({ title: "Of It", author: null, year: null }), null);
+});
+
 test("findArchiveCandidates with the librarian: planner leads, named books, a search inside every lead", async () => {
   const sent: Sent[] = [];
   globalThis.fetch = worldFetch(sent);
@@ -263,12 +308,40 @@ test("findArchiveCandidates with the librarian: planner leads, named books, a se
   assert.equal(loyrette.evidence.access, "borrow");
   assert.match(loyrette.snippet, /completed in 1889 the tower stood 300 metres/);
   assert.match(loyrette.citation.ref, /url-access=registration/);
-  // The search's own leads gained passages from the search inside.
+  // The search's own leads gained passages from the search inside, and from
+  // the planner's queries.
   const pezz = r.candidates.find((c) => c.evidence.identifier === "eiffeltower0000pezz")!;
   assert.ok(pezz.evidence.passages.includes("The tower is 300 metres tall without its antennas."));
+  const tiss = r.candidates.find((c) => c.evidence.identifier === "eiffeltowerdescr00tiss")!;
+  assert.ok(tiss.evidence.passages.includes("Eiffel completed the tower in 1889."));
   // Models through the Worker: the planner and the librarian's list of books.
   const models = sent.filter((s) => s.url.endsWith("/hf")).map((s) => s.body!.model);
   assert.deepEqual(models, [DEFAULT_LIBRARIAN_MODELS.planner, DEFAULT_LIBRARIAN_MODELS.books]);
+});
+
+test("findArchiveCandidates: a planner hit on a spare the search did not show becomes a lead", async () => {
+  const sent: Sent[] = [];
+  const world = worldFetch(sent);
+  globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+    const res = await world(input, init);
+    const q = new URL(String(input)).searchParams.get("user_query") ?? "";
+    if (!String(input).includes("/services/search/") || !PLAN.queries.includes(q)) return res;
+    const body = await res.json();
+    body.response.body.hits.hits.push({
+      fields: { identifier: "guidetoparis1925", title: "Guide to Paris", mediatype: "texts", collection: ["americana"] },
+      highlight: { text: ["The {{{Eiffel}}} tower, completed in {{{1889}}}, is 300 metres high."] },
+    });
+    return Response.json(body);
+  }) as typeof fetch;
+  const r = await findArchiveCandidates(
+    { claim: CLAIM, context: PARAGRAPH, section: null, offset: 0, tag: "{{cn}}" },
+    "Eiffel Tower",
+    // One lead shown: the search's second and third books are spares.
+    { librarian: { client: workerChatClient() }, maxCandidates: 1 },
+  );
+  const via = r.candidates.map((c) => [c.evidence.identifier, c.evidence.via ?? "search"]);
+  assert.deepEqual(via[0], ["eiffeltowerdescr00tiss", "search"]);
+  assert.ok(via.some(([id, v]) => id === "guidetoparis1925" && v === "planner"), JSON.stringify(via));
 });
 
 test("findArchiveCandidates: a failed planner is noted, and the search inside uses the claim's own terms", async () => {

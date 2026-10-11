@@ -443,27 +443,35 @@ export function parseCatalogueHits(response: CatalogueResponse, query: string): 
  * with two of the plan's concepts, and, when the plan names who or what the
  * claim is about, a highlight with one of those names. Without that, "New
  * York, 1814 DEATH (the) of Abel" is a lead for "Feodora's father died in 1814".
+ * A plan with fewer than two concepts cannot tell, and adds no book.
+ *
+ * A book found by several queries is judged on all its highlights together.
  */
 export function rankPlannedHits(lists: ArchiveHit[][], terms: string[][]): ScoredHit[] {
+  if (terms.length < 2) return [];
   const names = nameConcepts(terms);
-  const seen = new Set<string>();
-  const out: { s: ScoredHit; cover: number; order: number }[] = [];
+  const books = new Map<string, ArchiveHit>();
   for (let i = 0; lists.some((l) => i < l.length); i++) {
     for (const l of lists) {
       const h = l[i];
-      if (!h || seen.has(h.identifier)) continue;
-      seen.add(h.identifier);
-      const gate = accessGate(h);
-      if (!gate.ok || !h.highlights.length) continue;
-      const passages = h.highlights
-        .map((text) => ({ text, score: 0, matched: planMatched(text, terms) }))
-        .sort((a, b) => b.matched.length - a.matched.length);
-      if (terms.length >= 2 && passages[0].matched.length < 2) continue;
-      if (names.length && planCoverage(h.highlights.join(" "), names) === 0) continue;
-      const cover = planCoverage(h.highlights.join(" "), terms);
-      const score = terms.length ? Math.round((cover / terms.length) * 100) / 100 : 0;
-      out.push({ s: { hit: h, access: gate.access, passages, score }, cover, order: out.length });
+      if (!h) continue;
+      const known = books.get(h.identifier);
+      if (!known) books.set(h.identifier, { ...h, highlights: [...h.highlights] });
+      else for (const t of h.highlights) if (!known.highlights.includes(t)) known.highlights.push(t);
     }
+  }
+  const out: { s: ScoredHit; cover: number; order: number }[] = [];
+  for (const h of books.values()) {
+    const gate = accessGate(h);
+    if (!gate.ok || !h.highlights.length) continue;
+    const passages = h.highlights
+      .map((text) => ({ text, score: 0, matched: planMatched(text, terms) }))
+      .sort((a, b) => b.matched.length - a.matched.length);
+    if (passages[0].matched.length < 2) continue;
+    if (names.length && planCoverage(h.highlights.join(" "), names) === 0) continue;
+    const cover = planCoverage(h.highlights.join(" "), terms);
+    const score = Math.round((cover / terms.length) * 100) / 100;
+    out.push({ s: { hit: h, access: gate.access, passages, score }, cover, order: out.length });
   }
   return out.sort((a, b) => b.cover - a.cover || a.order - b.order).map((x) => x.s);
 }
@@ -1183,19 +1191,10 @@ export async function findArchiveCandidates(
   const extras: ScoredHit[] = [];
   if (options.fullText) await readWholeBooks(all, shortlist, extras, claim.claim, articleTitle, client, options, funnel);
 
-  // The librarian: the planner's books and the named ones, then a search
-  // inside every lead for the claim's telling terms.
-  const added: { s: ScoredHit; via: "planner" | "named" }[] = [];
-  if (models) {
-    funnel.librarian = await librarianLeads(
-      { planning, naming, client, terms, shortlist: [...shortlist, ...extras], added, funnel },
-    );
-  }
-
   // 4. Metadata for the few kept: publisher, ISBN, and whether it is still
-  // readable.
-  funnel.lookedUp = shortlist.length + extras.length + added.length;
-  const candidates: ArchiveCandidate[] = [];
+  // readable. The search's own leads are looked up while the librarian's
+  // models think, so its leads are judged new against the books shown.
+  const shown: { s: ScoredHit; details: ItemDetails | null; via?: "planner" | "named" }[] = [];
   const lookUp = async (list: ScoredHit[], cap: number, via?: "planner" | "named"): Promise<void> => {
     let added = 0;
     for (const s of list) {
@@ -1212,24 +1211,33 @@ export async function findArchiveCandidates(
         // The hit already passed the gate; a lead without a publisher is still a lead.
         funnel.errors.push(`metadata ${s.hit.identifier}: ${(err as Error).message}`);
       }
-      candidates.push(toArchiveCandidate(s, details, terms, via));
+      shown.push({ s, details, via });
       added++;
     }
   };
   await lookUp(shortlist, maxCandidates);
   await lookUp(extras, options.fullTextLeads ?? 2);
-  if (funnel.librarian) {
-    const before = candidates.length;
+
+  // The librarian: the planner's books and the named ones, then a search
+  // inside every lead for the claim's telling terms.
+  const added: { s: ScoredHit; via: "planner" | "named" }[] = [];
+  if (models) {
+    funnel.librarian = await librarianLeads({
+      planning, naming, client, terms, shortlist: shown.map((x) => x.s), added, funnel,
+    });
+    const before = shown.length;
     // Planner and named leads in their order, one call each so `via` is kept.
     let room = LIBRARIAN_LEADS;
     for (const a of added) {
       if (room <= 0) break;
-      const n = candidates.length;
+      const n = shown.length;
       await lookUp([a.s], 1, a.via);
-      room -= candidates.length - n;
+      room -= shown.length - n;
     }
-    funnel.librarian.added = candidates.length - before;
+    funnel.librarian.added = shown.length - before;
   }
+  funnel.lookedUp = shortlist.length + extras.length + added.length;
+  const candidates = shown.map((x) => toArchiveCandidate(x.s, x.details, terms, x.via));
   funnel.candidates = candidates.length;
 
   return { claim, candidates, funnel };
@@ -1290,12 +1298,23 @@ async function librarianLeads(a: {
   for (const f of found) if (f.error) funnel.errors.push(f.error);
   lib.namedFound = found.filter((f) => f.scans.length > 0).length;
 
-  // One lead per work, beyond the search's own.
+  // One lead per work, beyond the search's own. A planner hit on a book
+  // already shown adds its passages to it.
   const taken = a.shortlist.map((s) => s.hit);
   const isNew = (h: ArchiveHit): boolean => !taken.some((t) => t.identifier === h.identifier || sameWork(t, h));
+  const addPassages = (s: ScoredHit, texts: string[]): void => {
+    const known = new Set(s.passages.map((p) => p.text));
+    for (const text of texts) {
+      if (known.has(text)) continue;
+      known.add(text);
+      s.passages.push({ text, score: 0, matched: planMatched(text, concepts) });
+    }
+  };
   let fromPlanner = 0;
   for (const s of planned) {
-    if (fromPlanner >= PLANNER_LEADS) break;
+    const same = a.shortlist.find((x) => x.hit.identifier === s.hit.identifier);
+    if (same) addPassages(same, s.passages.map((p) => p.text));
+    if (fromPlanner >= PLANNER_LEADS) continue;
     if (!isNew(s.hit)) continue;
     added.push({ s, via: "planner" });
     taken.push(s.hit);
@@ -1335,14 +1354,7 @@ async function librarianLeads(a: {
     if (r.error) funnel.errors.push(r.error);
     for (const h of r.hits) inside.set(h.identifier, [...(inside.get(h.identifier) ?? []), ...h.highlights]);
   }
-  for (const s of everyone) {
-    const known = new Set(s.passages.map((p) => p.text));
-    for (const text of inside.get(s.hit.identifier) ?? []) {
-      if (known.has(text)) continue;
-      known.add(text);
-      s.passages.push({ text, score: 0, matched: planMatched(text, concepts) });
-    }
-  }
+  for (const s of everyone) addPassages(s, inside.get(s.hit.identifier) ?? []);
   // The librarian's leads show their best-covered passage first; one with no
   // passage at all has nothing to show or check, and a named book needs only
   // one scan.
