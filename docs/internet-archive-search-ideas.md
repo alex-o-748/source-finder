@@ -239,9 +239,10 @@ GLM-5.2 is also the best judge measured. On today's 97 hand-labelled leads:
 
 At about $1.40 / $4.40 per million tokens (input / output; first-party and most
 hosts), GLM-5.2 costs the Worker about $0.007 per claim to name books
-(~300 tokens in, ~1,500 out) and a little over half a cent per book judged on
-whole-text windows; judging every book on a 15-book shortlist would be some 5
-cents a claim, so GPT-OSS should sift and GLM-5.2 confirm the few it keeps.
+(~300 tokens in, ~1,500 out) and about a third of a cent per book judged on
+whole-text windows (~900 in, ~500 out); judging every book on a 15-book
+shortlist would be some 5 cents a claim, so GPT-OSS should sift and GLM-5.2
+confirm the few it keeps.
 
 Not tested, for lack of an allowlist entry or an enabled provider: the
 strongest open models this month (Kimi K3, DeepSeek V4, GLM-5.3, MiMo-V2.6;
