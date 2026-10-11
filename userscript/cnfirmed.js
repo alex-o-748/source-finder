@@ -2751,8 +2751,21 @@
 
   function iaFetchJson(url) {
     return fetch(url, { headers: { Accept: 'application/json' } }).then(function (res) {
-      if (!res.ok) throw new Error('Internet Archive: HTTP ' + res.status);
+      if (!res.ok) throw Object.assign(new Error('Internet Archive: HTTP ' + res.status), { status: res.status });
       return res.json();
+    });
+  }
+
+  // A full-text search, asked once more for one more hit when it fails with a
+  // 400: the search's backend now and then fails a query it accepts, and
+  // archive.org then serves that failure for the same URL for some 20
+  // minutes. A different hits_per_page is a fresh search. Mirrors
+  // searchWithRetry in src/core/internetArchive.ts.
+  function iaSearch(query, size) {
+    size = size || IA_MAX_HITS;
+    return iaFetchJson(iaSearchUrl(query, size)).catch(function (err) {
+      if (err.status !== 400) throw err;
+      return iaFetchJson(iaSearchUrl(query, size + 1));
     });
   }
 
@@ -2840,7 +2853,7 @@
         chain = chain.then(function () {
           if (found.length >= IA_ENOUGH_HITS) return;
           used.push(query);
-          return iaFetchJson(iaSearchUrl(query))
+          return iaSearch(query)
             .catch(function (err) {
               funnel.errors.push('search failed: ' + err.message);
               return null;
@@ -3551,7 +3564,7 @@
       var concepts = plan ? plan.terms : [];
 
       var searching = Promise.all((plan ? plan.queries : []).map(function (query) {
-        return iaFetchJson(iaSearchUrl(query, IA_PLANNER_HITS)).then(function (response) {
+        return iaSearch(query, IA_PLANNER_HITS).then(function (response) {
           return { hits: parseArchiveHits(response, query), error: null };
         }, function (err) {
           return { hits: [], error: 'search failed: ' + err.message };
@@ -3626,7 +3639,7 @@
         lib.shelfTerms.forEach(function (t) { shelf = shelf.concat(libShelfQueries(t, ids)); });
         lib.shelfQueries = shelf.length;
         return Promise.all(shelf.map(function (q) {
-          return iaFetchJson(iaSearchUrl(q.query, q.size)).then(function (response) {
+          return iaSearch(q.query, q.size).then(function (response) {
             return { hits: parseArchiveHits(response, q.query), error: null };
           }, function (err) {
             return { hits: [], error: 'shelf search failed: ' + err.message };

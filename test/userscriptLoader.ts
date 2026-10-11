@@ -55,6 +55,7 @@ const EXPOSED = [
   "libSafeTerm",
   "libSafeQuery",
   "iaPhrase",
+  "iaSearch",
   "archiveQueriesFor",
   "archiveNothingToSearch",
   "libJsonObjectIn",

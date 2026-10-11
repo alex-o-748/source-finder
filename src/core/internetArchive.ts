@@ -115,9 +115,28 @@ async function get(url: string, accept: string, retried = false): Promise<Respon
   }
   if (!res.ok) {
     // Status text is empty over HTTP/2, so the code alone.
-    throw new Error(`Internet Archive: HTTP ${res.status}`);
+    throw Object.assign(new Error(`Internet Archive: HTTP ${res.status}`), { status: res.status });
   }
   return res;
+}
+
+/**
+ * A full-text search, asked once more for one more hit when it fails with a
+ * 400. The search's backend now and then fails a query it accepts ("the
+ * search backend encountered an exception"), and archive.org then serves that
+ * failure for the same URL for some 20 minutes (checked live, 2026-10): asking
+ * again is the same failure, a different `hits_per_page` is a fresh search.
+ */
+export async function searchWithRetry(
+  request: SearchRequest,
+  search: (request: SearchRequest) => Promise<SearchResponse>,
+): Promise<SearchResponse> {
+  try {
+    return await search(request);
+  } catch (err) {
+    if ((err as { status?: number }).status !== 400) throw err;
+    return search({ ...request, size: request.size + 1 });
+  }
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -127,7 +146,7 @@ async function getJson<T>(url: string): Promise<T> {
 /** The live client. */
 export const httpArchiveClient: ArchiveClient = {
   fullTextSearch(request) {
-    return getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(request).toString()}`);
+    return searchWithRetry(request, (r) => getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(r).toString()}`));
   },
   metadata(identifier) {
     return getJson<MetadataResponse>(METADATA_URL + encodeURIComponent(identifier));

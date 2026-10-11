@@ -122,11 +122,13 @@ export function cassettePath(dir: string, key: string): string {
 
 /**
  * A failure worth retrying and never worth recording. The Internet Archive's
- * full-text search reports its own backend failing (an upstream 502) as a 400.
+ * full-text search reports its own backend failing as a 400, but serves that
+ * failure for the same URL for some 20 minutes, so asking again is no use:
+ * it is recorded, and the client asks for one more hit instead
+ * (`searchWithRetry` in src/core/internetArchive.ts).
  */
-export function isTransient(status: number, body: string): boolean {
-  if (status === 429 || status >= 500) return true;
-  return status === 400 && body.includes("search backend encountered an exception");
+export function isTransient(status: number, _body: string): boolean {
+  return status === 429 || status >= 500;
 }
 
 function sleep(ms: number): Promise<void> {
