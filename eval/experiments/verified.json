@@ -1,0 +1,66 @@
+{
+ "_about": "Hand check (October 2026) of every book the first judge said states the claim, in both runs: does the passage state the claim's fact? 'states' lists the books that do; 'not' records claims the judge passed that do not hold up, and why.",
+ "states": {
+  "Princess Feodora of Leiningen@1373372849#2645": [
+   "dli.ministry.02539",
+   "dli.ernet.51562",
+   "crownedheadsofeu00lint",
+   "memoirsbaronsto01stocgoog",
+   "illustratedqueen0000stra",
+   "queenvictoriasfa0000ashd",
+   "kingwithoutcrown0000benn",
+   "kingwithoutcrown0000unse",
+   "lettersofqueenvi01victuoft",
+   "whitakerspeerage1907lond"
+  ],
+  "Senate of the Roman Empire@1339603052#5947": [
+   "historydescripti00abbouoft"
+  ],
+  "Bosnian–Ragusan war of 1403–1404@1370606015#1063": [
+   "enes-dedic-the-bosnian-kingdom-and-the-serbian-despotate-1402-1459pdf"
+  ],
+  "Elena Aiello@1374070223#5056": [
+   "TheIncredibleLifeStoryOfSisterElenaAielloTheCalabrianHolyNun"
+  ],
+  "Vipakasutra@1242493963#775": [
+   "in.ernet.dli.2015.52154",
+   "early_jainism",
+   "xkhf_agamic-index-vol-1-prakrit-proper-names-part-2-by-mohanlal-mehta-k-rishabh-"
+  ],
+  "Endocrine system@1356929510#9852": [
+   "biology_books_collection",
+   "clinicalgipsysio00jaco",
+   "a-textbook-of-human-physiology",
+   "mammalianaliment0000madg",
+   "isbn_9781681352060",
+   "humananatomyphys0000suza",
+   "isbn_9781599849331"
+  ],
+  "Goodrich Quality Theaters@1373115973#4818": [
+   "filmdailyyearboo00film_13",
+   "filmdailyyearboo00film_14",
+   "filmdailyyearboo00film_15",
+   "1945filmdailyyea1945wids",
+   "filmdailyyearboo0000jack"
+  ],
+  "Khirbet Kerak@1368547483#14129": [
+   "galileefromalexa0000frey"
+  ],
+  "Otter civet@1371730282#2216": [
+   "raffles-bulletin-zoology-supplement-33-126-131"
+  ]
+ },
+ "not": {
+  "Silvae@1345841665#7076": "Image caption; the books describe funerary-banquet reliefs in general, not the pictured one. Partial at best.",
+  "Khirbet Kerak@1368547483#14129": "settlements (Cohen): about the Red Sea and Lycian cities named Philotera, not Philoteria in Galilee.",
+  "Junkers Ju 52@1374490506#15921": "Passages say a Ju 52 towed one, or 'two or three', gliders; none says up to two DFS 230s.",
+  "A-Imdugud@1358747319#1777": "Names the seal and tomb, not the cuneiform spelling the tag is on. Partial.",
+  "Cathedral of Évora@1373206424#3475": "A list of Évora teachers with the four names; does not say pupils. Partial.",
+  "Cenomanian@1362029724#3853": "Passages date a deposit to the upper Cenomanian, ~95 Mya; none says the substage starts then. Partial.",
+  "Spotted corydoras@1355298494#2999": "Aquarium encyclopedias' 'Diet: Worms, crustaceans, insects, plant matter' lines, but the passage does not show which species. Unverified.",
+  "Otter civet@1371730282#2216": "carnivores0000reyn and its reprints: the webbed-feet lines may describe other species. Unverified.",
+  "Didius Julianus@1370266531#1728": "The judge's quote ('His reign marks the start of the Empire's decline') is not in the book: GPT-OSS invented it.",
+  "Nitroxinil@1352698310#3075": "'also active against thiabendazole-resistant Haemonchus contortus': the passage does not show which drug. Unverified.",
+  "Fort Buford Stage Road@1373286591#872": "An 1870 report of roads to Fort Buford, Dakota Territory; not this road. Partial."
+ }
+}
