@@ -175,6 +175,34 @@ as "worth showing an editor", not as found.
    fact on one page of three hundred, and five highlights per search term
    rarely land on it. These shelves need page-level search inside (below).
 
+### A shortlist named by the model
+
+A librarian also knows which books to open. The `llm-books` strategy asks the
+model for up to six books likely to state the fact (title, author, year), finds
+each on the Archive by title and author, and searches inside them as above.
+It was tried on 12 claims where nothing else found anything, so these are the
+hard cases (`results/books-*.json`; the strong-model lists, written for claims
+whose sources had not been seen, are in `books-manual.json`).
+
+| Lists by | Books named | On the Archive | Claims with a book that states it |
+| --- | --- | --- | --- |
+| a strong model | 55 | 30 | 1, and 1 partly |
+| GPT-OSS-20b | 6 | 2 | 0 |
+
+The find: Caroline Ticknor's *May Alcott: A Memoir* (1928) — after the death of
+"her much beloved brother-in-law", "Louisa decided that she must return home in
+the spring, but that May should remain for a year longer, in order to complete
+her lessons… Concord was calling to Louisa, but not to May." The partial: Anna
+Seward's *Memoirs of the Life of Dr. Darwin* (1804), the primary source for the
+bridge and terrace at the Lichfield house.
+
+GPT-OSS-20b cannot do this. Told to name only books it is sure exist, it
+reasoned for some 15,000 tokens and returned an empty list for 11 of the 12;
+without that instruction it invents ("The Ottoman Empire: A Short History", by
+five different authors). Naming books takes a model's recall of the
+literature, which a 20B model does not have. A name that does not exist costs
+only a catalogue lookup, so a strong model's occasional mistake is cheap.
+
 ## Recommendations
 
 In order of gain per effort:
@@ -194,7 +222,9 @@ In order of gain per effort:
    CORS header on `/stream/`), and show the best window.
 5. **Add Tavily on archive.org** as a second source of books, for users with a
    Tavily key or through the Worker.
-6. **Then** subject shelves and cited books, once page-level search inside is
+6. **With a strong model, ask it to name the books** and add them to the
+   shortlist. Not with GPT-OSS-20b.
+7. **Then** subject shelves and cited books, once page-level search inside is
    available (the BookReader search below).
 
 ## Cost, and the path to free

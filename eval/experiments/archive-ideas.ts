@@ -318,10 +318,10 @@ function interleave<T>(lists: T[][]): T[] {
   return out;
 }
 
-async function leadsFrom(strategy: string, books: (Book & { native?: string[] })[], p: Plan): Promise<Lead[]> {
+async function leadsFrom(strategy: string, books: (Book & { native?: string[] })[], p: Plan, max = MAX_LEADS): Promise<Lead[]> {
   const out: Lead[] = [];
   for (const b of dedupe(books)) {
-    if (out.length >= MAX_LEADS) break;
+    if (out.length >= max) break;
     const l = await toLead(strategy, b, b.native ?? [], p);
     if (l) out.push(l);
   }
@@ -524,6 +524,30 @@ async function claudeWeb(c: EvalClaim): Promise<(Book & { native: string[] })[]>
   return out;
 }
 
+// A shortlist of books named by the model, as a librarian would from memory.
+interface NamedBook {
+  title: string;
+  author?: string;
+  year?: number | string;
+}
+
+const BOOKS_SYSTEM = `You are a reference librarian. A Wikipedia editor needs a published book that states a fact. Name the books most likely to state it: standard biographies, histories, monographs and reference works on the subject, older public-domain works included. Only books you are sure exist; a wrong title wastes a search.
+
+Reply with JSON only: {"books": [{"title": "the book's title", "author": "the first author's surname", "year": 1900}]}, up to six, most likely first.`;
+
+/** What happened to each claim's named books, for the report. */
+export const shortlists: Record<string, { named: NamedBook[]; found: string[] }> = {};
+
+async function namedBooks(c: EvalClaim, p: Plan): Promise<NamedBook[]> {
+  if (PLANNER_KIND === "manual") {
+    const lists = JSON.parse(readFileSync("eval/experiments/books-manual.json", "utf8")) as Record<string, NamedBook[]>;
+    return lists[c.id] ?? [];
+  }
+  const user = `Article: ${c.title}\nParagraph: ${prose(c.context).slice(0, 2000)}\n\nClaim: ${c.claim}\nThe claim, with the names it implies filled in: ${p.fact}`;
+  const r = jsonIn<{ books?: NamedBook[] }>(await workerChat("planner", BOOKS_SYSTEM, user, 16000));
+  return (r?.books ?? []).filter((b) => b && typeof b.title === "string").slice(0, 6);
+}
+
 const STRATEGIES: Record<string, Strategy> = {
   baseline: async (c) =>
     baselineBooks(c).map((b) => ({ strategy: "baseline", ...b, title: b.title, windows: [] }) as Lead),
@@ -557,6 +581,17 @@ const STRATEGIES: Record<string, Strategy> = {
     return leadsFrom("cited", found, p);
   },
   "claude-web": async (c, p) => leadsFrom("claude-web", await claudeWeb(c), p),
+  "llm-books": async (c, p) => {
+    const named = await namedBooks(c, p);
+    const found: Book[] = [];
+    for (const b of named) {
+      const surname = String(b.author ?? "").trim().split(/\s+/).pop() ?? null;
+      const hit = await findOnArchive({ title: String(b.title), last: surname || null, isbn: null, inSection: false });
+      if (hit) found.push(hit);
+    }
+    shortlists[c.id] = { named, found: found.map((b) => b.identifier) };
+    return leadsFrom("llm-books", found, p, 8);
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -651,6 +686,10 @@ interface ClaimResult {
 async function main(): Promise<void> {
   let claims = loadClaims();
   if (flag("--only")) claims = claims.filter((c) => c.id.startsWith(flag("--only")!));
+  if (flag("--ids")) {
+    const prefixes = flag("--ids")!.split(",");
+    claims = claims.filter((c) => prefixes.some((x) => c.id.startsWith(x)));
+  }
   if (flag("--limit")) claims = claims.slice(0, Number(flag("--limit")));
   if (args.includes("--calibrate")) return calibrate(claims);
   const skip = new Set((flag("--skip") ?? "claude-web").split(",").filter(Boolean));
@@ -714,6 +753,7 @@ async function main(): Promise<void> {
   });
 
   mkdirSync(OUT_DIR, { recursive: true });
+  for (const r of results) if (shortlists[r.id]) (r as ClaimResult & { shortlist?: unknown }).shortlist = shortlists[r.id];
   writeFileSync(`${OUT_DIR}/${flag("--name") ?? "latest"}.json`, JSON.stringify(results, null, 1));
   report(results, names, claims.length);
 }
