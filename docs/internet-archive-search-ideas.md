@@ -203,6 +203,51 @@ five different authors). Naming books takes a model's recall of the
 literature, which a 20B model does not have. A name that does not exist costs
 only a catalogue lookup, so a strong model's occasional mistake is cheap.
 
+### Open models that can be free to the user
+
+Through the Worker, three kinds of open model are reachable: Hugging Face
+Inference Providers on `/hf` (an allowlist; the Worker's account pays), Wikimedia's
+Lift Wing on `/liftwing` (free), and PublicAI on any other path (free). The
+book shortlist above was rerun with each that answered, on the same 12 claims,
+everything else unchanged (`results/books-{glm,apertus,qwen36}.json`).
+
+| Model | Route | Books named | With any Archive record | Readable | States it / partly |
+| --- | --- | --- | --- | --- | --- |
+| strong model (stand-in) | — | 55 | — | 30 | 1 / 1 |
+| GLM-5.2 | `/hf` | 70 | 40 | 30 | 0 / 2 |
+| Apertus v1.5 70B | PublicAI | 51 | 7 | 4 | 0 / 0 |
+| Qwen3.6 27B | Lift Wing | 72 | 9 | 8 | 0 / 0 |
+| GPT-OSS 20B | `/hf` | 6 | — | 2 | 0 / 0 |
+
+GLM-5.2 names the books a librarian would (Teixidor's two Palmyra books for
+Baalshamin, Peirce and Uluçay for the Ottoman harem, Groueff's life of Boris
+III, Sablinsky's *The Road to Bloody Sunday*, Shealy's *Little Women Abroad*
+for the Alcott sisters in Europe); its titles without an Archive record are
+real books that were never digitised. Apertus and Qwen3.6 mostly invent: one
+title in seven has any record ("Florence Scovel Shinn, *The Life of Louisa May
+Alcott*"). A one-question probe (Feodora's father and the year he died) told
+the same story: GLM-5.2 and Apertus 70B right; Qwen3-32B, Qwen3.6-27B,
+Qwen3-14B and Apertus 8B wrong.
+
+GLM-5.2 is also the best judge measured. On today's 97 hand-labelled leads:
+
+| Judge | Good leads kept (of 19) | Bad leads passed (of 77) | Precision |
+| --- | --- | --- | --- |
+| Verify API | 6 | 5 | 55% |
+| GPT-OSS-20b | 13 | 7 | 65% |
+| GLM-5.2 | 13 | 2 | 87% |
+
+At about $1.40 / $4.40 per million tokens (input / output; first-party and most
+hosts), GLM-5.2 costs the Worker about $0.007 per claim to name books
+(~300 tokens in, ~1,500 out) and a little over half a cent per book judged on
+whole-text windows; judging every book on a 15-book shortlist would be some 5
+cents a claim, so GPT-OSS should sift and GLM-5.2 confirm the few it keeps.
+
+Not tested, for lack of an allowlist entry or an enabled provider: the
+strongest open models this month (Kimi K3, DeepSeek V4, GLM-5.3, MiMo-V2.6;
+rankings disagree). `deepseek-ai/DeepSeek-V3.2-Exp` is on the allowlist but no
+provider enabled on the Worker's Hugging Face account serves it.
+
 ## Recommendations
 
 In order of gain per effort:
@@ -222,8 +267,9 @@ In order of gain per effort:
    CORS header on `/stream/`), and show the best window.
 5. **Add Tavily on archive.org** as a second source of books, for users with a
    Tavily key or through the Worker.
-6. **With a strong model, ask it to name the books** and add them to the
-   shortlist. Not with GPT-OSS-20b.
+6. **Ask GLM-5.2 (via `/hf`) to name the books** and add them to the
+   shortlist; and let it confirm what GPT-OSS keeps. Not GPT-OSS-20b, Apertus
+   or the Lift Wing Qwens for naming books: they invent them.
 7. **Then** subject shelves and cited books, once page-level search inside is
    available (the BookReader search below).
 

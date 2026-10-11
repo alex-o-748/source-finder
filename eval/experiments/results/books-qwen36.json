@@ -1,0 +1,1138 @@
+[
+ {
+  "id": "Didius Julianus@1370266531#1728",
+  "title": "Didius Julianus",
+  "claim": "His reign is a common delineation in the decline and fall of the Roman Empire.",
+  "plan": {
+   "fact": "The reign of Didius Julianus, who bought the empire at auction in 193, is commonly taken as a turning point in the decline and fall of the Roman Empire.",
+   "fulltext_queries": [
+    "\"Didius Julianus\" decline",
+    "\"sale of the empire\" Julianus",
+    "\"Didius Julianus\" auction empire"
+   ],
+   "catalogue_queries": [
+    "Decline and fall of the Roman Empire",
+    "Roman emperors Severan dynasty",
+    "Year of the Five Emperors 193"
+   ],
+   "evidence": [
+    [
+     "Julianus",
+     "Didius"
+    ],
+    [
+     "decline",
+     "decay",
+     "fall"
+    ],
+    [
+     "empire"
+    ],
+    [
+     "sale",
+     "auction",
+     "sold",
+     "purchased",
+     "bought"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "historychristia00gibbgoog",
+    "title": "History of Christianity : comprising all that relates to the progress of the Christian religion in \"The history of the decline and fall of the Roman empire,\" and A vindication of some passages in the 15th and 16th chapters",
+    "year": 1916,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "historychristia00gibbgoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention Didius Julianus or his reign, only general references to the Decline and Fall of the Roman Empire."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Decline and Fall of the Roman Empire",
+     "author": "Gibbon",
+     "year": 1776
+    },
+    {
+     "title": "The Crisis of the Third Century",
+     "author": "Southern",
+     "year": 2001
+    },
+    {
+     "title": "The Roman Empire from Severus to Constantine",
+     "author": "Barnes",
+     "year": 1997
+    },
+    {
+     "title": "The Cambridge Ancient History: The Crisis of the Empire, A.D. 193-284",
+     "author": "Potter",
+     "year": 2005
+    },
+    {
+     "title": "The Last of the Romans: The Life of Marcus Aurelius",
+     "author": "Scullard",
+     "year": 1984
+    },
+    {
+     "title": "Roman Imperial Biographies",
+     "author": "Syme",
+     "year": 1971
+    }
+   ],
+   "exists": 1,
+   "found": [
+    "historychristia00gibbgoog"
+   ]
+  }
+ },
+ {
+  "id": "Baalshamin@1362034634#6870",
+  "title": "Baalshamin",
+  "claim": "Writers in Syriac refer to Baalshamin as Zeus Olympios Zeus who shines.",
+  "plan": {
+   "fact": "Syriac writers call Baalshamin Zeus Olympios, the shining Zeus.",
+   "fulltext_queries": [
+    "Baalshamin \"Zeus Olympios\"",
+    "Baalshamin Zeus Syriac",
+    "Beelshamin Zeus"
+   ],
+   "catalogue_queries": [
+    "Baalshamin Palmyra temple",
+    "Syrian gods religion",
+    "religion of Palmyra"
+   ],
+   "evidence": [
+    [
+     "Baalshamin",
+     "Baal Shamin",
+     "Beelshamin",
+     "Baalsamin",
+     "Ba'alshamin",
+     "Beelsamen",
+     "Baal-shamin"
+    ],
+    [
+     "Zeus"
+    ],
+    [
+     "Olympios",
+     "Olympius",
+     "Olympian"
+    ],
+    [
+     "Syriac",
+     "Syrian"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Religion of Palmyra: As Reflected in the Inscriptions",
+     "author": "Seyrig",
+     "year": 1940
+    },
+    {
+     "title": "The Gods of Palmyra",
+     "author": "Seyrig",
+     "year": 1940
+    },
+    {
+     "title": "Syriac Inscriptions of Palmyra",
+     "author": "Seyrig",
+     "year": 1944
+    },
+    {
+     "title": "The Cult of Palmyra",
+     "author": "Seyrig",
+     "year": 1940
+    },
+    {
+     "title": "Palmyrene Inscriptions",
+     "author": "Seyrig",
+     "year": 1944
+    },
+    {
+     "title": "The Religion of the Syrian Desert",
+     "author": "Seyrig",
+     "year": 1940
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ },
+ {
+  "id": "Abigail May Alcott Nieriker@1373256207#9938",
+  "title": "Abigail May Alcott Nieriker",
+  "claim": "After the death of Anna Alcott's husband John Pratt in 1871, Louisa returned to Concord, while May stayed in Europe to begin serious study.",
+  "plan": {
+   "fact": "After John Pratt, husband of Anna Alcott, died (1870/1871), Louisa May Alcott returned home to Concord, while her sister May Alcott stayed in Europe to study art.",
+   "fulltext_queries": [
+    "\"John Pratt\" Louisa May Europe",
+    "\"May Alcott\" Europe study art",
+    "\"John Pratt\" death Louisa Rome"
+   ],
+   "catalogue_queries": [
+    "Louisa May Alcott life letters journals",
+    "May Alcott Nieriker",
+    "Alcott family biography"
+   ],
+   "evidence": [
+    [
+     "Pratt",
+     "John Pratt",
+     "Mr. Pratt"
+    ],
+    [
+     "death",
+     "died",
+     "dead"
+    ],
+    [
+     "Louisa"
+    ],
+    [
+     "May"
+    ],
+    [
+     "Concord",
+     "home",
+     "return",
+     "returned"
+    ],
+    [
+     "Europe",
+     "Rome",
+     "London",
+     "Paris",
+     "abroad"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Life and Times of Louisa May Alcott",
+     "author": "Bloom",
+     "year": 1993
+    },
+    {
+     "title": "Louisa May Alcott: A Writer's Life",
+     "author": "Bloom",
+     "year": 2009
+    },
+    {
+     "title": "May Alcott Nieriker: A Life in Art",
+     "author": "Bloom",
+     "year": 1993
+    },
+    {
+     "title": "The Alcotts: A Family Biography",
+     "author": "Bloom",
+     "year": 1993
+    },
+    {
+     "title": "Louisa May Alcott: The Making of an American Author",
+     "author": "Bloom",
+     "year": 1993
+    },
+    {
+     "title": "The Alcott Family: A Pictorial History",
+     "author": "Bloom",
+     "year": 1993
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ },
+ {
+  "id": "Muazzez Sultan@1370515564#2311",
+  "title": "Muazzez Sultan",
+  "claim": "She was the most beautiful of all of Ibrahim's concubine and was known for her mild character and good manners in the palace.",
+  "plan": {
+   "fact": "Muazzez Sultan was considered the most beautiful of Sultan Ibrahim's concubines and was known for her mild character and good manners.",
+   "fulltext_queries": [
+    "Muazzez Ibrahim concubine beautiful",
+    "Muazzez Haseki",
+    "\"Muazzez\" Ibrahim harem"
+   ],
+   "catalogue_queries": [
+    "Ottoman imperial harem",
+    "Sultan Ibrahim reign",
+    "Ottoman women history"
+   ],
+   "evidence": [
+    [
+     "Muazzez"
+    ],
+    [
+     "beautiful",
+     "beauty",
+     "loveliest"
+    ],
+    [
+     "Ibrahim"
+    ],
+    [
+     "concubine",
+     "concubines",
+     "haseki",
+     "harem"
+    ],
+    [
+     "character",
+     "manners",
+     "gentle",
+     "mild",
+     "temperament"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Concubine, the Princess, and the Teacher: Voices from the Ottoman Harem",
+     "author": "Woodhead",
+     "year": 2007
+    },
+    {
+     "title": "Women in the Ottoman Empire: The Harem",
+     "author": "Leslie-Pelecky",
+     "year": 2008
+    },
+    {
+     "title": "The Ottoman Century: The Rise and Fall of the Last Muslim Empire",
+     "author": "Woodhead",
+     "year": 2011
+    },
+    {
+     "title": "Sultans and Women: The History of the Ottoman Harem",
+     "author": "Uluçay",
+     "year": 1998
+    },
+    {
+     "title": "The New Cambridge History of Islam: Volume 3, The Eastern Islamic World, Eleventh to Eighteenth Centuries",
+     "author": "Robinson",
+     "year": 2010
+    },
+    {
+     "title": "Istanbul: Memory and the City",
+     "author": "Belge",
+     "year": 2000
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ },
+ {
+  "id": "Giovanna of Savoy@1366086768#3780",
+  "title": "Giovanna of Savoy",
+  "claim": "Stress and a heart condition were the official reasons for his death.",
+  "plan": {
+   "fact": "Tsar Boris III of Bulgaria died in August 1943; the official cause was stress and heart failure.",
+   "fulltext_queries": [
+    "\"Boris III\" death heart 1943",
+    "\"King Boris\" died heart 1943",
+    "Boris Bulgaria death \"heart failure\""
+   ],
+   "catalogue_queries": [
+    "Boris III Bulgaria",
+    "Bulgaria World War II",
+    "Bulgaria history 1943"
+   ],
+   "evidence": [
+    [
+     "Boris"
+    ],
+    [
+     "heart",
+     "coronary",
+     "thrombosis",
+     "cardiac"
+    ],
+    [
+     "official",
+     "officially",
+     "announced"
+    ],
+    [
+     "death",
+     "died"
+    ],
+    [
+     "1943"
+    ],
+    [
+     "stress",
+     "strain",
+     "overwork",
+     "exhaustion"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Boris III of Bulgaria",
+     "author": "Larner",
+     "year": 1974
+    },
+    {
+     "title": "Bulgaria in the Second World War, 1938-1945",
+     "author": "Todorova",
+     "year": 1981
+    },
+    {
+     "title": "The Rise and Fall of the Soviet Empire",
+     "author": "Harrison",
+     "year": 1997
+    },
+    {
+     "title": "Bulgaria: A History",
+     "author": "Fine",
+     "year": 1987
+    },
+    {
+     "title": "The Balkans Since the Second World War",
+     "author": "Burg",
+     "year": 1993
+    },
+    {
+     "title": "Hitler's Northern Neighbors",
+     "author": "Berg",
+     "year": 2003
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ },
+ {
+  "id": "Erasmus Darwin House@1344721583#4434",
+  "title": "Erasmus Darwin House",
+  "claim": "After the Darwins moved into the new front of their house, a wooden bridge was thrown across the ditch and a twin-tier terrace was built, causing alterations to be made to the basement windows.",
+  "plan": {
+   "fact": "After the Darwins moved into the new front of their Lichfield house, a wooden bridge was built across the ditch and a two-tier terrace made, altering the basement windows.",
+   "fulltext_queries": [
+    "\"Erasmus Darwin\" Lichfield bridge ditch",
+    "Darwin Lichfield house terrace ditch",
+    "\"Darwin's house\" Lichfield bridge"
+   ],
+   "catalogue_queries": [
+    "Erasmus Darwin biography",
+    "Lichfield history",
+    "Lunar Society"
+   ],
+   "evidence": [
+    [
+     "bridge"
+    ],
+    [
+     "ditch"
+    ],
+    [
+     "terrace"
+    ],
+    [
+     "Darwin"
+    ],
+    [
+     "Lichfield"
+    ],
+    [
+     "basement",
+     "windows",
+     "cellar"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Erasmus Darwin: A Life in Full",
+     "author": "Olby",
+     "year": 2008
+    },
+    {
+     "title": "The Darwin Family: A History of the House at Lichfield",
+     "author": "Huxley",
+     "year": 1910
+    },
+    {
+     "title": "Erasmus Darwin: Scientist and Prophet",
+     "author": "Secord",
+     "year": 2000
+    },
+    {
+     "title": "The Life and Letters of Erasmus Darwin",
+     "author": "Darwin",
+     "year": 1886
+    },
+    {
+     "title": "Lichfield: A History of the Town",
+     "author": "Hartshorne",
+     "year": 1975
+    },
+    {
+     "title": "Erasmus Darwin and the Botanic Garden",
+     "author": "Gill",
+     "year": 1990
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ },
+ {
+  "id": "Uintah Lake@1370072314#3368",
+  "title": "Uintah Lake",
+  "claim": "Although it has a slightly different spelling, the name of the lake has the same etymology as the mountain range in which it is located.",
+  "plan": {
+   "fact": "Uintah Lake's name has the same origin as that of the Uinta Mountains, despite the different spelling.",
+   "fulltext_queries": [
+    "Uintah Uinta name Ute",
+    "\"Uinta\" name derived",
+    "Uinta Uintah spelling"
+   ],
+   "catalogue_queries": [
+    "Utah place names",
+    "Uinta mountains history",
+    "Ute Indians history"
+   ],
+   "evidence": [
+    [
+     "Uinta",
+     "Uintah"
+    ],
+    [
+     "name",
+     "named",
+     "derived",
+     "meaning",
+     "means",
+     "origin"
+    ],
+    [
+     "Ute",
+     "Utes",
+     "Indian",
+     "pine"
+    ],
+    [
+     "mountains",
+     "range"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "origincertainpl01ganngoog",
+    "title": "The origin of certain place names in the United States",
+    "year": 1905,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "origincertainpl01ganngoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention the etymology of Uintah Lake or the Uinta Mountains."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Place Names of Utah",
+     "author": "Huntington",
+     "year": 1948
+    },
+    {
+     "title": "Utah Place Names",
+     "author": "Huntington",
+     "year": 1964
+    },
+    {
+     "title": "The Uinta Basin: A History",
+     "author": "Huntington",
+     "year": 1970
+    },
+    {
+     "title": "Geography of Utah",
+     "author": "Huntington",
+     "year": 1922
+    },
+    {
+     "title": "The Uintahs: A History of the Uintah Basin",
+     "author": "Huntington",
+     "year": 1970
+    },
+    {
+     "title": "Place Names of the United States",
+     "author": "Gannett",
+     "year": 1905
+    }
+   ],
+   "exists": 1,
+   "found": [
+    "origincertainpl01ganngoog"
+   ]
+  }
+ },
+ {
+  "id": "Xi Sagittarii@1369728394#573",
+  "title": "Xi Sagittarii",
+  "claim": "The last occultation of ξ² Sagittarii by a planet took place on 22 December 1810, when it was occulted by Venus.",
+  "plan": {
+   "fact": "ξ² Sagittarii was last occulted by a planet on 22 December 1810, by Venus.",
+   "fulltext_queries": [
+    "occultation Venus 1810 Sagittarii",
+    "occultation Venus \"1810\"",
+    "\"xi Sagittarii\" Venus"
+   ],
+   "catalogue_queries": [
+    "occultations of stars by planets",
+    "planetary occultations",
+    "astronomical phenomena tables"
+   ],
+   "evidence": [
+    [
+     "occultation",
+     "occulted",
+     "occultations"
+    ],
+    [
+     "Venus"
+    ],
+    [
+     "1810"
+    ],
+    [
+     "Sagittarii",
+     "Sagittarius",
+     "Sgr"
+    ],
+    [
+     "December"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "nauticalalmanac05offigoog",
+    "title": "The nautical almanac and astronomical ephemeris for the year ..",
+    "year": 1772,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "connaissancedes07longgoog",
+    "title": "Connaissance des temps",
+    "year": 1851,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "nauticalalmanac05offigoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages are from 1772 and do not mention the 1810 occultation of ξ² Sagittarii by Venus."
+   },
+   "connaissancedes07longgoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention ξ² Sagittarii or its occultation by Venus on 22 December 1810."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Astronomical Almanac",
+     "author": "Nautical Almanac Office",
+     "year": 1811
+    },
+    {
+     "title": "Connaissance des Temps",
+     "author": "Bureau des Longitudes",
+     "year": 1811
+    },
+    {
+     "title": "Astronomical Observations Made at the Royal Observatory, Greenwich",
+     "author": "Maskelyne",
+     "year": 1812
+    },
+    {
+     "title": "The History of Astronomy",
+     "author": "Dugas",
+     "year": 1905
+    },
+    {
+     "title": "A History of Modern Astronomy",
+     "author": "Kuhn",
+     "year": 1989
+    },
+    {
+     "title": "Planetary Occultations: A Historical Survey",
+     "author": "Meeus",
+     "year": 1997
+    }
+   ],
+   "exists": 2,
+   "found": [
+    "nauticalalmanac05offigoog",
+    "connaissancedes07longgoog"
+   ]
+  }
+ },
+ {
+  "id": "Methyl isobutyl ketone@1353925244#7532",
+  "title": "Methyl isobutyl ketone",
+  "claim": "It has a similar polarity to ethyl acetate, but greater stability towards aqueous acids and bases.",
+  "plan": {
+   "fact": "Methyl isobutyl ketone has a polarity similar to ethyl acetate but is more stable to aqueous acids and bases.",
+   "fulltext_queries": [
+    "\"methyl isobutyl ketone\" \"ethyl acetate\" polarity",
+    "MIBK \"ethyl acetate\" stability",
+    "\"methyl isobutyl ketone\" solvent stable acids"
+   ],
+   "catalogue_queries": [
+    "industrial solvents handbook",
+    "organic solvents properties",
+    "ketones industrial chemistry"
+   ],
+   "evidence": [
+    [
+     "methyl isobutyl ketone",
+     "MIBK",
+     "hexone",
+     "4-methyl-2-pentanone"
+    ],
+    [
+     "ethyl acetate"
+    ],
+    [
+     "polarity",
+     "polar"
+    ],
+    [
+     "stable",
+     "stability",
+     "hydrolysis"
+    ],
+    [
+     "acid",
+     "acids",
+     "bases",
+     "alkali",
+     "alkaline"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Perry's Chemical Engineers' Handbook",
+     "author": "Green",
+     "year": 2007
+    },
+    {
+     "title": "Lange's Handbook of Chemistry",
+     "author": "Hawkes",
+     "year": 2011
+    },
+    {
+     "title": "Solvent Extraction Principles and Practice",
+     "author": "Albrecht",
+     "year": 2010
+    },
+    {
+     "title": "Handbook of Solvent Properties",
+     "author": "Yalkowsky",
+     "year": 2010
+    },
+    {
+     "title": "Ullmann's Encyclopedia of Industrial Chemistry",
+     "author": "Lohmer",
+     "year": 2000
+    },
+    {
+     "title": "Merck Index",
+     "author": "O'Neil",
+     "year": 2013
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ },
+ {
+  "id": "Okhrana@1370650714#4928",
+  "title": "Okhrana",
+  "claim": "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905.",
+  "plan": {
+   "fact": "The communists partly blamed the Okhrana for Bloody Sunday (January 1905), since Gapon's movement was police-sponsored.",
+   "fulltext_queries": [
+    "Okhrana \"Bloody Sunday\" Gapon",
+    "Okhrana \"Bloody Sunday\" blamed",
+    "\"Bloody Sunday\" Gapon police agent"
+   ],
+   "catalogue_queries": [
+    "Okhrana Russian secret police history",
+    "Russian revolution 1905",
+    "Tsarist secret police"
+   ],
+   "evidence": [
+    [
+     "Okhrana",
+     "secret police",
+     "political police"
+    ],
+    [
+     "Bloody Sunday",
+     "January 9",
+     "9 January",
+     "22 January"
+    ],
+    [
+     "1905"
+    ],
+    [
+     "Gapon"
+    ],
+    [
+     "blamed",
+     "responsible",
+     "provocation",
+     "provocateur",
+     "agent"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Okhrana: The Secret Police of the Russian Empire",
+     "author": "Klier",
+     "year": 1960
+    },
+    {
+     "title": "Bloody Sunday: St. Petersburg, 1905",
+     "author": "Figes",
+     "year": 1996
+    },
+    {
+     "title": "The Russian Revolution",
+     "author": "Service",
+     "year": 1991
+    },
+    {
+     "title": "The Decline and Fall of the Russian Empire",
+     "author": "Figes",
+     "year": 1998
+    },
+    {
+     "title": "Gapon: The Life and Death of a Russian Labor Leader",
+     "author": "Klier",
+     "year": 1962
+    },
+    {
+     "title": "The Russian Secret Police and the Revolution, 1905-1917",
+     "author": "Klier",
+     "year": 1960
+    }
+   ],
+   "exists": 1,
+   "found": []
+  }
+ },
+ {
+  "id": "Diagonal band of Broca@1220886502#2424",
+  "title": "Diagonal band of Broca",
+  "claim": "It interconnects the subcallosal gyrus in the septal area with the hippocampus and lateral olfactory area.",
+  "plan": {
+   "fact": "The diagonal band of Broca connects the subcallosal gyrus and septal area with the hippocampus and the lateral olfactory area.",
+   "fulltext_queries": [
+    "\"diagonal band\" Broca hippocampus septal",
+    "\"diagonal band of Broca\" olfactory",
+    "\"diagonal band\" subcallosal"
+   ],
+   "catalogue_queries": [
+    "neuroanatomy textbook",
+    "anatomy of the nervous system",
+    "rhinencephalon olfactory brain"
+   ],
+   "evidence": [
+    [
+     "diagonal band",
+     "Broca"
+    ],
+    [
+     "septal",
+     "septum",
+     "subcallosal",
+     "paraterminal"
+    ],
+    [
+     "hippocampus",
+     "hippocampal"
+    ],
+    [
+     "olfactory",
+     "amygdala",
+     "piriform"
+    ],
+    [
+     "connects",
+     "interconnects",
+     "connecting",
+     "fibres",
+     "fibers",
+     "bundle"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "humanbrainintrod0000nolt",
+    "title": "The human brain : an introduction to its functional anatomy",
+    "year": 1999,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "principlesofneur00kand_0",
+    "title": "Principles of neural science",
+    "year": 1985,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "cunninghamsmanua0000cunn",
+    "title": "Cunningham's manual of practical anatomy / Vol. 3, Head and neck and brain",
+    "year": 1978,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "humanbrainintrod0000nolt": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention the diagonal band of Broca, subcallosal gyrus, or lateral olfactory area."
+   },
+   "principlesofneur00kand_0": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention the diagonal band of Broca connecting the subcallosal gyrus, septal area, hippocampus, and lateral olfactory area."
+   },
+   "cunninghamsmanua0000cunn": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention the diagonal band connecting the subcallosal gyrus, septal area, hippocampus, and lateral olfactory area."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Human Brain: An Introduction to its Functional Anatomy",
+     "author": "Nolte",
+     "year": 2002
+    },
+    {
+     "title": "Principles of Neural Science",
+     "author": "Kandel",
+     "year": 2013
+    },
+    {
+     "title": "Neuroanatomy Through Clinical Cases",
+     "author": "Haines",
+     "year": 2012
+    },
+    {
+     "title": "The Anatomy of the Brain",
+     "author": "Cunningham",
+     "year": 1905
+    },
+    {
+     "title": "Gray's Anatomy: The Anatomical Basis of Clinical Practice",
+     "author": "Gray",
+     "year": 2015
+    },
+    {
+     "title": "Atlas of the Human Brain",
+     "author": "Duvernoy",
+     "year": 1999
+    }
+   ],
+   "exists": 3,
+   "found": [
+    "humanbrainintrod0000nolt",
+    "principlesofneur00kand_0",
+    "cunninghamsmanua0000cunn"
+   ]
+  }
+ },
+ {
+  "id": "Chakapa@1291746289#1676",
+  "title": "Chakapa",
+  "claim": "Shamans have a large variety of chakapa movements that create different sounds and energy waves; these movements match the coinciding icaro and healing that is being done at the time.",
+  "plan": {
+   "fact": "Shamans use many chakapa (leaf rattle) movements producing different sounds, matched to the icaro being sung and the healing under way.",
+   "fulltext_queries": [
+    "chakapa icaro shaman",
+    "chacapa ayahuasca icaros",
+    "\"leaf rattle\" ayahuasca icaro"
+   ],
+   "catalogue_queries": [
+    "ayahuasca shamanism Peru",
+    "Amazonian shamanism vegetalismo",
+    "icaros healing songs"
+   ],
+   "evidence": [
+    [
+     "chakapa",
+     "shacapa",
+     "chacapa",
+     "schacapa",
+     "leaf rattle",
+     "rattle"
+    ],
+    [
+     "icaro",
+     "icaros",
+     "song",
+     "songs"
+    ],
+    [
+     "shaman",
+     "shamans",
+     "curandero",
+     "vegetalista",
+     "ayahuasquero"
+    ],
+    [
+     "movement",
+     "movements",
+     "shaking",
+     "shake"
+    ],
+    [
+     "healing",
+     "heal",
+     "cure"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "shamanismarchaic0000elia_f7q7",
+    "title": "Shamanism : archaic techniques of ecstasy",
+    "year": 1989,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "shamanismarchaic0000elia_f7q7": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention chakapa, icaro, or any related movements."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Ayahuasca: The Complete Guide to the Shamanic Plant Medicine",
+     "author": "Mithun",
+     "year": 2013
+    },
+    {
+     "title": "The Shaman's Apprentice: A Journey into the Heart of Amazonian Healing",
+     "author": "Krippner",
+     "year": 1998
+    },
+    {
+     "title": "Ayahuasca: The Divine Mother",
+     "author": "Rama",
+     "year": 1998
+    },
+    {
+     "title": "Shamanism: Archaic Techniques of Ecstasy",
+     "author": "Eliade",
+     "year": 1964
+    },
+    {
+     "title": "The Healing Wisdom of Africa: Lost Knowledge, Spirits, and Drugs from the Black Continent",
+     "author": "Mbiti",
+     "year": 1990
+    },
+    {
+     "title": "Ayahuasca: The Complete Guide to the Shamanic Plant Medicine",
+     "author": "Mithun",
+     "year": 2013
+    }
+   ],
+   "exists": 1,
+   "found": [
+    "shamanismarchaic0000elia_f7q7"
+   ]
+  }
+ }
+]

@@ -39,7 +39,7 @@ const LIMITS: Record<string, number> = {
   "archive.org#fts": Number(process.env.FTS_CONCURRENCY ?? 4),
   "api.tavily.com": 4,
   "en.wikipedia.org": 2,
-  "publicai-proxy.alaexis.workers.dev": 4,
+  "publicai-proxy.alaexis.workers.dev": 3,
   "citation-verifier.toolforge.org": 2,
 };
 
@@ -171,6 +171,16 @@ export async function catalogue(q: string, rows = 10): Promise<Book[]> {
     out.push({ identifier: String(d.identifier), title: arr(d.title)[0] ?? String(d.identifier), year: yearOf(d.year) ?? yearOf(d.date), access });
   }
   return out;
+}
+
+/** How many catalogue records match, whatever their access: does the book exist on the Archive at all? */
+export async function catalogueCount(q: string): Promise<number> {
+  const params = new URLSearchParams({ q: `(${q}) AND mediatype:texts`, rows: "0", output: "json" });
+  const r = await cached(`advcount:${q}`, async () => {
+    const res = await http(`https://archive.org/advancedsearch.php?${params}`);
+    return { n: res.status === 200 ? Number(JSON.parse(res.body)?.response?.numFound ?? 0) : 0 };
+  });
+  return r.n;
 }
 
 export interface Meta {
@@ -308,11 +318,22 @@ const WORKER = process.env.CNFIRMED_PROXY_URL ?? "https://publicai-proxy.alaexis
 
 /** gpt-oss-20b on Hugging Face via the Worker, which pays for it: free to the caller. */
 export async function workerChat(tag: string, system: string, user: string, maxTokens = 6000): Promise<string> {
-  const body = { model: "openai/gpt-oss-20b", max_tokens: maxTokens, temperature: 0, messages: [{ role: "system", content: system }, { role: "user", content: user }] };
-  const r = await cached(`worker:${JSON.stringify(body)}`, async () => {
-    const res = await http(`${WORKER}/hf`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, 180_000);
+  return chatVia(tag, "/hf", "openai/gpt-oss-20b", system, user, maxTokens);
+}
+
+/**
+ * Any model the Worker serves: `/hf` (Hugging Face, allowlisted, paid by the
+ * Worker), `/liftwing` (Wikimedia's Lift Wing, free) or `/chat` (PublicAI,
+ * free; any path the Worker does not know goes there).
+ */
+export async function chatVia(tag: string, route: string, model: string, system: string, user: string, maxTokens = 6000): Promise<string> {
+  const body = { model, max_tokens: maxTokens, temperature: 0, messages: [{ role: "system", content: system }, { role: "user", content: user }] };
+  // gpt-oss on /hf keeps its original cache key, so earlier runs replay.
+  const key = route === "/hf" && model === "openai/gpt-oss-20b" ? `worker:${JSON.stringify(body)}` : `chat:${route}:${JSON.stringify(body)}`;
+  const r = await cached(key, async () => {
+    const res = await http(`${WORKER}${route}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, 300_000);
     const j = JSON.parse(res.body);
-    if (res.status !== 200) throw new Error(`Worker /hf ${res.status}: ${res.body.slice(0, 200)}`);
+    if (res.status !== 200) throw new Error(`Worker ${route} ${res.status}: ${res.body.slice(0, 200)}`);
     return { text: (j.choices?.[0]?.message?.content ?? "") as string, usage: j.usage ?? {} };
   });
   const u = (usage[tag] ??= { calls: 0, input: 0, output: 0, searches: 0 });

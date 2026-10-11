@@ -24,7 +24,10 @@
  * Usage:
  *   NODE_USE_ENV_PROXY=1 npx tsx eval/experiments/archive-ideas.ts \
  *     --planner worker|manual|claude   # GPT-OSS-20b via the Worker (default), plans-manual.json, or Claude Haiku
- *     --judge worker|verify|claude     # GPT-OSS-20b (default), the Verify API, or Claude Sonnet
+ *     --judge worker|verify|claude|<route>:<model>
+ *                                      # GPT-OSS-20b (default), the Verify API, Claude Sonnet, or any
+ *                                      # model the Worker serves, e.g. /hf:zai-org/GLM-5.2
+ *     --books-model <route>:<model>    # who names books for llm-books (default: the planner)
  *     --confirm                        # also ask the Verify API about every book the judge keeps
  *     [--limit N] [--only <claim id prefix>] [--skip a,b] [--name run] [--no-shelf]
  *   NODE_USE_ENV_PROXY=1 npx tsx eval/experiments/archive-ideas.ts --calibrate --judge verify
@@ -52,6 +55,8 @@ import {
   verify,
   wholeText,
   workerChat,
+  chatVia,
+  catalogueCount,
   jsonIn,
 } from "./lib.js";
 
@@ -472,6 +477,13 @@ async function citedBooks(c: EvalClaim): Promise<CitedBook[]> {
   return books.sort((a, b) => Number(b.inSection) - Number(a.inSection));
 }
 
+async function bookExists(title: string, surname: string | null): Promise<boolean> {
+  const words = title.replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((w) => w.length > 3).slice(0, 5);
+  if (!words.length) return false;
+  const q = `title:(${words.join(" AND ")})${surname && surname.length > 2 ? ` AND creator:(${surname.replace(/[^\p{L}-]/gu, "")})` : ""}`;
+  return (await catalogueCount(q)) > 0;
+}
+
 async function findOnArchive(b: CitedBook): Promise<Book | null> {
   if (b.isbn) {
     const hits = await catalogue(`isbn:${b.isbn}`, 3);
@@ -536,15 +548,23 @@ const BOOKS_SYSTEM = `You are a reference librarian. A Wikipedia editor needs a 
 Reply with JSON only: {"books": [{"title": "the book's title", "author": "the first author's surname", "year": 1900}]}, up to six, most likely first.`;
 
 /** What happened to each claim's named books, for the report. */
-export const shortlists: Record<string, { named: NamedBook[]; found: string[] }> = {};
+export const shortlists: Record<string, { named: NamedBook[]; exists: number; found: string[] }> = {};
 
 async function namedBooks(c: EvalClaim, p: Plan): Promise<NamedBook[]> {
-  if (PLANNER_KIND === "manual") {
+  const via = flag("--books-model"); // e.g. /hf:zai-org/GLM-5.2, /chat:swiss-ai/apertus-v1.5-70b
+  if (PLANNER_KIND === "manual" && !via) {
     const lists = JSON.parse(readFileSync("eval/experiments/books-manual.json", "utf8")) as Record<string, NamedBook[]>;
     return lists[c.id] ?? [];
   }
   const user = `Article: ${c.title}\nParagraph: ${prose(c.context).slice(0, 2000)}\n\nClaim: ${c.claim}\nThe claim, with the names it implies filled in: ${p.fact}`;
-  const r = jsonIn<{ books?: NamedBook[] }>(await workerChat("planner", BOOKS_SYSTEM, user, 16000));
+  let text: string;
+  if (via) {
+    const i = via.indexOf(":");
+    text = await chatVia("books", via.slice(0, i), via.slice(i + 1), BOOKS_SYSTEM, user, 16000);
+  } else {
+    text = await workerChat("planner", BOOKS_SYSTEM, user, 16000);
+  }
+  const r = jsonIn<{ books?: NamedBook[] }>(text);
   return (r?.books ?? []).filter((b) => b && typeof b.title === "string").slice(0, 6);
 }
 
@@ -584,12 +604,15 @@ const STRATEGIES: Record<string, Strategy> = {
   "llm-books": async (c, p) => {
     const named = await namedBooks(c, p);
     const found: Book[] = [];
+    let exists = 0;
     for (const b of named) {
       const surname = String(b.author ?? "").trim().split(/\s+/).pop() ?? null;
       const hit = await findOnArchive({ title: String(b.title), last: surname || null, isbn: null, inSection: false });
       if (hit) found.push(hit);
+      // Any record of it at all, readable or not: a rough check that the book is real.
+      if (hit || (await bookExists(String(b.title), surname))) exists++;
     }
-    shortlists[c.id] = { named, found: found.map((b) => b.identifier) };
+    shortlists[c.id] = { named, exists, found: found.map((b) => b.identifier) };
     return leadsFrom("llm-books", found, p, 8);
   },
 };
@@ -630,8 +653,14 @@ async function judge(c: EvalClaim, l: { title: string; year: number | null; nati
   }
   const resolved = fact ? `\nThe same claim with the names it implies filled in from its article (use this only to know who or what the claim is about): ${fact}` : "";
   const user = `Article: ${c.title}\nClaim: ${c.claim}${resolved}\nThe claim's paragraph, for context only: ${prose(c.context).slice(0, 1200)}\n\nBook: ${l.title}${l.year ? ` (${l.year})` : ""}\nPassages:\n${evidenceOf(l)}`;
-  if (JUDGE_KIND === "worker") {
-    const v = jsonIn<Verdict>(await workerChat("judge", JUDGE_SYSTEM, user, 4000));
+  if (JUDGE_KIND === "worker" || JUDGE_KIND.includes(":")) {
+    // --judge worker is gpt-oss-20b; --judge /hf:zai-org/GLM-5.2 (any Worker route:model) is that model.
+    const i = JUDGE_KIND.indexOf(":");
+    const text =
+      JUDGE_KIND === "worker"
+        ? await workerChat("judge", JUDGE_SYSTEM, user, 4000)
+        : await chatVia("judge", JUDGE_KIND.slice(0, i), JUDGE_KIND.slice(i + 1), JUDGE_SYSTEM, user, 8000);
+    const v = jsonIn<Verdict>(text);
     return v && ["supports", "partial", "no"].includes(v.verdict) ? v : { verdict: "no", quote: "", why: "unparsed" };
   }
   const msg = await claude("judge", {
@@ -664,6 +693,7 @@ async function calibrate(claims: EvalClaim[]): Promise<void> {
   });
   console.log(`\nlabel → ${JUDGE_KIND} verdicts`);
   for (const [label, row] of Object.entries(m)) console.log(`  ${label.padEnd(10)} ${JSON.stringify(row)}`);
+  for (const [tag, u] of Object.entries(usage)) console.log(`  ${tag}: ${u.calls} calls, ${u.input} in / ${u.output} out tokens`);
 }
 
 // ---------------------------------------------------------------------------

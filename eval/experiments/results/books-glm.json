@@ -1,0 +1,1466 @@
+[
+ {
+  "id": "Didius Julianus@1370266531#1728",
+  "title": "Didius Julianus",
+  "claim": "His reign is a common delineation in the decline and fall of the Roman Empire.",
+  "plan": {
+   "fact": "The reign of Didius Julianus, who bought the empire at auction in 193, is commonly taken as a turning point in the decline and fall of the Roman Empire.",
+   "fulltext_queries": [
+    "\"Didius Julianus\" decline",
+    "\"sale of the empire\" Julianus",
+    "\"Didius Julianus\" auction empire"
+   ],
+   "catalogue_queries": [
+    "Decline and fall of the Roman Empire",
+    "Roman emperors Severan dynasty",
+    "Year of the Five Emperors 193"
+   ],
+   "evidence": [
+    [
+     "Julianus",
+     "Didius"
+    ],
+    [
+     "decline",
+     "decay",
+     "fall"
+    ],
+    [
+     "empire"
+    ],
+    [
+     "sale",
+     "auction",
+     "sold",
+     "purchased",
+     "bought"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "historychristia00gibbgoog",
+    "title": "History of Christianity : comprising all that relates to the progress of the Christian religion in \"The history of the decline and fall of the Roman empire,\" and A vindication of some passages in the 15th and 16th chapters",
+    "year": 1916,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "bwb_S0-DQX-669",
+    "title": "A short history of the roman empire to the death of marcus aurelius",
+    "year": 1931,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "historychristia00gibbgoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention Didius Julianus or his reign, only general references to the Decline and Fall of the Roman Empire."
+   },
+   "bwb_S0-DQX-669": {
+    "verdict": "no",
+    "quote": "",
+    "why": "Passages do not mention Didius Julianus or the auction."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The History of the Decline and Fall of the Roman Empire",
+     "author": "Gibbon",
+     "year": 1776
+    },
+    {
+     "title": "The Roman Empire at Bay, AD 180–395",
+     "author": "Potter",
+     "year": 2004
+    },
+    {
+     "title": "The Roman Empire",
+     "author": "Wells",
+     "year": 1984
+    },
+    {
+     "title": "The Cambridge Ancient History, Volume 12: The Crisis of Empire, AD 193–337",
+     "author": "Bowman",
+     "year": 2005
+    },
+    {
+     "title": "A History of Rome",
+     "author": "Le Glay",
+     "year": 2001
+    },
+    {
+     "title": "The Fall of the Roman Empire: A New History of Rome and the Barbarians",
+     "author": "Heather",
+     "year": 2005
+    }
+   ],
+   "exists": 4,
+   "found": [
+    "historychristia00gibbgoog",
+    "bwb_S0-DQX-669"
+   ]
+  }
+ },
+ {
+  "id": "Baalshamin@1362034634#6870",
+  "title": "Baalshamin",
+  "claim": "Writers in Syriac refer to Baalshamin as Zeus Olympios Zeus who shines.",
+  "plan": {
+   "fact": "Syriac writers call Baalshamin Zeus Olympios, the shining Zeus.",
+   "fulltext_queries": [
+    "Baalshamin \"Zeus Olympios\"",
+    "Baalshamin Zeus Syriac",
+    "Beelshamin Zeus"
+   ],
+   "catalogue_queries": [
+    "Baalshamin Palmyra temple",
+    "Syrian gods religion",
+    "religion of Palmyra"
+   ],
+   "evidence": [
+    [
+     "Baalshamin",
+     "Baal Shamin",
+     "Beelshamin",
+     "Baalsamin",
+     "Ba'alshamin",
+     "Beelsamen",
+     "Baal-shamin"
+    ],
+    [
+     "Zeus"
+    ],
+    [
+     "Olympios",
+     "Olympius",
+     "Olympian"
+    ],
+    [
+     "Syriac",
+     "Syrian"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "millar-1998-roman-caravan-cities",
+    "title": "Caravan Cities: The Roman Near East and Long-Distance Trade by Land",
+    "year": null,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "geschichtedersyr00baumuoft",
+    "title": "Geschichte der syrischen Literatur, mit Ausschluss der christlich-palästinensischen Texte",
+    "year": 1922,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "millar-1998-roman-caravan-cities": {
+    "verdict": "no",
+    "quote": "",
+    "why": "No passage."
+   },
+   "geschichtedersyr00baumuoft": {
+    "verdict": "no",
+    "quote": "",
+    "why": "No passage."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Pantheon of Palmyra",
+     "author": "Teixidor",
+     "year": 1979
+    },
+    {
+     "title": "The Pagan God: Popular Religion in the Greco-Roman Near East",
+     "author": "Teixidor",
+     "year": 1977
+    },
+    {
+     "title": "Dictionary of Deities and Demons in the Bible",
+     "author": "van der Toorn",
+     "year": 1995
+    },
+    {
+     "title": "The Roman Near East, 31 BC-AD 337",
+     "author": "Millar",
+     "year": 1993
+    },
+    {
+     "title": "Palmyra and Its Empire: Zenobia's Revolt Against Rome",
+     "author": "Stoneman",
+     "year": 1992
+    },
+    {
+     "title": "Geschichte der syrischen Literatur",
+     "author": "Baumstark",
+     "year": 1922
+    }
+   ],
+   "exists": 3,
+   "found": [
+    "millar-1998-roman-caravan-cities",
+    "geschichtedersyr00baumuoft"
+   ]
+  }
+ },
+ {
+  "id": "Abigail May Alcott Nieriker@1373256207#9938",
+  "title": "Abigail May Alcott Nieriker",
+  "claim": "After the death of Anna Alcott's husband John Pratt in 1871, Louisa returned to Concord, while May stayed in Europe to begin serious study.",
+  "plan": {
+   "fact": "After John Pratt, husband of Anna Alcott, died (1870/1871), Louisa May Alcott returned home to Concord, while her sister May Alcott stayed in Europe to study art.",
+   "fulltext_queries": [
+    "\"John Pratt\" Louisa May Europe",
+    "\"May Alcott\" Europe study art",
+    "\"John Pratt\" death Louisa Rome"
+   ],
+   "catalogue_queries": [
+    "Louisa May Alcott life letters journals",
+    "May Alcott Nieriker",
+    "Alcott family biography"
+   ],
+   "evidence": [
+    [
+     "Pratt",
+     "John Pratt",
+     "Mr. Pratt"
+    ],
+    [
+     "death",
+     "died",
+     "dead"
+    ],
+    [
+     "Louisa"
+    ],
+    [
+     "May"
+    ],
+    [
+     "Concord",
+     "home",
+     "return",
+     "returned"
+    ],
+    [
+     "Europe",
+     "Rome",
+     "London",
+     "Paris",
+     "abroad"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "alcottsbiography0000bede",
+    "title": "The Alcotts : biography of a family",
+    "year": 1980,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "louisamaymodernb00saxt",
+    "title": "Louisa May ; a modern biography of Louisa May Alcott",
+    "year": 1977,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "louisamayalcott01chengoog",
+    "title": "Louisa May Alcott, her life, letters, and journals;",
+    "year": 1890,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "alcottsbiography0000bede": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention John Pratt’s death, Louisa’s return to Concord, or May’s continued study in Europe."
+   },
+   "louisamaymodernb00saxt": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the provided passages mention John Pratt’s death, Louisa’s return to Concord, or May’s stay in Europe for study."
+   },
+   "louisamayalcott01chengoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "Passages mention Pratt’s death but do not state Louisa’s return to Concord or May’s continued study in Europe."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Eden's Outcasts: The Story of Louisa May Alcott and Her Father",
+     "author": "Matteson",
+     "year": 2007
+    },
+    {
+     "title": "The Alcotts: Biography of a Family",
+     "author": "Bedell",
+     "year": 1980
+    },
+    {
+     "title": "Louisa May Alcott: The Woman Behind Little Women",
+     "author": "Reisen",
+     "year": 2009
+    },
+    {
+     "title": "Little Women Abroad: The Alcott Sisters' Letters",
+     "author": "Shealy",
+     "year": 2008
+    },
+    {
+     "title": "Louisa May Alcott: A Modern Biography",
+     "author": "Saxton",
+     "year": 1977
+    },
+    {
+     "title": "Louisa May Alcott: Her Life, Letters, and Journals",
+     "author": "Cheney",
+     "year": 1889
+    }
+   ],
+   "exists": 4,
+   "found": [
+    "alcottsbiography0000bede",
+    "louisamaymodernb00saxt",
+    "louisamayalcott01chengoog"
+   ]
+  }
+ },
+ {
+  "id": "Muazzez Sultan@1370515564#2311",
+  "title": "Muazzez Sultan",
+  "claim": "She was the most beautiful of all of Ibrahim's concubine and was known for her mild character and good manners in the palace.",
+  "plan": {
+   "fact": "Muazzez Sultan was considered the most beautiful of Sultan Ibrahim's concubines and was known for her mild character and good manners.",
+   "fulltext_queries": [
+    "Muazzez Ibrahim concubine beautiful",
+    "Muazzez Haseki",
+    "\"Muazzez\" Ibrahim harem"
+   ],
+   "catalogue_queries": [
+    "Ottoman imperial harem",
+    "Sultan Ibrahim reign",
+    "Ottoman women history"
+   ],
+   "evidence": [
+    [
+     "Muazzez"
+    ],
+    [
+     "beautiful",
+     "beauty",
+     "loveliest"
+    ],
+    [
+     "Ibrahim"
+    ],
+    [
+     "concubine",
+     "concubines",
+     "haseki",
+     "harem"
+    ],
+    [
+     "character",
+     "manners",
+     "gentle",
+     "mild",
+     "temperament"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "haremaccountofin00penquoft",
+    "title": "The Harem : an account of the institution as it existed in the palace of the Turkish sultans, with a history of the Grand Seraglio from its foundation to the present time",
+    "year": null,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "in.gov.ignca.15370",
+    "title": "Structure of the Ottoman Dynasty",
+    "year": 1956,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "haremaccountofin00penquoft": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages describe architectural details of the harem and its gates, with no mention of Muazzez Sultan or her beauty or character."
+   },
+   "in.gov.ignca.15370": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention Muazzez Sultan or describe her beauty or manners."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Imperial Harem: Women and Sovereignty in the Ottoman Empire",
+     "author": "Peirce",
+     "year": 1993
+    },
+    {
+     "title": "Bu Mülkün Kadın Sultanları",
+     "author": "Sakaoğlu",
+     "year": 2008
+    },
+    {
+     "title": "Padişahların kadınları ve kızları",
+     "author": "Uluçay",
+     "year": 1992
+    },
+    {
+     "title": "Inside the Seraglio: Private Lives of the Sultans in Istanbul",
+     "author": "Freely",
+     "year": 1999
+    },
+    {
+     "title": "The Harem",
+     "author": "Penzer",
+     "year": 1936
+    },
+    {
+     "title": "The Structure of the Ottoman Dynasty",
+     "author": "Alderson",
+     "year": 1956
+    }
+   ],
+   "exists": 3,
+   "found": [
+    "haremaccountofin00penquoft",
+    "in.gov.ignca.15370"
+   ]
+  }
+ },
+ {
+  "id": "Giovanna of Savoy@1366086768#3780",
+  "title": "Giovanna of Savoy",
+  "claim": "Stress and a heart condition were the official reasons for his death.",
+  "plan": {
+   "fact": "Tsar Boris III of Bulgaria died in August 1943; the official cause was stress and heart failure.",
+   "fulltext_queries": [
+    "\"Boris III\" death heart 1943",
+    "\"King Boris\" died heart 1943",
+    "Boris Bulgaria death \"heart failure\""
+   ],
+   "catalogue_queries": [
+    "Boris III Bulgaria",
+    "Bulgaria World War II",
+    "Bulgaria history 1943"
+   ],
+   "evidence": [
+    [
+     "Boris"
+    ],
+    [
+     "heart",
+     "coronary",
+     "thrombosis",
+     "cardiac"
+    ],
+    [
+     "official",
+     "officially",
+     "announced"
+    ],
+    [
+     "death",
+     "died"
+    ],
+    [
+     "1943"
+    ],
+    [
+     "stress",
+     "strain",
+     "overwork",
+     "exhaustion"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "bulgariaduringse0000mill",
+    "title": "Bulgaria during the Second World War ",
+    "year": 1975,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "concisehistoryof0000cram",
+    "title": "A concise history of Bulgaria",
+    "year": 1997,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "micro_IA41153440_0790",
+    "title": "History of the Balkans: Twentieth Century. Volume 2. The Joint Committee on Eastern Europe Publication Series. No. 12.",
+    "year": 1983,
+    "access": "open",
+    "verdict": "partial"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "the-balkans-a-short-history",
+    "title": "The Balkans: A Short History",
+    "year": 2002,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "bulgariaduringse0000mill": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages mention heart failure and other illnesses but do not state that stress and a heart condition were the official reasons for his death."
+   },
+   "concisehistoryof0000cram": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages explicitly state that stress and a heart condition were the official reasons for Tsar Boris III’s death."
+   },
+   "micro_IA41153440_0790": {
+    "verdict": "partial",
+    "quote": "he died from what was undoubtedly a heart attack",
+    "why": "The passage confirms a heart attack but does not mention stress."
+   },
+   "the-balkans-a-short-history": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention Tsar Boris III’s death or its cause."
+   }
+  },
+  "confirmed": {
+   "micro_IA41153440_0790": {
+    "verdict": "partial",
+    "quote": "the king died suddenly in August 1943. After returning from a visit to Germany, Boris climbed Mt. Musala, the highest peak in Bulgaria. Three days later he died from what was undoubtedly a heart attack, although, because of the wartime situation, rumors that he had been murdered abounded.",
+    "why": "The source confirms the death occurred in August 1943 and cites a heart attack as the cause, but it does not mention stress as the official cause."
+   }
+  },
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Crown of Thorns: The Reign of King Boris III of Bulgaria, 1918-1943",
+     "author": "Groueff",
+     "year": 1987
+    },
+    {
+     "title": "Bulgaria During the Second World War",
+     "author": "Miller",
+     "year": 1975
+    },
+    {
+     "title": "A Concise History of Bulgaria",
+     "author": "Crampton",
+     "year": 1997
+    },
+    {
+     "title": "The Bulgarian Jews and the Final Solution",
+     "author": "Chary",
+     "year": 1972
+    },
+    {
+     "title": "History of the Balkans, Volume 2: Twentieth Century",
+     "author": "Jelavich",
+     "year": 1983
+    },
+    {
+     "title": "The Balkans: A Short History",
+     "author": "Mazower",
+     "year": 2000
+    }
+   ],
+   "exists": 5,
+   "found": [
+    "bulgariaduringse0000mill",
+    "concisehistoryof0000cram",
+    "micro_IA41153440_0790",
+    "the-balkans-a-short-history"
+   ]
+  }
+ },
+ {
+  "id": "Erasmus Darwin House@1344721583#4434",
+  "title": "Erasmus Darwin House",
+  "claim": "After the Darwins moved into the new front of their house, a wooden bridge was thrown across the ditch and a twin-tier terrace was built, causing alterations to be made to the basement windows.",
+  "plan": {
+   "fact": "After the Darwins moved into the new front of their Lichfield house, a wooden bridge was built across the ditch and a two-tier terrace made, altering the basement windows.",
+   "fulltext_queries": [
+    "\"Erasmus Darwin\" Lichfield bridge ditch",
+    "Darwin Lichfield house terrace ditch",
+    "\"Darwin's house\" Lichfield bridge"
+   ],
+   "catalogue_queries": [
+    "Erasmus Darwin biography",
+    "Lichfield history",
+    "Lunar Society"
+   ],
+   "evidence": [
+    [
+     "bridge"
+    ],
+    [
+     "ditch"
+    ],
+    [
+     "terrace"
+    ],
+    [
+     "Darwin"
+    ],
+    [
+     "Lichfield"
+    ],
+    [
+     "basement",
+     "windows",
+     "cellar"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "erasmusdarwinlif0000king",
+    "title": "Erasmus Darwin : a life of unequalled achievement",
+    "year": 1999,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "erasmusdarwin0000desm",
+    "title": "erasmus darwin",
+    "year": 1963,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "bub_gb_eQlAAAAAIAAJ",
+    "title": "Erasmus Darwin und seine Stellung in der Geschichte der DescendenzTheorie",
+    "year": 1880,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "erasmusdarwinlif0000king": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages mention a bridge but do not describe a wooden bridge across a ditch, a two‑tier terrace, or alterations to basement windows at the Darwins’ Lichfield house."
+   },
+   "erasmusdarwin0000desm": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention a wooden bridge, a two‑tier terrace, or alterations to basement windows."
+   },
+   "bub_gb_eQlAAAAAIAAJ": {
+    "verdict": "no",
+    "quote": "",
+    "why": "unparsed"
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Erasmus Darwin: A Life of Unequalled Achievement",
+     "author": "King-Hele",
+     "year": 1999
+    },
+    {
+     "title": "Erasmus Darwin",
+     "author": "King-Hele",
+     "year": 1963
+    },
+    {
+     "title": "The Lunar Men: The Friends Who Made the Future",
+     "author": "Uglow",
+     "year": 2002
+    },
+    {
+     "title": "Erasmus Darwin",
+     "author": "Krause",
+     "year": 1879
+    }
+   ],
+   "exists": 4,
+   "found": [
+    "erasmusdarwinlif0000king",
+    "erasmusdarwin0000desm",
+    "bub_gb_eQlAAAAAIAAJ"
+   ]
+  }
+ },
+ {
+  "id": "Uintah Lake@1370072314#3368",
+  "title": "Uintah Lake",
+  "claim": "Although it has a slightly different spelling, the name of the lake has the same etymology as the mountain range in which it is located.",
+  "plan": {
+   "fact": "Uintah Lake's name has the same origin as that of the Uinta Mountains, despite the different spelling.",
+   "fulltext_queries": [
+    "Uintah Uinta name Ute",
+    "\"Uinta\" name derived",
+    "Uinta Uintah spelling"
+   ],
+   "catalogue_queries": [
+    "Utah place names",
+    "Uinta mountains history",
+    "Ute Indians history"
+   ],
+   "evidence": [
+    [
+     "Uinta",
+     "Uintah"
+    ],
+    [
+     "name",
+     "named",
+     "derived",
+     "meaning",
+     "means",
+     "origin"
+    ],
+    [
+     "Ute",
+     "Utes",
+     "Indian",
+     "pine"
+    ],
+    [
+     "mountains",
+     "range"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "utahplacenamesco0000vanc",
+    "title": "Utah place names : a comprehensive guide to the origins of geographic names : a compilation ",
+    "year": 1990,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "historyutah00bancgoog",
+    "title": "History of Utah",
+    "year": 1890,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "historyofutahcom03whit",
+    "title": "History of Utah: comprising preliminary chapters on the previous history of her founders, accounts of early Spanish and American explorations in the Rocky Mountain region, the advent of the Mormon pioneers, the establishment and dissolution of the provisional government of the State of Deseret, and the subsequent creation and development of the territory",
+    "year": 1892,
+    "access": "open",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "utahplacenamesco0000vanc": {
+    "verdict": "no",
+    "quote": "",
+    "why": "Passages mention Uinta Mountains and Ute names but do not refer to Uintah Lake or its etymology."
+   },
+   "historyutah00bancgoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages mention Uinta Mountains and Uintah but do not state that Uintah Lake shares the same etymology as the mountain range."
+   },
+   "historyofutahcom03whit": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages mention the county name Uintah but do not refer to Uintah Lake or its etymology."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Utah Place Names",
+     "author": "Van Cott",
+     "year": 1990
+    },
+    {
+     "title": "Utah: A Guide to the State",
+     "author": "Federal Writers' Project",
+     "year": 1941
+    },
+    {
+     "title": "History of Utah",
+     "author": "Bancroft",
+     "year": 1889
+    },
+    {
+     "title": "History of Utah",
+     "author": "Whitney",
+     "year": 1892
+    },
+    {
+     "title": "The Ute Indians of Utah, Colorado, and New Mexico",
+     "author": "Simmons",
+     "year": 2000
+    },
+    {
+     "title": "A History of Uintah County",
+     "author": "Burton",
+     "year": 1996
+    }
+   ],
+   "exists": 3,
+   "found": [
+    "utahplacenamesco0000vanc",
+    "historyutah00bancgoog",
+    "historyofutahcom03whit"
+   ]
+  }
+ },
+ {
+  "id": "Xi Sagittarii@1369728394#573",
+  "title": "Xi Sagittarii",
+  "claim": "The last occultation of ξ² Sagittarii by a planet took place on 22 December 1810, when it was occulted by Venus.",
+  "plan": {
+   "fact": "ξ² Sagittarii was last occulted by a planet on 22 December 1810, by Venus.",
+   "fulltext_queries": [
+    "occultation Venus 1810 Sagittarii",
+    "occultation Venus \"1810\"",
+    "\"xi Sagittarii\" Venus"
+   ],
+   "catalogue_queries": [
+    "occultations of stars by planets",
+    "planetary occultations",
+    "astronomical phenomena tables"
+   ],
+   "evidence": [
+    [
+     "occultation",
+     "occulted",
+     "occultations"
+    ],
+    [
+     "Venus"
+    ],
+    [
+     "1810"
+    ],
+    [
+     "Sagittarii",
+     "Sagittarius",
+     "Sgr"
+    ],
+    [
+     "December"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "popuhistastron00clerrich",
+    "title": "A popular history of astronomy during the nineteenth century",
+    "year": 1887,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "historyphysical00grangoog",
+    "title": "History of physical astronomy, from the earliest ages to the middle of the 19th century. Comprehending a detailed account of the establishment of the theory of gravitation by Newton, and its development by his successors; with an exposition of the progress of research on all the other subjects of celestial physics",
+    "year": 1852,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "starnamestheirlo0000rich",
+    "title": "Star names their lore and meaning",
+    "year": 1899,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "cycleofcelestial0000smyt",
+    "title": "A cycle of celestial objects, for the use of naval, military, and private astronomers, observed, reduced, and discussed. Volume the second, The Bedford catalogue ",
+    "year": 1986,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "popuhistastron00clerrich": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages mention Venus and transits but do not refer to ξ² Sagittarii or the 22 December 1810 occultation."
+   },
+   "historyphysical00grangoog": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention the occultation of ξ² Sagittarii by Venus on 22 December 1810."
+   },
+   "starnamestheirlo0000rich": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention ξ² Sagittarii or the date 22 December 1810."
+   },
+   "cycleofcelestial0000smyt": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages contain no mention of an occultation of ξ² Sagittarii, Venus, or the date 22 December 1810."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "A Popular History of Astronomy During the Nineteenth Century",
+     "author": "Clerke",
+     "year": 1885
+    },
+    {
+     "title": "Burnham's Celestial Handbook",
+     "author": "Burnham",
+     "year": 1978
+    },
+    {
+     "title": "History of Physical Astronomy",
+     "author": "Grant",
+     "year": 1852
+    },
+    {
+     "title": "The Nautical Almanac and Astronomical Ephemeris",
+     "author": "Maskelyne",
+     "year": 1810
+    },
+    {
+     "title": "Star Names: Their Lore and Meaning",
+     "author": "Allen",
+     "year": 1899
+    },
+    {
+     "title": "A Cycle of Celestial Objects",
+     "author": "Smyth",
+     "year": 1844
+    }
+   ],
+   "exists": 4,
+   "found": [
+    "popuhistastron00clerrich",
+    "historyphysical00grangoog",
+    "starnamestheirlo0000rich",
+    "cycleofcelestial0000smyt"
+   ]
+  }
+ },
+ {
+  "id": "Methyl isobutyl ketone@1353925244#7532",
+  "title": "Methyl isobutyl ketone",
+  "claim": "It has a similar polarity to ethyl acetate, but greater stability towards aqueous acids and bases.",
+  "plan": {
+   "fact": "Methyl isobutyl ketone has a polarity similar to ethyl acetate but is more stable to aqueous acids and bases.",
+   "fulltext_queries": [
+    "\"methyl isobutyl ketone\" \"ethyl acetate\" polarity",
+    "MIBK \"ethyl acetate\" stability",
+    "\"methyl isobutyl ketone\" solvent stable acids"
+   ],
+   "catalogue_queries": [
+    "industrial solvents handbook",
+    "organic solvents properties",
+    "ketones industrial chemistry"
+   ],
+   "evidence": [
+    [
+     "methyl isobutyl ketone",
+     "MIBK",
+     "hexone",
+     "4-methyl-2-pentanone"
+    ],
+    [
+     "ethyl acetate"
+    ],
+    [
+     "polarity",
+     "polar"
+    ],
+    [
+     "stable",
+     "stability",
+     "hydrolysis"
+    ],
+    [
+     "acid",
+     "acids",
+     "bases",
+     "alkali",
+     "alkaline"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "The_Properties_of_Solvents_by_Yizhak_Marcus_Wiley",
+    "title": "The properties of solvents",
+    "year": 1998,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "crchandbookofche0000davi_z8x3",
+    "title": "CRC Handbook of Chemistry and Physics, A Ready-Reference Book of Chemical and Physical Data",
+    "year": 1996,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "The_Properties_of_Solvents_by_Yizhak_Marcus_Wiley": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages list polarity indices and a table of ketone names but do not state that MIBK has polarity similar to ethyl acetate or that it is more stable to aqueous acids and bases."
+   },
+   "crchandbookofche0000davi_z8x3": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not mention polarity similarity or stability toward aqueous acids and bases for methyl isobutyl ketone."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Solvents and Solvent Effects in Organic Chemistry",
+     "author": "Reichardt",
+     "year": 2003
+    },
+    {
+     "title": "Industrial Solvents Handbook",
+     "author": "Flick",
+     "year": 1998
+    },
+    {
+     "title": "The Properties of Solvents",
+     "author": "Marcus",
+     "year": 1998
+    },
+    {
+     "title": "Perry's Chemical Engineers' Handbook",
+     "author": "Perry",
+     "year": 2008
+    },
+    {
+     "title": "CRC Handbook of Chemistry and Physics",
+     "author": "Lide",
+     "year": 2004
+    },
+    {
+     "title": "Solvent Extraction Principles and Practice",
+     "author": "Rydberg",
+     "year": 2004
+    }
+   ],
+   "exists": 3,
+   "found": [
+    "The_Properties_of_Solvents_by_Yizhak_Marcus_Wiley",
+    "crchandbookofche0000davi_z8x3"
+   ]
+  }
+ },
+ {
+  "id": "Okhrana@1370650714#4928",
+  "title": "Okhrana",
+  "claim": "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905.",
+  "plan": {
+   "fact": "The communists partly blamed the Okhrana for Bloody Sunday (January 1905), since Gapon's movement was police-sponsored.",
+   "fulltext_queries": [
+    "Okhrana \"Bloody Sunday\" Gapon",
+    "Okhrana \"Bloody Sunday\" blamed",
+    "\"Bloody Sunday\" Gapon police agent"
+   ],
+   "catalogue_queries": [
+    "Okhrana Russian secret police history",
+    "Russian revolution 1905",
+    "Tsarist secret police"
+   ],
+   "evidence": [
+    [
+     "Okhrana",
+     "secret police",
+     "political police"
+    ],
+    [
+     "Bloody Sunday",
+     "January 9",
+     "9 January",
+     "22 January"
+    ],
+    [
+     "1905"
+    ],
+    [
+     "Gapon"
+    ],
+    [
+     "blamed",
+     "responsible",
+     "provocation",
+     "provocateur",
+     "agent"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "Fontanka16TheTsarsSecretPolice",
+    "title": "Fontanka 16: The Tsars' Secret Police",
+    "year": null,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "russianpolicetra0000posp",
+    "title": "Russian police trade unionism: experiment or provocation? ",
+    "year": 1971,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "Fontanka16TheTsarsSecretPolice": {
+    "verdict": "no",
+    "quote": "",
+    "why": "No passage states that communists blamed the Okhrana for Bloody Sunday."
+   },
+   "russianpolicetra0000posp": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages state that communists blamed the Okhrana for Bloody Sunday."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Fontanka 16: The Tsars' Secret Police",
+     "author": "Ruud",
+     "year": 1999
+    },
+    {
+     "title": "The Road to Bloody Sunday: Father Gapon and the St. Petersburg Massacre of 1905",
+     "author": "Sablinsky",
+     "year": 1976
+    },
+    {
+     "title": "The Tsarist Secret Police in Russian Society, 1880–1917",
+     "author": "Zuckerman",
+     "year": 1996
+    },
+    {
+     "title": "The Revolution of 1905: Russia in Disarray",
+     "author": "Ascher",
+     "year": 1988
+    },
+    {
+     "title": "Russian Police Trade Unionism: Experiment or Provocation?",
+     "author": "Pospielovsky",
+     "year": 1971
+    },
+    {
+     "title": "A People's Tragedy: The Russian Revolution, 1891–1924",
+     "author": "Figes",
+     "year": 1996
+    }
+   ],
+   "exists": 4,
+   "found": [
+    "Fontanka16TheTsarsSecretPolice",
+    "russianpolicetra0000posp"
+   ]
+  }
+ },
+ {
+  "id": "Diagonal band of Broca@1220886502#2424",
+  "title": "Diagonal band of Broca",
+  "claim": "It interconnects the subcallosal gyrus in the septal area with the hippocampus and lateral olfactory area.",
+  "plan": {
+   "fact": "The diagonal band of Broca connects the subcallosal gyrus and septal area with the hippocampus and the lateral olfactory area.",
+   "fulltext_queries": [
+    "\"diagonal band\" Broca hippocampus septal",
+    "\"diagonal band of Broca\" olfactory",
+    "\"diagonal band\" subcallosal"
+   ],
+   "catalogue_queries": [
+    "neuroanatomy textbook",
+    "anatomy of the nervous system",
+    "rhinencephalon olfactory brain"
+   ],
+   "evidence": [
+    [
+     "diagonal band",
+     "Broca"
+    ],
+    [
+     "septal",
+     "septum",
+     "subcallosal",
+     "paraterminal"
+    ],
+    [
+     "hippocampus",
+     "hippocampal"
+    ],
+    [
+     "olfactory",
+     "amygdala",
+     "piriform"
+    ],
+    [
+     "connects",
+     "interconnects",
+     "connecting",
+     "fibres",
+     "fibers",
+     "bundle"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "principlesofneur00kand_0",
+    "title": "Principles of neural science",
+    "year": 1985,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "neuroanatomytext0000mart_j4w1",
+    "title": "Neuroanatomy : text and atlas ",
+    "year": 1989,
+    "access": "borrow",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "centralnervoussy0000brod_l9r9",
+    "title": "The central nervous system : structure and function ",
+    "year": 1998,
+    "access": "borrow",
+    "verdict": "partial"
+   }
+  ],
+  "verdicts": {
+   "principlesofneur00kand_0": {
+    "verdict": "no",
+    "quote": "",
+    "why": "Passages mention related structures but do not state that the diagonal band of Broca interconnects the subcallosal gyrus, septal area, hippocampus, and lateral olfactory area."
+   },
+   "neuroanatomytext0000mart_j4w1": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The passages do not state that the diagonal band of Broca interconnects the subcallosal gyrus in the septal area with the hippocampus and lateral olfactory area."
+   },
+   "centralnervoussy0000brod_l9r9": {
+    "verdict": "partial",
+    "quote": "The septal nuclei and the diagonal band send fibers mainly to the hippocampal formation",
+    "why": "It confirms the diagonal band of Broca projects to the hippocampus, but does not mention the subcallosal gyrus or lateral olfactory area."
+   }
+  },
+  "confirmed": {
+   "centralnervoussy0000brod_l9r9": {
+    "verdict": "no",
+    "quote": "",
+    "why": "The source discusses the diagonal band of Broca sending fibers mainly to the hippocampal formation, but it does not mention connections to the subcallosal gyrus or the lateral olfactory area, so the claim is not supported."
+   }
+  },
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Principles of Neural Science",
+     "author": "Kandel",
+     "year": 2013
+    },
+    {
+     "title": "Carpenter's Human Neuroanatomy",
+     "author": "Carpenter",
+     "year": 1991
+    },
+    {
+     "title": "The Human Nervous System",
+     "author": "Paxinos",
+     "year": 2012
+    },
+    {
+     "title": "Neuroanatomy: Text and Atlas",
+     "author": "Martin",
+     "year": 2012
+    },
+    {
+     "title": "The Central Nervous System: Structure and Function",
+     "author": "Brodal",
+     "year": 2010
+    },
+    {
+     "title": "Gray's Anatomy: The Anatomical Basis of Medicine and Surgery",
+     "author": "Standring",
+     "year": 2020
+    }
+   ],
+   "exists": 3,
+   "found": [
+    "principlesofneur00kand_0",
+    "neuroanatomytext0000mart_j4w1",
+    "centralnervoussy0000brod_l9r9"
+   ]
+  }
+ },
+ {
+  "id": "Chakapa@1291746289#1676",
+  "title": "Chakapa",
+  "claim": "Shamans have a large variety of chakapa movements that create different sounds and energy waves; these movements match the coinciding icaro and healing that is being done at the time.",
+  "plan": {
+   "fact": "Shamans use many chakapa (leaf rattle) movements producing different sounds, matched to the icaro being sung and the healing under way.",
+   "fulltext_queries": [
+    "chakapa icaro shaman",
+    "chacapa ayahuasca icaros",
+    "\"leaf rattle\" ayahuasca icaro"
+   ],
+   "catalogue_queries": [
+    "ayahuasca shamanism Peru",
+    "Amazonian shamanism vegetalismo",
+    "icaros healing songs"
+   ],
+   "evidence": [
+    [
+     "chakapa",
+     "shacapa",
+     "chacapa",
+     "schacapa",
+     "leaf rattle",
+     "rattle"
+    ],
+    [
+     "icaro",
+     "icaros",
+     "song",
+     "songs"
+    ],
+    [
+     "shaman",
+     "shamans",
+     "curandero",
+     "vegetalista",
+     "ayahuasquero"
+    ],
+    [
+     "movement",
+     "movements",
+     "shaking",
+     "shake"
+    ],
+    [
+     "healing",
+     "heal",
+     "cure"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "Singing to the Plants: A Guide to Mestizo Shamanism in the Upper Amazon",
+     "author": "Beyer",
+     "year": 2009
+    },
+    {
+     "title": "The Ayahuasca Sessions: Conversations with Amazonian Curanderos",
+     "author": "Razam",
+     "year": 2009
+    },
+    {
+     "title": "Ayahuasca: The Visionary and Healing Jungle",
+     "author": "Weiskopf",
+     "year": 2005
+    },
+    {
+     "title": "The Shaman and Ayahuasca: Journeys to Sacred Realms",
+     "author": "Campos",
+     "year": 2011
+    },
+    {
+     "title": "Plant Spirit Shamanism: Traditional Techniques for Healing the Soul",
+     "author": "Heaven",
+     "year": 2006
+    },
+    {
+     "title": "Rainforest Medicine: Preserving Indigenous Science and Biological Diversity in the Upper Amazon",
+     "author": "Weisberger",
+     "year": 2014
+    }
+   ],
+   "exists": 0,
+   "found": []
+  }
+ }
+]
