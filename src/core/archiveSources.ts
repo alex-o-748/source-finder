@@ -42,6 +42,7 @@ import type {
   SearchResponse,
 } from "./internetArchive.js";
 import {
+  BOOKS_EFFORT,
   BOOKS_MAX_TOKENS,
   BOOKS_SYSTEM,
   DEFAULT_LIBRARIAN_MODELS,
@@ -56,6 +57,7 @@ import {
   planMatched,
   planPrompt,
   shelfQueries,
+  safeTerm,
   shelfSearchable,
   tellingTerms,
 } from "./archiveLibrarian.js";
@@ -274,7 +276,7 @@ export function claimTerms(claim: string, articleTitle: string): ClaimTerms {
 }
 
 function phrase(term: string): string {
-  return `"${term.replace(/["\\]/g, " ").trim()}"`;
+  return `"${safeTerm(term)}"`;
 }
 
 /**
@@ -1129,7 +1131,7 @@ export async function findArchiveCandidates(
       : Promise.resolve({ plan: null, error: null });
   const naming: Promise<{ books: NamedBook[]; error: string | null }> =
     chat && models?.books
-      ? chat.chat(models.books, BOOKS_SYSTEM, booksPrompt(input), BOOKS_MAX_TOKENS).then(
+      ? chat.chat(models.books, BOOKS_SYSTEM, booksPrompt(input), BOOKS_MAX_TOKENS, BOOKS_EFFORT).then(
           (text) => ({ books: parseBooks(text), error: null }),
           (err) => ({ books: [], error: `books: ${(err as Error).message}` }),
         )

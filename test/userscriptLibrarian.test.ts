@@ -59,6 +59,49 @@ test("the user script reads the models' replies as the core does", () => {
   }
 });
 
+test("the user script calls the Worker as the core does: body, caps, effort and retries", async () => {
+  assert.deepEqual(script.limits, { plan: lib.PLAN_MAX_TOKENS, books: lib.BOOKS_MAX_TOKENS, judge: lib.JUDGE_MAX_TOKENS, booksEffort: lib.BOOKS_EFFORT });
+  for (const effort of [undefined, "low"]) {
+    assert.equal(script.workerRequestBody("m", "s", "u", 10, effort), lib.workerRequestBody("m", "s", "u", 10, effort));
+  }
+  const empty = '{"choices":[{"message":{"content":null},"finish_reason":"length"}]}';
+  for (const [status, text] of [[200, empty], [200, '{"choices":[{"message":{"content":"x"}}]}'], [200, "{}"], [429, "x"], [500, "x"], [504, ""], [400, "x"]] as const) {
+    for (const attempt of [0, 1, 2, 3]) {
+      assert.equal(script.workerShouldRetry(status, text, attempt), lib.workerShouldRetry(status, text, attempt), `${status} ${text} ${attempt}`);
+    }
+    assert.equal(script.workerReplyContent(text), lib.replyContent(text));
+  }
+  // The script's own call: an answerless reply is tried once more, then fails.
+  const sent: string[] = [];
+  globalThis.fetch = (async (_url: string, init: RequestInit) => {
+    sent.push(String(init.body));
+    return new Response(empty, { status: 200 });
+  }) as typeof fetch;
+  const realTimeout = globalThis.setTimeout;
+  const waits: number[] = [];
+  globalThis.setTimeout = ((f: () => void, ms: number) => {
+    waits.push(ms);
+    f();
+    return 0;
+  }) as unknown as typeof setTimeout;
+  try {
+    await assert.rejects(script.callWorkerModel("m", "s", "u", 10, "low"), /Worker: empty reply/);
+  } finally {
+    globalThis.setTimeout = realTimeout;
+  }
+  assert.deepEqual(waits, [10_000]);
+  assert.equal(sent.length, 2);
+  assert.equal(sent[0], lib.workerRequestBody("m", "s", "u", 10, "low"));
+});
+
+test("the user script makes model queries and phrases safe as the core does", () => {
+  for (const q of ['"Bet Yerah/Philoteria" 1814', '"Leiningen 1814 died', "Hood~2 [1900 TO 1910] title:(x)", 'Saxe-Coburg -death "" 1814', '"Gustave Eiffel" "300 metres"', '"Eiffel" ""  " 1889 " tower', "", 'a\\b "c"']) {
+    assert.equal(script.libSafeQuery(q), lib.safeQuery(q), q);
+    assert.equal(script.libSafeTerm(q), lib.safeTerm(q), q);
+  }
+  assert.equal(script.iaPhrase("1/2 of the land"), '"1 2 of the land"');
+});
+
 test("the user script builds the same terms, shelf queries and planner ranking", () => {
   for (const plan of [PLAN, null, { fact: "", queries: [], terms: [['say "xy"'], ["Say xy"], ["x"], ["xy"]] }]) {
     for (const [claim, title] of [[CLAIM, "Eiffel_Tower"], ["The population of 616,093 was recorded in 1921 by Anna Berg.", "Oslo"]]) {

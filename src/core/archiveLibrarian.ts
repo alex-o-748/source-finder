@@ -50,40 +50,54 @@ export const DEFAULT_LIBRARIAN_MODELS: LibrarianModels = {
   judge: "zai-org/GLM-5.2",
 };
 
-/** Reasoning models spend output tokens thinking before they answer. */
+/**
+ * Output tokens per call, thinking included. The Worker gives up on Hugging
+ * Face after 60 seconds, about 8,000 tokens of GLM-5.2, and now and then the
+ * model thinks until it runs out (finish_reason "length", no answer): the caps
+ * keep a call inside the Worker's minute, and such a call is tried once more.
+ */
 export const PLAN_MAX_TOKENS = 6000;
-export const BOOKS_MAX_TOKENS = 8000;
-export const JUDGE_MAX_TOKENS = 12000;
+export const BOOKS_MAX_TOKENS = 6000;
+export const JUDGE_MAX_TOKENS = 7000;
+/** Naming books is recall, not reasoning: less thinking, fewer runaways. */
+export const BOOKS_EFFORT = "low";
 /** Paragraph sent with a claim, in characters. */
 export const PARAGRAPH_CHARS = 2000;
 
 export interface ChatClient {
-  /** The model's reply text. Throws when there is none. */
-  chat(model: string, system: string, user: string, maxTokens: number): Promise<string>;
+  /** The model's reply text. Throws when there is none. `effort` is sent as `reasoning_effort`. */
+  chat(model: string, system: string, user: string, maxTokens: number, effort?: string): Promise<string>;
+}
+
+/** The request body for the Worker's `/hf` route. The user script sends the same. */
+export function workerRequestBody(model: string, system: string, user: string, maxTokens: number, effort?: string): string {
+  return JSON.stringify({
+    model,
+    max_tokens: maxTokens,
+    temperature: 0,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    ...(effort && { reasoning_effort: effort }),
+  });
 }
 
 /**
  * The Worker's `/hf` route: Hugging Face Inference Providers, open-weight
  * models on an allowlist, paid for by the Worker. It allows 20 requests a
- * minute per address; a 429 or a 5xx is waited out a few times.
+ * minute per address: a 429 is waited out up to three times. A 5xx (the
+ * Worker's own minute ran out) or a reply with no answer is tried once more.
  */
 export function workerChatClient(base?: string, sleep = defaultSleep): ChatClient {
   const url = `${(base || process.env.CNFIRMED_PROXY_URL || WORKER_URL).replace(/\/+$/, "")}/hf`;
   return {
-    async chat(model, system, user, maxTokens) {
-      const body = JSON.stringify({
-        model,
-        max_tokens: maxTokens,
-        temperature: 0,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
-        ],
-      });
+    async chat(model, system, user, maxTokens, effort) {
+      const body = workerRequestBody(model, system, user, maxTokens, effort);
       for (let attempt = 0; ; attempt++) {
         const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
         const text = await res.text();
-        if ((res.status === 429 || res.status >= 500) && attempt < WORKER_RETRIES) {
+        if (workerShouldRetry(res.status, text, attempt)) {
           await sleep(WORKER_RETRY_WAIT_MS * 2 ** attempt);
           continue;
         }
@@ -96,26 +110,66 @@ export function workerChatClient(base?: string, sleep = defaultSleep): ChatClien
 export const WORKER_RETRIES = 3;
 export const WORKER_RETRY_WAIT_MS = 10_000;
 
+/** A 429, up to three times; a 5xx or a reply with no answer, once. */
+export function workerShouldRetry(status: number, text: string, attempt: number): boolean {
+  if (status === 429) return attempt < WORKER_RETRIES;
+  if (status >= 500) return attempt < 1;
+  return status >= 200 && status < 300 && replyContent(text) === null && attempt < 1;
+}
+
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function parseReply(text: string): { choices?: { message?: { content?: unknown } }[]; error?: { message?: unknown } | string } | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+/** A chat-completions reply's message content, or null when it has none. */
+export function replyContent(text: string): string | null {
+  const content = parseReply(text)?.choices?.[0]?.message?.content;
+  return typeof content === "string" && content.trim() ? content : null;
+}
+
 /** The message content of a chat-completions reply, or an error naming why there is none. */
 export function workerReplyText(status: number, text: string): string {
-  let data: { choices?: { message?: { content?: unknown } }[]; error?: { message?: unknown } | string } | null = null;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    data = null;
-  }
   if (status < 200 || status >= 300) {
+    const data = parseReply(text);
     const err = data && data.error;
     const message = (err && typeof err === "object" ? err.message : err) || text.slice(0, 200);
     throw new Error(`Worker ${status}: ${String(message)}`);
   }
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || !content.trim()) throw new Error("Worker: empty reply");
+  const content = replyContent(text);
+  if (content === null) throw new Error("Worker: empty reply");
   return content;
+}
+
+/**
+ * Characters the full-text search's parser rejects or reads as syntax. A "/"
+ * starts a regular expression even inside quotes, "~" is proximity, "[" and
+ * "]" a range: each fails the query with HTTP 400, as does an unbalanced quote
+ * (checked live, 2026-10). ":" and the brackets name fields and groups.
+ */
+const QUERY_SYNTAX = /[/\\~[\]{}^*?:()!+&|<>=]/g;
+
+/** A term for a quoted phrase: no quotes and none of the parser's syntax. */
+export function safeTerm(term: string): string {
+  return String(term ?? "").replace(QUERY_SYNTAX, " ").replace(/"/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/** A model's query the parser accepts: no syntax characters, quotes balanced, no term starting with "-". */
+export function safeQuery(query: string): string {
+  let q = String(query ?? "").replace(QUERY_SYNTAX, " ");
+  if ((q.match(/"/g) ?? []).length % 2) q = q.replace(/"/g, " ");
+  return q
+    .replace(/"([^"]*)"/g, (_, inner: string) => (inner.trim() ? `"${inner.trim()}"` : " "))
+    .replace(/(^|\s)-+/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** The first JSON object in a reply, whatever surrounds it. */
@@ -203,7 +257,7 @@ export function parsePlan(text: string): ArchivePlan | null {
   const fact = typeof j.fact === "string" ? j.fact.replace(/\s+/g, " ").trim() : "";
   const queries = (Array.isArray(j.queries) ? j.queries : [])
     .map((q) => (Array.isArray(q) ? q.join(" ") : String(q ?? "")))
-    .map((q) => q.replace(/\s+/g, " ").trim())
+    .map(safeQuery)
     .filter((q) => q.length >= 3);
   const terms = (Array.isArray(j.terms) ? j.terms : [])
     .map((g) => (Array.isArray(g) ? strings(g) : strings([g])))
@@ -230,7 +284,7 @@ export const SHELF_TERMS = 3;
 export function tellingTerms(plan: ArchivePlan | null, terms: ClaimTerms): string[] {
   const out: string[] = [];
   const add = (t: string | undefined): void => {
-    const v = String(t ?? "").replace(/["\\]/g, " ").replace(/\s+/g, " ").trim();
+    const v = safeTerm(String(t ?? ""));
     if (v.length >= 2 && !out.some((o) => fold(o) === fold(v))) out.push(v);
   };
   if (plan && plan.terms.length) {

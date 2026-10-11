@@ -14,11 +14,14 @@ import {
   parseJudgement,
   parsePlan,
   quoteInPassages,
+  safeQuery,
+  safeTerm,
   shelfQueries,
   shelfSearchable,
   tellingTerms,
   workerChatClient,
   workerReplyText,
+  workerShouldRetry,
 } from "../src/core/archiveLibrarian.js";
 import { catalogueUrl } from "../src/core/internetArchive.js";
 import { claimTerms, findArchiveCandidates, rankPlannedHits } from "../src/core/archiveSources.js";
@@ -169,6 +172,50 @@ test("workerChatClient: the Worker's /hf route; a 429 is waited out, then retrie
       { role: "user", content: "user" },
     ],
   });
+});
+
+test("workerChatClient: an answerless reply or a 5xx is tried once more, with reasoning_effort sent when given", async () => {
+  const empty = JSON.stringify({ choices: [{ message: { content: null }, finish_reason: "length" }] });
+  const ok = JSON.stringify({ choices: [{ message: { content: "ok" } }] });
+  const run = async (statuses: [number, string][], effort?: string) => {
+    const sent: Record<string, unknown>[] = [];
+    globalThis.fetch = (async (_url: string, init: RequestInit) => {
+      sent.push(JSON.parse(String(init.body)));
+      const [status, body] = statuses.shift()!;
+      return new Response(body, { status });
+    }) as typeof fetch;
+    const waits: number[] = [];
+    const client = workerChatClient("https://worker.example", async (ms) => void waits.push(ms));
+    let out: string;
+    try { out = await client.chat("m", "s", "u", 10, effort); } catch (e) { out = (e as Error).message; }
+    return { out, waits, sent };
+  };
+  assert.deepEqual((await run([[200, empty], [200, ok]])).out, "ok");
+  assert.equal((await run([[200, empty], [200, empty]])).out, "Worker: empty reply");
+  assert.equal((await run([[504, "Gateway Timeout"], [200, ok]])).out, "ok");
+  const twice504 = await run([[504, "Gateway Timeout"], [504, "Gateway Timeout"]]);
+  assert.equal(twice504.out, "Worker 504: Gateway Timeout");
+  assert.deepEqual(twice504.waits, [10_000]);
+  const limited = await run([[429, "x"], [429, "x"], [429, "x"], [429, "x"]]);
+  assert.equal(limited.out, "Worker 429: x");
+  assert.deepEqual(limited.waits, [10_000, 20_000, 40_000]);
+  assert.equal((await run([[400, "bad"]])).sent.length, 1);
+  const low = await run([[200, ok]], "low");
+  assert.equal(low.sent[0].reasoning_effort, "low");
+  assert.equal("reasoning_effort" in (await run([[200, ok]])).sent[0], false);
+  assert.equal(workerShouldRetry(200, ok, 0), false);
+});
+
+test("safeQuery and safeTerm: what the full-text search's parser rejects is taken out", () => {
+  assert.equal(safeQuery('"Bet Yerah/Philoteria" 1814'), '"Bet Yerah Philoteria" 1814');
+  assert.equal(safeQuery('"Leiningen 1814 died'), "Leiningen 1814 died");
+  assert.equal(safeQuery('Hood~2 [1900 TO 1910] title:(x)'), "Hood 2 1900 TO 1910 title x");
+  assert.equal(safeQuery('Saxe-Coburg -death "" 1814'), "Saxe-Coburg death 1814");
+  assert.equal(safeQuery('"Gustave Eiffel" "300 metres"'), '"Gustave Eiffel" "300 metres"');
+  assert.equal(safeQuery('"Eiffel" ""  " 1889 " tower'), '"Eiffel" "1889" tower');
+  assert.equal(safeTerm('say "xy" / 1/2'), "say xy 1 2");
+  assert.deepEqual(parsePlan('{"queries": ["a/b c", "\\"x"], "terms": [["1/2"]]}')?.queries, ["a b c"]);
+  assert.deepEqual(tellingTerms({ fact: "", queries: [], terms: [["Bet Yerah/Philoteria"]] }, claimTerms("x", "Y")), ["Bet Yerah Philoteria"]);
 });
 
 test("rankPlannedHits: best covered first, and only books about the claim", () => {

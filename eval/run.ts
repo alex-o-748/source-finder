@@ -37,7 +37,7 @@ import { join } from "node:path";
 import { fetchArticle } from "../src/core/fetchArticle.js";
 import { findWikiCandidates, loadWikiCorpus } from "../src/core/wikiSources.js";
 import { findArchiveCandidates } from "../src/core/archiveSources.js";
-import { WORKER_URL, workerChatClient } from "../src/core/archiveLibrarian.js";
+import { WORKER_URL, replyContent, workerChatClient } from "../src/core/archiveLibrarian.js";
 import type { ArchiveFunnel } from "../src/core/archiveSources.js";
 import { installCassette } from "./lib/http.js";
 import { indexOfClaim, loadScriptArticle } from "./lib/userscript.js";
@@ -122,6 +122,10 @@ const stats = installCassette({
     [WORKER_HOST]: { ms: 300_000, retryNetworkErrors: false },
   },
   recordOnlyOk: ["api.anthropic.com", WORKER_HOST],
+  // The librarian's client tries a 504 or an answerless reply once more
+  // itself; recording the answerless one would replay it to that retry.
+  clientRetries5xx: [WORKER_HOST],
+  skipRecording: (host, status, body) => host === WORKER_HOST && status === 200 && replyContent(body) === null,
   log: (line) => console.error(line),
   observe: tallyUsage,
 });

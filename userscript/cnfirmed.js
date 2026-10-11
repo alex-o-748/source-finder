@@ -2285,7 +2285,7 @@
   }
 
   function iaPhrase(term) {
-    return '"' + String(term).replace(/["\\]/g, ' ').trim() + '"';
+    return '"' + libSafeTerm(term) + '"';
   }
 
   // Terms are joined by a space, which the endpoint reads as AND: between two
@@ -2815,7 +2815,7 @@
         })
       : Promise.resolve({ plan: null, error: null });
     var naming = IA_LIBRARIAN && LIB_MODELS.books
-      ? callWorkerModel(LIB_MODELS.books, LIB_BOOKS_SYSTEM, libBooksPrompt(libInput), LIB_BOOKS_MAX_TOKENS)
+      ? callWorkerModel(LIB_MODELS.books, LIB_BOOKS_SYSTEM, libBooksPrompt(libInput), LIB_BOOKS_MAX_TOKENS, LIB_BOOKS_EFFORT)
         .then(function (text) {
           return { books: libParseBooks(text), error: null };
         }, function (err) {
@@ -3091,9 +3091,15 @@
     judge: libModel('cnfirmedArchiveJudgeModel', 'zai-org/GLM-5.2')
   };
   // Reasoning models spend output tokens thinking before they answer.
+  // Output tokens per call, thinking included. The Worker gives up on Hugging
+  // Face after 60 seconds, about 8,000 tokens of GLM-5.2, and now and then the
+  // model thinks until it runs out (no answer): the caps keep a call inside the
+  // Worker's minute, and such a call is tried once more.
   var LIB_PLAN_MAX_TOKENS = 6000;
-  var LIB_BOOKS_MAX_TOKENS = 8000;
-  var LIB_JUDGE_MAX_TOKENS = 12000;
+  var LIB_BOOKS_MAX_TOKENS = 6000;
+  var LIB_JUDGE_MAX_TOKENS = 7000;
+  // Naming books is recall, not reasoning: less thinking, fewer runaways.
+  var LIB_BOOKS_EFFORT = 'low';
   var LIB_PARAGRAPH_CHARS = 2000;
   var LIB_PLAN_MAX_QUERIES = 3;
   var LIB_SHELF_TERMS = 3;
@@ -3163,28 +3169,35 @@
     return sleep(workerCalls[0] + 60000 - now).then(workerTurn);
   }
 
+  function workerRequestBody(model, system, user, maxTokens, effort) {
+    var body = {
+      model: model,
+      max_tokens: maxTokens,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ]
+    };
+    if (effort) body.reasoning_effort = effort;
+    return JSON.stringify(body);
+  }
+
   // One chat completion through the Worker's /hf route: the reply text.
-  function callWorkerModel(model, system, user, maxTokens, attempt) {
+  // `effort` is sent as reasoning_effort.
+  function callWorkerModel(model, system, user, maxTokens, effort, attempt) {
     attempt = attempt || 0;
     return workerTurn().then(function () {
       return fetch(PROXY_BASE + '/hf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: model,
-          max_tokens: maxTokens,
-          temperature: 0,
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user }
-          ]
-        })
+        body: workerRequestBody(model, system, user, maxTokens, effort)
       });
     }).then(function (res) {
       return res.text().then(function (text) {
-        if ((res.status === 429 || res.status >= 500) && attempt < WORKER_RETRIES) {
+        if (workerShouldRetry(res.status, text, attempt)) {
           return sleep(WORKER_RETRY_WAIT_MS * Math.pow(2, attempt)).then(function () {
-            return callWorkerModel(model, system, user, maxTokens, attempt + 1);
+            return callWorkerModel(model, system, user, maxTokens, effort, attempt + 1);
           });
         }
         return workerReplyText(res.status, text);
@@ -3192,18 +3205,60 @@
     });
   }
 
+  // A 429, up to three times; a 5xx (the Worker's own minute ran out) or a
+  // reply with no answer, once.
+  function workerShouldRetry(status, text, attempt) {
+    if (status === 429) return attempt < WORKER_RETRIES;
+    if (status >= 500) return attempt < 1;
+    return status >= 200 && status < 300 && workerReplyContent(text) === null && attempt < 1;
+  }
+
+  function workerParseReply(text) {
+    try { return JSON.parse(text); } catch (e) { return null; }
+  }
+
+  // A chat-completions reply's message content, or null when it has none.
+  function workerReplyContent(text) {
+    var data = workerParseReply(text);
+    var content = data && data.choices && data.choices[0] && data.choices[0].message &&
+      data.choices[0].message.content;
+    return typeof content === 'string' && content.trim() ? content : null;
+  }
+
   function workerReplyText(status, text) {
-    var data;
-    try { data = JSON.parse(text); } catch (e) { data = null; }
     if (status < 200 || status >= 300) {
+      var data = workerParseReply(text);
       var err = data && data.error;
       var message = (err && typeof err === 'object' ? err.message : err) || String(text).slice(0, 200);
       throw new Error('Worker ' + status + ': ' + String(message));
     }
-    var content = data && data.choices && data.choices[0] && data.choices[0].message &&
-      data.choices[0].message.content;
-    if (typeof content !== 'string' || !content.trim()) throw new Error('Worker: empty reply');
+    var content = workerReplyContent(text);
+    if (content === null) throw new Error('Worker: empty reply');
     return content;
+  }
+
+  // Characters the full-text search's parser rejects or reads as syntax. A "/"
+  // starts a regular expression even inside quotes, "~" is proximity, "[" and
+  // "]" a range: each fails the query with HTTP 400, as does an unbalanced
+  // quote. ":" and the brackets name fields and groups.
+  var LIB_QUERY_SYNTAX = /[/\\~[\]{}^*?:()!+&|<>=]/g;
+
+  // A term for a quoted phrase: no quotes and none of the parser's syntax.
+  function libSafeTerm(term) {
+    return String(term == null ? '' : term).replace(LIB_QUERY_SYNTAX, ' ').replace(/"/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  // A model's query the parser accepts: no syntax characters, quotes
+  // balanced, no term starting with "-".
+  function libSafeQuery(query) {
+    var q = String(query == null ? '' : query).replace(LIB_QUERY_SYNTAX, ' ');
+    if ((q.match(/"/g) || []).length % 2) q = q.replace(/"/g, ' ');
+    return q
+      .replace(/"([^"]*)"/g, function (_, inner) { return inner.trim() ? '"' + inner.trim() + '"' : ' '; })
+      .replace(/(^|\s)-+/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   // The first JSON object in a reply, whatever surrounds it.
@@ -3256,7 +3311,7 @@
     var fact = typeof j.fact === 'string' ? j.fact.replace(/\s+/g, ' ').trim() : '';
     var queries = (Array.isArray(j.queries) ? j.queries : [])
       .map(function (q) { return Array.isArray(q) ? q.join(' ') : String(q == null ? '' : q); })
-      .map(function (q) { return q.replace(/\s+/g, ' ').trim(); })
+      .map(libSafeQuery)
       .filter(function (q) { return q.length >= 3; });
     var terms = (Array.isArray(j.terms) ? j.terms : [])
       .map(function (g) { return Array.isArray(g) ? libStrings(g) : libStrings([g]); })
@@ -3281,7 +3336,7 @@
   function libTellingTerms(plan, terms) {
     var out = [];
     function add(t) {
-      var v = String(t == null ? '' : t).replace(/["\\]/g, ' ').replace(/\s+/g, ' ').trim();
+      var v = libSafeTerm(t);
       if (v.length >= 2 && !out.some(function (o) { return foldText(o) === foldText(v); })) out.push(v);
     }
     if (plan && plan.terms.length) {

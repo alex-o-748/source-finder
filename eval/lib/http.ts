@@ -59,6 +59,14 @@ export interface CassetteOptions {
    * would hide the gap from the next --record.
    */
   recordOnlyOk?: string[];
+  /**
+   * Hosts whose client retries its own server errors: a 5xx is handed back
+   * at once (a 429 is still waited out here), so a billed call is not
+   * repeated twice over.
+   */
+  clientRetries5xx?: string[];
+  /** A response that is not to be recorded, though it is no error: say, a model's reply with no answer. */
+  skipRecording?: (host: string, status: number, body: string) => boolean;
   log?: (line: string) => void;
   /** Sees every response body, replayed or live, and how long it took live. */
   observe?: (key: string, body: string, ms: number | undefined) => void;
@@ -177,7 +185,8 @@ export function installCassette(options: CassetteOptions): CassetteStats {
         continue;
       }
       const body = await res.text();
-      if (isTransient(res.status, body) && attempt < maxRetries) {
+      const clientRetries = res.status >= 500 && options.clientRetries5xx?.includes(host);
+      if (isTransient(res.status, body) && !clientRetries && attempt < maxRetries) {
         const ms = retryAfterMs(res, attempt);
         stats.retries++;
         log(`  ${res.status} from ${host}, waiting ${Math.round(ms / 1000)}s`);
@@ -221,7 +230,11 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     // Rate limits and server errors that outlived the retries are not facts
     // about the world; everything else (200, 404, a MediaWiki error) is.
     options.observe?.(key, text, ms);
-    if (!isTransient(res.status, text) && (res.ok || !options.recordOnlyOk?.includes(host))) {
+    if (
+      !isTransient(res.status, text) &&
+      (res.ok || !options.recordOnlyOk?.includes(host)) &&
+      !options.skipRecording?.(host, res.status, text)
+    ) {
       const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body: text, ms };
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, gzipSync(JSON.stringify(rec)));
