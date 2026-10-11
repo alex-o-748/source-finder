@@ -36,6 +36,8 @@ export interface CassetteOptions {
   mode: CassetteMode;
   /** Minimum gap between two live requests to the same host (default 1000 ms). */
   minIntervalMs?: number;
+  /** The same, for particular hosts: the CNfirmed Worker allows 20 requests a minute. */
+  hostMinIntervalMs?: Record<string, number>;
   /**
    * Live requests in flight per host (default 1). The Internet Archive's
    * full-text search takes 20-odd seconds to answer; two at a time is still
@@ -155,7 +157,8 @@ export function installCassette(options: CassetteOptions): CassetteStats {
   ): Promise<{ res: Response; body: string; ms: number }> {
     const timeout = options.hostTimeouts?.[host] ?? { ms: 60_000, retryNetworkErrors: true };
     for (let attempt = 0; ; attempt++) {
-      const wait = (lastSent.get(host) ?? 0) + minInterval / lanes - Date.now();
+      const gap = options.hostMinIntervalMs?.[host] ?? minInterval / lanes;
+      const wait = (lastSent.get(host) ?? 0) + gap - Date.now();
       if (wait > 0) await sleep(wait);
       lastSent.set(host, Date.now());
       let res: Response;
