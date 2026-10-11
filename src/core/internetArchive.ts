@@ -10,6 +10,8 @@
  *   - Item metadata (`/metadata/{id}`), for what a hit lacks: the publisher,
  *     and the access-restriction flag, checked once more for the few books
  *     kept.
+ *   - The catalogue search (`/advancedsearch.php`), to find a book a model
+ *     named by its title and author.
  *
  * Only `archive.org` is on Wikipedia's CSP allowlist, so these are the
  * endpoints the user script can reach too — checked from the console on a
@@ -26,14 +28,20 @@ import { USER_AGENT } from "./mediawiki.js";
 export const SEARCH_URL = "https://archive.org/services/search/beta/page_production/";
 export const METADATA_URL = "https://archive.org/metadata/";
 export const STREAM_URL = "https://archive.org/stream/";
+/** The catalogue search (titles, creators, subjects): how a book named by title is found. */
+export const CATALOGUE_URL = "https://archive.org/advancedsearch.php";
 
-const REQUEST_TIMEOUT_MS = 30_000;
+/** The full-text search takes 20 to 60 seconds under load, longer for a long `identifier:(…)` list. */
+const REQUEST_TIMEOUT_MS = 120_000;
 /** Longest `Retry-After` honoured on a 429 before giving up. */
 const MAX_RETRY_AFTER_S = 30;
 
 /** The search response, as far as it is read. */
 export type SearchResponse = {
   response?: { body?: { hits?: { total?: unknown; hits?: unknown[] } } | null };
+};
+export type CatalogueResponse = {
+  response?: { docs?: unknown[] } | null;
 };
 export type MetadataResponse = {
   metadata?: Record<string, unknown>;
@@ -52,6 +60,8 @@ export interface SearchRequest {
 export interface ArchiveClient {
   fullTextSearch(request: SearchRequest): Promise<SearchResponse>;
   metadata(identifier: string): Promise<MetadataResponse>;
+  /** Catalogue search, texts only: the fields a hit needs, `rows` at most. */
+  catalogue?(query: string, rows: number): Promise<CatalogueResponse>;
   /** The `/stream/` page holding an open book's whole OCR text (HTML, the text in a `<pre>`). */
   streamPage?(identifier: string, file: string): Promise<string>;
 }
@@ -73,6 +83,14 @@ export function searchParams(request: SearchRequest): URLSearchParams {
     user_query: request.query,
     hits_per_page: String(request.size),
   });
+}
+
+/** The catalogue search's fields: what the access gate and a citation need. The user script builds the same URL. */
+export function catalogueUrl(query: string, rows: number): string {
+  const fields = ["identifier", "title", "creator", "year", "date", "collection", "mediatype"]
+    .map((f) => `&fl[]=${f}`)
+    .join("");
+  return `${CATALOGUE_URL}?q=${encodeURIComponent(`(${query}) AND mediatype:texts`)}${fields}&rows=${rows}&output=json`;
 }
 
 async function get(url: string, accept: string, retried = false): Promise<Response> {
@@ -114,6 +132,9 @@ export const httpArchiveClient: ArchiveClient = {
   metadata(identifier) {
     return getJson<MetadataResponse>(METADATA_URL + encodeURIComponent(identifier));
   },
+  catalogue(query, rows) {
+    return getJson<CatalogueResponse>(catalogueUrl(query, rows));
+  },
   async streamPage(identifier, file) {
     return (await get(streamUrl(identifier, file), "text/html")).text();
   },
@@ -143,6 +164,13 @@ export function recordingClient(inner: ArchiveClient, dir: string): ArchiveClien
       save(`metadata-${identifier}`, r);
       return r;
     },
+    ...(inner.catalogue && {
+      async catalogue(query: string, rows: number) {
+        const r = await inner.catalogue!(query, rows);
+        save(`catalogue-${query}`, { query, rows, response: r });
+        return r;
+      },
+    }),
     ...(inner.streamPage && {
       async streamPage(identifier: string, file: string) {
         const r = await inner.streamPage!(identifier, file);

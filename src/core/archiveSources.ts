@@ -23,6 +23,11 @@
  *   5. **Whole text**, optional: for a few open books, the best stretch of
  *      the whole OCR text instead of the search's short highlights.
  *
+ * With `librarian` set, models do what word matching cannot
+ * (src/core/archiveLibrarian.ts): one restates the claim and writes queries a
+ * book would match, another names books likely to state it, and every lead is
+ * then searched inside for the claim's telling terms.
+ *
  * What comes out is evidence — a book, a passage, the anchors it matched — not
  * a verdict.
  */
@@ -32,9 +37,29 @@ import { extractClaims } from "./extractClaims.js";
 import { httpArchiveClient } from "./internetArchive.js";
 import type {
   ArchiveClient,
+  CatalogueResponse,
   MetadataResponse,
   SearchResponse,
 } from "./internetArchive.js";
+import {
+  BOOKS_MAX_TOKENS,
+  BOOKS_SYSTEM,
+  DEFAULT_LIBRARIAN_MODELS,
+  PLAN_MAX_TOKENS,
+  PLAN_SYSTEM,
+  booksPrompt,
+  catalogueQuery,
+  parseBooks,
+  parsePlan,
+  nameConcepts,
+  planCoverage,
+  planMatched,
+  planPrompt,
+  shelfQueries,
+  shelfSearchable,
+  tellingTerms,
+} from "./archiveLibrarian.js";
+import type { ArchivePlan, ChatClient, ClaimInput, LibrarianModels, NamedBook } from "./archiveLibrarian.js";
 import {
   anchorScore,
   anchorsOf,
@@ -73,7 +98,24 @@ export interface ArchiveSourceOptions {
   minScore?: number;
   /** Swap in a fixture-backed or recording client. */
   client?: ArchiveClient;
+  /**
+   * The librarian's steps (src/core/archiveLibrarian.ts), off unless given: a
+   * planner model's queries, books a model names, and a search inside every
+   * lead for the claim's telling terms. A model left null skips its step.
+   */
+  librarian?: { client: ChatClient; models?: Partial<LibrarianModels> };
 }
+
+/** Hits asked of each planner query. */
+export const PLANNER_HITS = 25;
+/** Books the planner's queries may add, best covered first. */
+export const PLANNER_LEADS = 5;
+/** Catalogue records read per named book. */
+export const NAMED_ROWS = 5;
+/** Scans of a named book searched inside: the first may not be in the full-text index. */
+export const NAMED_SCANS = 2;
+/** Leads the librarian may add in all, after the metadata checks. */
+export const LIBRARIAN_LEADS = 8;
 
 /** Collections of books anyone with a free account can borrow. */
 const LENDING_COLLECTIONS = new Set(["inlibrary", "lendinglibrary"]);
@@ -363,6 +405,65 @@ export function parseSearchHits(response: SearchResponse, query: string): Archiv
     });
   });
   return out;
+}
+
+/** Reads a catalogue search's `response.docs[]`: a book, with no passages. */
+export function parseCatalogueHits(response: CatalogueResponse, query: string): ArchiveHit[] {
+  const raw = response.response?.docs ?? [];
+  const out: ArchiveHit[] = [];
+  raw.forEach((d, rank) => {
+    if (!d || typeof d !== "object") return;
+    const f = d as Record<string, unknown>;
+    const identifier = first(f.identifier);
+    if (!identifier) return;
+    out.push({
+      identifier,
+      title: first(f.title) ?? identifier,
+      creator: first(f.creator),
+      year: yearOf(f.year) ?? yearOf(f.date),
+      mediatype: first(f.mediatype),
+      collections: all(f.collection),
+      file: null,
+      highlights: [],
+      rank,
+      query,
+    });
+  });
+  return out;
+}
+
+/**
+ * The planner's hits, one per book, best covered first: by how many of the
+ * plan's concepts the book's highlights mention, ties in search order (the
+ * queries taken in turn). Each book's best-covered passage comes first.
+ *
+ * As with the search's own leads, a book must be about the claim: one passage
+ * with two of the plan's concepts, and, when the plan names who or what the
+ * claim is about, a highlight with one of those names. Without that, "New
+ * York, 1814 DEATH (the) of Abel" is a lead for "Feodora's father died in 1814".
+ */
+export function rankPlannedHits(lists: ArchiveHit[][], terms: string[][]): ScoredHit[] {
+  const names = nameConcepts(terms);
+  const seen = new Set<string>();
+  const out: { s: ScoredHit; cover: number; order: number }[] = [];
+  for (let i = 0; lists.some((l) => i < l.length); i++) {
+    for (const l of lists) {
+      const h = l[i];
+      if (!h || seen.has(h.identifier)) continue;
+      seen.add(h.identifier);
+      const gate = accessGate(h);
+      if (!gate.ok || !h.highlights.length) continue;
+      const passages = h.highlights
+        .map((text) => ({ text, score: 0, matched: planMatched(text, terms) }))
+        .sort((a, b) => b.matched.length - a.matched.length);
+      if (terms.length >= 2 && passages[0].matched.length < 2) continue;
+      if (names.length && planCoverage(h.highlights.join(" "), names) === 0) continue;
+      const cover = planCoverage(h.highlights.join(" "), terms);
+      const score = terms.length ? Math.round((cover / terms.length) * 100) / 100 : 0;
+      out.push({ s: { hit: h, access: gate.access, passages, score }, cover, order: out.length });
+    }
+  }
+  return out.sort((a, b) => b.cover - a.cover || a.order - b.order).map((x) => x.s);
 }
 
 /** What the item metadata adds to a hit. */
@@ -877,6 +978,7 @@ export function toArchiveCandidate(
   s: ScoredHit,
   details: Pick<ItemDetails, "publisher" | "isbn"> | null,
   terms: ClaimTerms,
+  via?: "planner" | "named",
 ): ArchiveCandidate {
   const { hit } = s;
   const best = s.passages[0];
@@ -902,6 +1004,7 @@ export function toArchiveCandidate(
       query: hit.query,
       viewerUrl: viewerUrl(hit.identifier, terms),
       ...(s.fullText && { fullText: true as const }),
+      ...(via && { via }),
     },
     citation: formatArchiveCitation(hit, s.access, details),
   };
@@ -951,6 +1054,23 @@ export interface ArchiveFunnel {
   candidates: number;
   /** Non-fatal request failures. */
   errors: string[];
+  /** What the librarian did, when it ran. */
+  librarian?: LibrarianFunnel;
+}
+
+export interface LibrarianFunnel {
+  /** The planner's restated claim, queries and terms; null when it gave none. */
+  plan: ArchivePlan | null;
+  /** Readable books the planner's queries found. */
+  planned: number;
+  /** The books the model named, and how many were found readable on the Archive. */
+  named: NamedBook[];
+  namedFound: number;
+  /** The terms every lead was searched inside for, and the queries that took. */
+  shelfTerms: string[];
+  shelfQueries: number;
+  /** Leads the librarian added to the search's, after the metadata checks. */
+  added: number;
 }
 
 export interface ArchiveSourceResult {
@@ -985,6 +1105,35 @@ export async function findArchiveCandidates(
     candidates: 0,
     errors: [],
   };
+
+  // The librarian's model calls run while the searches below do.
+  const chat = options.librarian?.client;
+  const models: LibrarianModels | null = options.librarian
+    ? { ...DEFAULT_LIBRARIAN_MODELS, ...options.librarian.models }
+    : null;
+  const input: ClaimInput = {
+    articleTitle,
+    section: claim.section,
+    paragraph: claim.context,
+    claim: claim.claim,
+  };
+  const planning: Promise<{ plan: ArchivePlan | null; error: string | null }> =
+    chat && models?.planner
+      ? chat.chat(models.planner, PLAN_SYSTEM, planPrompt(input), PLAN_MAX_TOKENS).then(
+          (text) => {
+            const plan = parsePlan(text);
+            return { plan, error: plan ? null : "planner: no plan in the reply" };
+          },
+          (err) => ({ plan: null, error: `planner: ${(err as Error).message}` }),
+        )
+      : Promise.resolve({ plan: null, error: null });
+  const naming: Promise<{ books: NamedBook[]; error: string | null }> =
+    chat && models?.books
+      ? chat.chat(models.books, BOOKS_SYSTEM, booksPrompt(input), BOOKS_MAX_TOKENS).then(
+          (text) => ({ books: parseBooks(text), error: null }),
+          (err) => ({ books: [], error: `books: ${(err as Error).message}` }),
+        )
+      : Promise.resolve({ books: [], error: null });
 
   // 1. Search: the two families side by side, each strictest first until it
   // has enough distinct books of its own.
@@ -1032,11 +1181,20 @@ export async function findArchiveCandidates(
   const extras: ScoredHit[] = [];
   if (options.fullText) await readWholeBooks(all, shortlist, extras, claim.claim, articleTitle, client, options, funnel);
 
+  // The librarian: the planner's books and the named ones, then a search
+  // inside every lead for the claim's telling terms.
+  const added: { s: ScoredHit; via: "planner" | "named" }[] = [];
+  if (models) {
+    funnel.librarian = await librarianLeads(
+      { planning, naming, client, terms, shortlist: [...shortlist, ...extras], added, funnel },
+    );
+  }
+
   // 4. Metadata for the few kept: publisher, ISBN, and whether it is still
   // readable.
-  funnel.lookedUp = shortlist.length + extras.length;
+  funnel.lookedUp = shortlist.length + extras.length + added.length;
   const candidates: ArchiveCandidate[] = [];
-  const lookUp = async (list: ScoredHit[], cap: number): Promise<void> => {
+  const lookUp = async (list: ScoredHit[], cap: number, via?: "planner" | "named"): Promise<void> => {
     let added = 0;
     for (const s of list) {
       if (added >= cap) break;
@@ -1052,15 +1210,156 @@ export async function findArchiveCandidates(
         // The hit already passed the gate; a lead without a publisher is still a lead.
         funnel.errors.push(`metadata ${s.hit.identifier}: ${(err as Error).message}`);
       }
-      candidates.push(toArchiveCandidate(s, details, terms));
+      candidates.push(toArchiveCandidate(s, details, terms, via));
       added++;
     }
   };
   await lookUp(shortlist, maxCandidates);
   await lookUp(extras, options.fullTextLeads ?? 2);
+  if (funnel.librarian) {
+    const before = candidates.length;
+    // Planner and named leads in their order, one call each so `via` is kept.
+    let room = LIBRARIAN_LEADS;
+    for (const a of added) {
+      if (room <= 0) break;
+      const n = candidates.length;
+      await lookUp([a.s], 1, a.via);
+      room -= candidates.length - n;
+    }
+    funnel.librarian.added = candidates.length - before;
+  }
   funnel.candidates = candidates.length;
 
   return { claim, candidates, funnel };
+}
+
+/**
+ * The librarian's leads, added to `added`, and every lead's passages extended
+ * by a search inside it for the claim's telling terms. Request failures are
+ * noted in the funnel, in a fixed order, and never fail the stage.
+ */
+async function librarianLeads(a: {
+  planning: Promise<{ plan: ArchivePlan | null; error: string | null }>;
+  naming: Promise<{ books: NamedBook[]; error: string | null }>;
+  client: ArchiveClient;
+  terms: ClaimTerms;
+  shortlist: ScoredHit[];
+  added: { s: ScoredHit; via: "planner" | "named" }[];
+  funnel: ArchiveFunnel;
+}): Promise<LibrarianFunnel> {
+  const { client, terms, added, funnel } = a;
+  const [{ plan, error: planError }, { books: named, error: booksError }] = await Promise.all([a.planning, a.naming]);
+  if (planError) funnel.errors.push(planError);
+  if (booksError) funnel.errors.push(booksError);
+  const lib: LibrarianFunnel = { plan, planned: 0, named, namedFound: 0, shelfTerms: [], shelfQueries: 0, added: 0 };
+  const concepts = plan?.terms ?? [];
+
+  // Books the planner's queries find, and the books the model named, found
+  // by title and author (a couple of readable scans of each that can be
+  // searched inside), side by side.
+  const searching = Promise.all(
+    (plan?.queries ?? []).map(async (query) => {
+      try {
+        return { hits: parseSearchHits(await client.fullTextSearch({ query, size: PLANNER_HITS }), query), error: null };
+      } catch (err) {
+        return { hits: [] as ArchiveHit[], error: `search failed: ${(err as Error).message}` };
+      }
+    }),
+  );
+  const finding = Promise.all(
+    named.map(async (book) => {
+      const q = catalogueQuery(book);
+      if (!q || !client.catalogue) return { scans: [] as ArchiveHit[], error: null };
+      try {
+        const hits = parseCatalogueHits(await client.catalogue(q, NAMED_ROWS), q);
+        return { scans: hits.filter((h) => accessGate(h).ok && shelfSearchable(h.identifier)).slice(0, NAMED_SCANS), error: null };
+      } catch (err) {
+        return { scans: [] as ArchiveHit[], error: `catalogue: ${(err as Error).message}` };
+      }
+    }),
+  );
+  const [lists, found] = await Promise.all([searching, finding]);
+  for (const l of lists) if (l.error) funnel.errors.push(l.error);
+  const planned = rankPlannedHits(
+    lists.map((l) => l.hits),
+    concepts,
+  );
+  lib.planned = planned.length;
+  for (const f of found) if (f.error) funnel.errors.push(f.error);
+  lib.namedFound = found.filter((f) => f.scans.length > 0).length;
+
+  // One lead per work, beyond the search's own.
+  const taken = a.shortlist.map((s) => s.hit);
+  const isNew = (h: ArchiveHit): boolean => !taken.some((t) => t.identifier === h.identifier || sameWork(t, h));
+  let fromPlanner = 0;
+  for (const s of planned) {
+    if (fromPlanner >= PLANNER_LEADS) break;
+    if (!isNew(s.hit)) continue;
+    added.push({ s, via: "planner" });
+    taken.push(s.hit);
+    fromPlanner++;
+  }
+  // Each named book's scans, as one group: after the search inside, the first
+  // scan with a passage stands for the book.
+  const groups = new Map<ScoredHit, number>();
+  found.forEach((f, g) => {
+    const scans = f.scans.filter(isNew);
+    for (const h of scans) {
+      const gate = accessGate(h);
+      if (!gate.ok) continue;
+      const s: ScoredHit = { hit: h, access: gate.access, passages: [], score: 0 };
+      groups.set(s, g);
+      added.push({ s, via: "named" });
+    }
+    taken.push(...scans);
+  });
+
+  // Search inside every lead, one query per telling term.
+  const everyone = [...a.shortlist, ...added.map((x) => x.s)];
+  lib.shelfTerms = tellingTerms(plan, terms);
+  const shelf = lib.shelfTerms.flatMap((t) => shelfQueries(t, everyone.map((s) => s.hit.identifier)));
+  lib.shelfQueries = shelf.length;
+  const replies = await Promise.all(
+    shelf.map(async ({ query, size }) => {
+      try {
+        return { hits: parseSearchHits(await client.fullTextSearch({ query, size }), query), error: null };
+      } catch (err) {
+        return { hits: [] as ArchiveHit[], error: `shelf search failed: ${(err as Error).message}` };
+      }
+    }),
+  );
+  const inside = new Map<string, string[]>();
+  for (const r of replies) {
+    if (r.error) funnel.errors.push(r.error);
+    for (const h of r.hits) inside.set(h.identifier, [...(inside.get(h.identifier) ?? []), ...h.highlights]);
+  }
+  for (const s of everyone) {
+    const known = new Set(s.passages.map((p) => p.text));
+    for (const text of inside.get(s.hit.identifier) ?? []) {
+      if (known.has(text)) continue;
+      known.add(text);
+      s.passages.push({ text, score: 0, matched: planMatched(text, concepts) });
+    }
+  }
+  // The librarian's leads show their best-covered passage first; one with no
+  // passage at all has nothing to show or check, and a named book needs only
+  // one scan.
+  const kept = new Set<number>();
+  for (let i = 0; i < added.length; i++) {
+    const s = added[i].s;
+    const group = groups.get(s);
+    if (!s.passages.length || (group !== undefined && kept.has(group))) {
+      added.splice(i--, 1);
+      continue;
+    }
+    if (group !== undefined) kept.add(group);
+    s.passages.sort((x, y) => y.matched.length - x.matched.length);
+    if (concepts.length) {
+      const cover = planCoverage(s.passages.map((p) => p.text).join(" "), concepts);
+      s.score = Math.max(s.score, Math.round((cover / concepts.length) * 100) / 100);
+    }
+  }
+  return lib;
 }
 
 /**

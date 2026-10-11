@@ -113,7 +113,11 @@ test("both implementations keep, score and cite the same books", () => {
 
 test("the user script's live flow matches the core's", async () => {
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
-  const eiffel = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  // The word search alone; the librarian has its own test below.
+  const eiffel = loadUserScript(
+    { wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" },
+    { window: { cnfirmedArchiveLibrarian: false } },
+  );
   const claim = CLAIMS[1];
   eiffel.setClaimContexts([{ claim, context: claim, section: null, links: [] }]);
 
@@ -158,7 +162,7 @@ test("with the switch on, the user script reads whole texts as the core does", a
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
   const eiffel = loadUserScript(
     { wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" },
-    { window: { cnfirmedArchiveFullText: true } },
+    { window: { cnfirmedArchiveFullText: true, cnfirmedArchiveLibrarian: false } },
   );
   const claim = CLAIMS[1];
   eiffel.setClaimContexts([{ claim, context: claim, section: null, links: [] }]);

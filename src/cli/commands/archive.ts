@@ -2,6 +2,12 @@ import { findArticleArchiveSources } from "../../core/archiveSources.js";
 import { passageSummary } from "../../core/archiveSources.js";
 import type { ArchiveFunnel } from "../../core/archiveSources.js";
 import { httpArchiveClient, recordingClient } from "../../core/internetArchive.js";
+import {
+  DEFAULT_LIBRARIAN_MODELS,
+  judgeArchiveBooks,
+  workerChatClient,
+  type ArchiveVerdict,
+} from "../../core/archiveLibrarian.js";
 
 interface ArchiveArgs {
   urlOrTitle: string;
@@ -10,6 +16,10 @@ interface ArchiveArgs {
   record?: string;
   /** Read the whole text of open books for a longer passage. */
   fullText?: boolean;
+  /** The planner, named books and the search inside every lead (default on). */
+  librarian?: boolean;
+  /** Check every lead's passages against the claim, one model call per claim. */
+  check?: boolean;
   json: boolean;
 }
 
@@ -23,7 +33,18 @@ function funnelLine(f: ArchiveFunnel): string {
     (rejected ? ` (dropped: ${rejected})` : "") +
     ` → ${f.matched} with a matching passage, ${f.byUnits} by claim phrases` +
     (f.fullText ? ` → ${f.fullText.read} whole text(s) read, ${f.fullText.windows} with a passage` : "") +
+    (f.librarian ? ` → ${librarianLine(f)}` : "") +
     ` → ${f.candidates} lead(s)`
+  );
+}
+
+/** The librarian's part of the funnel: "planner 3 queries, 12 books; named 4 of 6 readable; 3 terms searched inside; +5 lead(s)". */
+export function librarianLine(f: ArchiveFunnel): string {
+  const l = f.librarian!;
+  return (
+    `planner ${l.plan ? `${l.plan.queries.length} quer${l.plan.queries.length === 1 ? "y" : "ies"}, ${l.planned} books` : "gave no plan"}; ` +
+    `named ${l.namedFound} of ${l.named.length} readable; ` +
+    `${l.shelfTerms.length} term(s) searched inside; +${l.added} lead(s)`
   );
 }
 
@@ -37,20 +58,48 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
   const client = args.record
     ? recordingClient(httpArchiveClient, args.record)
     : httpArchiveClient;
+  const chat = args.librarian === false && !args.check ? null : workerChatClient();
   const run = await findArticleArchiveSources(args.urlOrTitle, {
     maxClaims: args.maxClaims,
     client,
     fullText: args.fullText,
+    ...(args.librarian !== false && chat && { librarian: { client: chat } }),
     onProgress: args.json
       ? undefined
       : (done, total) => process.stderr.write(`\r  searched ${done}/${total}`),
   });
   if (!args.json) process.stderr.write("\r\x1b[K");
 
+  // The check: every lead of a claim in one call, against the restated claim.
+  const checks: ((ArchiveVerdict | null)[] | string)[] = [];
+  if (args.check && chat && DEFAULT_LIBRARIAN_MODELS.judge) {
+    for (const r of run.results) {
+      try {
+        checks.push(
+          await judgeArchiveBooks(
+            {
+              articleTitle: run.article.title,
+              section: r.claim.section,
+              paragraph: r.claim.context,
+              claim: r.claim.claim,
+              fact: r.funnel.librarian?.plan?.fact || null,
+            },
+            r.candidates.map((c) => ({ title: c.title, year: c.evidence.year, passages: c.evidence.passages })),
+            chat,
+            DEFAULT_LIBRARIAN_MODELS.judge,
+          ),
+        );
+      } catch (err) {
+        checks.push(`check failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
   if (args.json) {
     const { wikitext: _omit, ...article } = run.article;
     void _omit;
-    process.stdout.write(JSON.stringify({ article, results: run.results }, null, 2) + "\n");
+    const results = run.results.map((r, i) => (args.check ? { ...r, check: checks[i] ?? null } : r));
+    process.stdout.write(JSON.stringify({ article, results }, null, 2) + "\n");
     return;
   }
 
@@ -72,11 +121,24 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     console.log(`    funnel: ${funnelLine(r.funnel)}`);
     console.log(`    passages: ${passageSummary(r.funnel.passages)}`);
     for (const q of r.funnel.queries) console.log(`    query:  ${q}`);
+    const plan = r.funnel.librarian?.plan;
+    if (plan) {
+      console.log(`    restated: ${plan.fact}`);
+      for (const q of plan.queries) console.log(`    planner query: ${q}`);
+    }
+    for (const b of r.funnel.librarian?.named ?? []) {
+      console.log(`    named:  ${b.author ?? "?"}, ${b.title}${b.year ? ` (${b.year})` : ""}`);
+    }
     for (const e of r.funnel.errors) console.log(`    ! ${e}`);
+    const check = checks[i];
+    if (typeof check === "string") console.log(`    ! ${check}`);
     r.candidates.forEach((c, j) => {
       const access = c.evidence.access === "borrow" ? ", borrow" : "";
       const whole = c.evidence.fullText ? ", whole text" : "";
-      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}${access}${whole})`);
+      const via = c.evidence.via ? `, ${c.evidence.via === "named" ? "named by the model" : "planner's query"}` : "";
+      console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}${access}${whole}${via})`);
+      const v = Array.isArray(check) ? check[j] : undefined;
+      if (v) console.log(`       check: ${v.verdict}${v.quote ? ` — "${v.quote}"` : ""}${v.reason ? ` (${v.reason})` : ""}`);
       console.log(`       ${c.evidence.viewerUrl}`);
       console.log(`       ${c.relevance}`);
       for (const p of c.evidence.passages.slice(0, 2)) console.log(`       "${p}"`);
@@ -86,7 +148,8 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
   });
 
   console.log("Leads, not verdicts: the passage carries the claim's numbers and names, which");
-  console.log("is not the same as stating it. Read it — and add |page= — before pasting.");
+  console.log("is not the same as stating it, and a model's check can be wrong too. Read it —");
+  console.log("and add |page= — before pasting.");
   console.log("Borrowable books need a free archive.org account to read. Old sources may be");
   console.log("outdated: see WP:AGEMATTERS.");
 }
