@@ -1663,6 +1663,14 @@
     "ia:898nar_Sas": {
       "verdict": "partial",
       "why": "Says \"the Hephthalites held sway over Karashahr\" (as its \"easternmost\" extremity), but nothing on this being the first time, on Qiongqi's death, or on Mi'etu being taken hostage."
+    },
+    "ia:the-huns-hyun-jin-kim": {
+      "verdict": "partial",
+      "why": "\"These Hephthalites after eliminating\" the Rouran, and \"between 497 AD and 509 AD Karashahr and the region of modern day Urumchi\" were occupied: the expansion to Karashahr, but not Qiongqi or Mi'etu."
+    },
+    "ia:kim-hyun-jin-2016.-the-huns": {
+      "verdict": "topic",
+      "why": "The Hephthalites taking over from the Rouran, and hostages of other peoples; nothing on Karashahr, Qiongqi or Mi'etu."
     }
   },
   "Transcendental Meditation movement@1374321389#44979": {
@@ -2097,6 +2105,10 @@
     "ia:santa-ana-daily-evening-register-1919-06-02#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:bwb_S0-ASO-178": {
+      "verdict": "topic",
+      "why": "Exhibitions and gifts at the California Club (\"presented a View of the Grand Canyon to the California Club\") and entries on Wendt, Lauritz, Brandriff and Bischoff, but nothing on the clubhouse's collection."
     }
   },
   "Lankaran-Astara Economic Region@1373625035#8298": {

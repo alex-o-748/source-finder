@@ -64,11 +64,52 @@ re-record takes the better part of an hour. Replay is instant.
 3. If the change is kept, copy `results/latest.json` to `results/baseline.json`
    and put the before/after table in the PR.
 
+## Baseline (October 2026: the librarian)
+
+The user script on all 100 claims, with the Internet Archive librarian and its
+check (`--check`). "Found" means at least one lead whose evidence states the
+claim's fact; "or partly" also counts one that states part of it. "Archive,
+checked" is what the panel shows: the leads GLM-5.2 judged to state the claim
+or part of it.
+
+| Method | Found | Found or partly | Claims with any lead | Precision of leads |
+| --- | --- | --- | --- | --- |
+| Same article | 0% | 1% | 7% | 14% (of 7) |
+| Other language editions | 2% | 3% | 9% | 21% (of 28) |
+| Internet Archive, all leads | 6% | 28% | 88% | 27% (of 234 judged; 550 leads) |
+| Internet Archive, checked | 5% | 23% | 39% | 55% (of 91) |
+| Any | 8% | 30% | 88% | 26% (of 269 judged) |
+
+On the 46 book-plausible claims, the checked Archive leads find 9% and find or
+partly find 33% (September: 4% and 22%, unchecked), at 58% precision; the top
+lead shown is a good one for 57% of the claims shown any.
+
+**What the librarian added** (README, "Books on the Internet Archive"; the
+experiments behind it in `docs/internet-archive-search-ideas.md`): a model
+(GLM-5.2, through the Worker) restates the claim and writes book-style
+queries, names books likely to state it, every lead is searched inside for
+the claim's telling terms, and the leads are checked in one call. Against the
+September baseline below, the Archive's "found or partly" goes from 17% to 28%
+of all claims (22% to 39% of the book-plausible), and the panel, which shows
+only the checked leads, from 17% at 18% precision to 23% at 55%. The check
+keeps 50 of the 63 good leads judged; most of the leads it rejected (about
+310 of 450) have no label, so the unchecked figures are lower bounds. The Worker's model
+calls cost about $2.40 for the 100 claims (GLM-5.2, ~350k tokens in, ~430k out).
+
+Labels for the 73 new leads the check kept were made by five readers on the
+rubric above, every supports/partial re-read by a second, the stricter verdict
+taken where they differed (8 of 38).
+
+Recording it met two failures worth knowing: archive.org's full-text backend
+fails a query now and then (HTTP 400, an upstream 502) and serves the failure
+again for the same URL for some 20 minutes, so a failed search is tried with
+one more hit, three times, after 5 and 15 seconds; and GLM-5.2 sometimes
+thinks until it runs out of tokens with no answer, which is tried once more
+(5 of ~300 calls still failed; the check then falls back to the Verify API).
+
 ## Baseline (September 2026)
 
-The user script on all 100 claims. "Found" means at least one lead whose
-evidence states the claim's fact; "or partly" also counts one that states part
-of it.
+The user script on all 100 claims, before the librarian.
 
 | Method | Found | Found or partly | Claims with any lead | Precision of leads |
 | --- | --- | --- | --- | --- |
@@ -156,13 +197,14 @@ where modern secondary sources are, have no public text.
 
 ## Checking the Archive leads (`--check`)
 
-The user script sends each Archive lead's passages to the Verify API
-(`POST /v1/verify` at `citation-verifier.toolforge.org`), one call per book,
-and shows only the books it judges to state the claim or part of it (README,
-"Books on the Internet Archive", step 6). Its SUPPORTED / PARTIALLY SUPPORTED
-map onto `labels.json`'s `supports` / `partial`; NOT SUPPORTED becomes
-`unsupported`, which covers both `topic` and `unrelated` (the API does not
-tell them apart). So what is kept can be scored against the labels:
+The user script sends every Archive lead's passages to GLM-5.2 in one call,
+with the claim, its paragraph and the restated claim, and shows only the books
+it judges to state the claim or part of it (README, "Books on the Internet
+Archive", step 10); if that call fails, each lead goes to the Verify API
+(`POST /v1/verify` at `citation-verifier.toolforge.org`) instead. Verdicts
+map onto `labels.json`'s `supports` / `partial`; "does not state it" becomes
+`unsupported`, which covers both `topic` and `unrelated`. So what is kept can
+be scored against the labels:
 
 ```sh
 NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --check --name check
@@ -173,11 +215,15 @@ npx tsx eval/score.ts --run check
 shows: kept by the model, or given no verdict) and a table of the model's
 verdicts against the labels, with the precision of what it keeps and how many
 of the good leads it keeps. Recording needs no key, only network access to the
-Verify API; about 200 calls, one per lead, which at the service's 30
-requests/minute (shared with every other caller) takes several minutes.
+Worker (and the Verify API for the fallback).
 
-**Not measured yet.** Neither the earlier model check nor the Verify API check
-has been recorded, so what the check is worth is unknown.
+Measured in October 2026 (above): 55% precision, 50 of 63 good leads kept. On
+September's 97 hand-labelled leads, the Verify API alone kept 6 of 19 good
+ones and passed 6 bad; GLM-5.2 kept 12 and passed 3
+(`eval/experiments/calibrate-check.ts`). The Verify API misses who a claim is
+about ("Feodora's father" vs "the Prince of Leiningen, who died in 1814"),
+calls a claim with one part missing unsupported, and passes shared words (an
+otter shrew's webbed feet for the otter civet's).
 
 ## The web search (paid)
 

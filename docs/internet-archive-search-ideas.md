@@ -274,6 +274,27 @@ In order of gain per effort:
 7. **Then** subject shelves and cited books, once page-level search inside is
    available (the BookReader search below).
 
+## In production (October 2026)
+
+Items 1, 2, 3 and 6 above are in both front ends (README, "Books on the
+Internet Archive"), with GLM-5.2 for all three model steps (plan, name books,
+check) rather than GPT-OSS-20b: it plans better, it names real books, and as
+the only judge it beats GPT-OSS sifting plus a second opinion. The check is
+one call per claim, every lead at once, and a verdict counts only when its
+quote is in the passages. On all 100 evaluation claims (`eval/README.md`), the
+Archive's "found or partly" went from 17% to 28% (book-plausible: 22% to
+39%), and the leads the panel shows, the checked ones, are 55% good (18%
+before), at about 2.4 US cents a claim of GLM-5.2 paid by the Worker.
+
+Not built yet: whole texts through the Worker (item 4), Tavily as a source of
+books (item 5), page-level search inside (item 7). Two things the production
+run taught: archive.org's full-text backend fails some 1 query in 8 under
+load and serves the failure again for the same URL, so a failed search is
+asked again for one more hit; and GLM-5.2 now and then reasons until it runs
+out of tokens, past the Worker's 60-second limit to Hugging Face, so the
+calls are capped and tried once more. Raising the Worker's upstream timeout
+would let the check think longer on claims with many leads.
+
 ## Cost, and the path to free
 
 Per claim, as measured here:
