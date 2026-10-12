@@ -6,9 +6,9 @@
  * the user's own API key (stored in localStorage) — or by searching with
  * Tavily (the user's Tavily key) and judging the results with GPT-OSS on
  * Hugging Face, both through the publicai-proxy Worker, since Wikipedia's CSP
- * blocks those services. Internet Archive passages
- * are checked against the claim by the Verify API
- * (https://citation-verifier.toolforge.org), which needs no key.
+ * blocks those services. Internet Archive books are found and checked with
+ * open-weight models through the same Worker, which needs no key (the Verify
+ * API, https://citation-verifier.toolforge.org, when the Worker cannot).
  *
  * Add to User:Yourname/common.js:
  *
@@ -757,7 +757,7 @@
 
   // Free first, paid second. Opening a claim runs both free searches at once:
   // the citations Wikipedia already holds, and Internet Archive books (whose
-  // passages the Verify API then checks). The paid web search only starts by
+  // passages a model then checks). The paid web search only starts by
   // itself when both came back empty and a key is set; otherwise it waits for
   // a click.
   var autoWebConsidered = {};
@@ -772,8 +772,14 @@
     });
   }
 
+  // A claim with no word to search on still has the librarian, which reads
+  // its paragraph.
+  function archiveNothingToSearch(i) {
+    return archiveQueriesFor(i).length === 0 && !(IA_LIBRARIAN && (LIB_MODELS.planner || LIB_MODELS.books));
+  }
+
   function runBooks(i) {
-    if (archiveQueriesFor(i).length === 0) return Promise.resolve(null);
+    if (archiveNothingToSearch(i)) return Promise.resolve(null);
     return runArchiveStage(i).then(function (a) {
       // Leads cached before their check finished are checked now.
       if (a && a.status === 'done' && (a.candidates || []).length && !a.check) {
@@ -828,8 +834,9 @@
   }
 
   // "Find sources for all": both free searches for every claim, one claim at
-  // a time — the Wikipedia corpus is fetched once, and the Archive check
-  // shares the Verify API's 30 requests a minute with everyone else.
+  // a time — the Wikipedia corpus is fetched once, and the Archive's models
+  // share the Worker's 20 requests a minute (the Verify API's 30 a minute,
+  // shared with everyone, when it is the fallback).
   var batch = null; // { done, total, promise } while it runs
 
   function findAllFree() {
@@ -2284,7 +2291,7 @@
   }
 
   function iaPhrase(term) {
-    return '"' + String(term).replace(/["\\]/g, ' ').trim() + '"';
+    return '"' + libSafeTerm(term) + '"';
   }
 
   // Terms are joined by a space, which the endpoint reads as AND: between two
@@ -2704,7 +2711,7 @@
     });
   }
 
-  function toArchiveCandidate(s, details, terms) {
+  function toArchiveCandidate(s, details, terms, via) {
     var hit = s.hit;
     var best = s.passages[0];
     var matched = iaCompactAnchors(best.matched);
@@ -2725,6 +2732,7 @@
       viewerUrl: iaViewerUrl(hit.identifier, terms)
     };
     if (s.fullText) evidence.fullText = true;
+    if (via) evidence.via = via;
     return {
       url: iaDetailsUrl(hit.identifier),
       title: hit.title,
@@ -2735,17 +2743,36 @@
     };
   }
 
-  function iaSearchUrl(query) {
+  function iaSearchUrl(query, size) {
     return IA_SEARCH_URL + '?service_backend=fts' +
       '&user_query=' + encodeURIComponent(query) +
-      '&hits_per_page=' + IA_MAX_HITS;
+      '&hits_per_page=' + (size || IA_MAX_HITS);
   }
 
   function iaFetchJson(url) {
     return fetch(url, { headers: { Accept: 'application/json' } }).then(function (res) {
-      if (!res.ok) throw new Error('Internet Archive: HTTP ' + res.status);
+      if (!res.ok) throw Object.assign(new Error('Internet Archive: HTTP ' + res.status), { status: res.status });
       return res.json();
     });
+  }
+
+  // A full-text search, asked twice more, each time for one more hit, when it
+  // fails with a 400: the search's backend now and then fails a query it
+  // accepts, and archive.org then serves that failure for the same URL for
+  // some 20 minutes. A different hits_per_page is a fresh search; the
+  // failures come in bursts, so each try waits a little longer. Mirrors
+  // searchWithRetry in src/core/internetArchive.ts.
+  var IA_RETRY_WAITS_MS = window.cnfirmedArchiveRetryWait === 0 ? [0, 0] : [5000, 15000];
+
+  function iaSearch(query, size) {
+    size = size || IA_MAX_HITS;
+    function attempt(n) {
+      return iaFetchJson(iaSearchUrl(query, size + n)).catch(function (err) {
+        if (err.status !== 400 || n >= IA_RETRY_WAITS_MS.length) throw err;
+        return sleep(IA_RETRY_WAITS_MS[n]).then(function () { return attempt(n + 1); });
+      });
+    }
+    return attempt(0);
   }
 
   // An open book's whole OCR text. archive.org does not send a CORS header on
@@ -2801,6 +2828,26 @@
       lookedUp: 0, candidates: 0, errors: []
     };
 
+    // The librarian's model calls run while the searches below do.
+    var libInput = { articleTitle: title, section: ctx.section, paragraph: ctx.context, claim: ctx.claim };
+    var planning = IA_LIBRARIAN && LIB_MODELS.planner
+      ? callWorkerModel(LIB_MODELS.planner, LIB_PLAN_SYSTEM, libPlanPrompt(libInput), LIB_PLAN_MAX_TOKENS)
+        .then(function (text) {
+          var plan = libParsePlan(text);
+          return { plan: plan, error: plan ? null : 'planner: no plan in the reply' };
+        }, function (err) {
+          return { plan: null, error: 'planner: ' + err.message };
+        })
+      : Promise.resolve({ plan: null, error: null });
+    var naming = IA_LIBRARIAN && LIB_MODELS.books
+      ? callWorkerModel(LIB_MODELS.books, LIB_BOOKS_SYSTEM, libBooksPrompt(libInput), LIB_BOOKS_MAX_TOKENS, LIB_BOOKS_EFFORT)
+        .then(function (text) {
+          return { books: libParseBooks(text), error: null };
+        }, function (err) {
+          return { books: [], error: 'books: ' + err.message };
+        })
+      : Promise.resolve({ books: [], error: null });
+
     // The two families side by side, each strictest first until it has enough
     // distinct books of its own.
     function searchFamily(queries) {
@@ -2812,7 +2859,7 @@
         chain = chain.then(function () {
           if (found.length >= IA_ENOUGH_HITS) return;
           used.push(query);
-          return iaFetchJson(iaSearchUrl(query))
+          return iaSearch(query)
             .catch(function (err) {
               funnel.errors.push('search failed: ' + err.message);
               return null;
@@ -2856,10 +2903,14 @@
       var extras = [];
       var read = IA_FULL_TEXT ? readWholeBooks(hits, shortlist, extras, ctx.claim, title, funnel)
         : Promise.resolve();
+      var added = [];
       return read.then(function () {
-        funnel.lookedUp = shortlist.length + extras.length;
-        var candidates = [];
-        function lookUp(list, cap) {
+        // Metadata for the few kept: publisher, ISBN, and whether it is still
+        // readable. The search's own leads are looked up while the
+        // librarian's models think, so its leads are judged new against the
+        // books shown.
+        var shown = [];
+        function lookUp(list, cap, via) {
           var added = 0;
           return list.reduce(function (p, s) {
             return p.then(function () {
@@ -2872,11 +2923,11 @@
                     funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
                     return;
                   }
-                  candidates.push(toArchiveCandidate(s, details, terms));
+                  shown.push({ s: s, details: details, via: via });
                   added++;
                 }, function (err) {
                   funnel.errors.push('metadata ' + s.hit.identifier + ': ' + err.message);
-                  candidates.push(toArchiveCandidate(s, null, terms));
+                  shown.push({ s: s, details: null, via: via });
                   added++;
                 });
             });
@@ -2885,6 +2936,29 @@
         return lookUp(shortlist, IA_MAX_CANDIDATES)
           .then(function () { return lookUp(extras, IA_FULL_TEXT_LEADS); })
           .then(function () {
+            // The librarian: the planner's books and the named ones, then a
+            // search inside every lead for the claim's telling terms.
+            if (!IA_LIBRARIAN) return;
+            var shownLeads = shown.map(function (x) { return x.s; });
+            return librarianLeads(planning, naming, terms, shownLeads, added, funnel).then(function (lib) {
+              funnel.librarian = lib;
+              // Planner and named leads in their order, one at a time so `via` is kept.
+              var before = shown.length;
+              var room = IA_LIBRARIAN_LEADS;
+              return added.reduce(function (p, a) {
+                return p.then(function () {
+                  if (room <= 0) return;
+                  var n = shown.length;
+                  return lookUp([a.s], 1, a.via).then(function () { room -= shown.length - n; });
+                });
+              }, Promise.resolve()).then(function () {
+                funnel.librarian.added = shown.length - before;
+              });
+            });
+          })
+          .then(function () {
+            funnel.lookedUp = shortlist.length + extras.length + added.length;
+            var candidates = shown.map(function (x) { return toArchiveCandidate(x.s, x.details, terms, x.via); });
             funnel.candidates = candidates.length;
             return { candidates: candidates, funnel: funnel };
           });
@@ -2935,7 +3009,16 @@
       ' → ' + f.matched + ' with a matching passage, ' + f.byUnits + ' by claim phrases' +
       (f.fullText ? ' → ' + f.fullText.read + ' whole text(s) read, ' + f.fullText.windows +
         ' with a passage' : '') +
+      (f.librarian ? ' → ' + archiveLibrarianLine(f.librarian) : '') +
       ' → ' + f.candidates + ' lead(s)';
+  }
+
+  // "planner 3 queries, 12 books; named 4 of 6 readable; 3 term(s) searched inside; +5 lead(s)".
+  function archiveLibrarianLine(l) {
+    var n = l.plan ? l.plan.queries.length : 0;
+    return 'planner ' + (l.plan ? n + ' quer' + (n === 1 ? 'y' : 'ies') + ', ' + l.planned + ' books' : 'gave no plan') +
+      '; named ' + l.namedFound + ' of ' + l.named.length + ' readable; ' +
+      l.shelfTerms.length + ' term(s) searched inside; +' + l.added + ' lead(s)';
   }
 
   // Why passages did or did not count. Mirrors passageSummary in
@@ -3011,13 +3094,679 @@
     } catch (e) { /* ignore */ }
   }
 
+  // ---- Internet Archive: the librarian ------------------------------------
+  // What a person does and word matching cannot: restate the claim and write
+  // the queries a book would match, name the books likely to state it, search
+  // inside every lead for the claim's telling terms, and check the passages
+  // against the restated claim. Mirrors src/core/archiveLibrarian.ts, which
+  // explains each step; the parity tests run both on the same replies.
+  //
+  // The models are open-weight, served through the CNfirmed Worker's /hf route
+  // (Hugging Face Inference Providers, paid for by the Worker), so no key is
+  // needed. Set before the script loads, to change a model or turn its step off:
+  //   window.cnfirmedArchivePlannerModel  restates the claim, writes the queries
+  //   window.cnfirmedArchiveBooksModel    names books likely to state it
+  //   window.cnfirmedArchiveJudgeModel    checks the passages (false: the Verify API)
+  //   window.cnfirmedArchiveLibrarian = false   no planner, named books or search
+  //                                             inside: the word search alone (the
+  //                                             check keeps its own switch above)
+
+  function libModel(name, fallback) {
+    var v = window[name];
+    if (v === false || v === null) return null;
+    return typeof v === 'string' && v ? v : fallback;
+  }
+  var IA_LIBRARIAN = window.cnfirmedArchiveLibrarian !== false;
+  var LIB_MODELS = {
+    planner: libModel('cnfirmedArchivePlannerModel', 'zai-org/GLM-5.2'),
+    books: libModel('cnfirmedArchiveBooksModel', 'zai-org/GLM-5.2'),
+    judge: libModel('cnfirmedArchiveJudgeModel', 'zai-org/GLM-5.2')
+  };
+  // Reasoning models spend output tokens thinking before they answer.
+  // Output tokens per call, thinking included. The Worker gives up on Hugging
+  // Face after 60 seconds, about 8,000 tokens of GLM-5.2, and now and then the
+  // model thinks until it runs out (no answer): the caps keep a call inside the
+  // Worker's minute, and such a call is tried once more.
+  var LIB_PLAN_MAX_TOKENS = 6000;
+  var LIB_BOOKS_MAX_TOKENS = 6000;
+  var LIB_JUDGE_MAX_TOKENS = 7000;
+  // Naming books is recall, not reasoning: less thinking, fewer runaways.
+  var LIB_BOOKS_EFFORT = 'low';
+  var LIB_PARAGRAPH_CHARS = 2000;
+  var LIB_PLAN_MAX_QUERIES = 3;
+  var LIB_SHELF_TERMS = 3;
+  var LIB_MAX_NAMED_BOOKS = 6;
+  var LIB_SHELF_SIZE = 20;
+  var LIB_JUDGE_BOOK_CHARS = 1600;
+  var IA_PLANNER_HITS = 25;
+  var IA_PLANNER_LEADS = 5;
+  var IA_NAMED_ROWS = 5;
+  var IA_NAMED_SCANS = 2;
+  var IA_LIBRARIAN_LEADS = 8;
+  var IA_CATALOGUE_URL = 'https://archive.org/advancedsearch.php';
+
+  var LIB_PLAN_SYSTEM = [
+    "You help a Wikipedia editor find a book on the Internet Archive that states a claim. Work out exactly what must be found, then the words a book would print.",
+    "",
+    "Reply with JSON only:",
+    "{\"fact\": \"...\", \"queries\": [\"...\", \"...\", \"...\"], \"terms\": [[\"...\"], [\"...\", \"...\"]]}",
+    "",
+    "- fact: the claim as one self-contained sentence. Replace every pronoun and every phrase that points elsewhere (\"her mother\", \"the city\", \"his reign\", \"it\") with the name the paragraph gives.",
+    "- queries: three queries for a full-text search over the OCR of millions of books. Every space-separated term must appear in the book; put a multi-word term in double quotes. No OR, AND, NEAR or wildcards. Two or three terms each: a name as a book would print it, the specific number or date, one distinctive word. Not Wikipedia's wording, and never a whole clause. Most specific first.",
+    "- terms: the three to six things a passage stating the claim must mention, each a list of the ways a book might write it, numbers and names first. The person or thing the claim is about is one of them, by name.",
+    "",
+    "Take every name, number and date from the paragraph and the claim; do not add any from memory.",
+    "",
+    "Example 1. Article: Mary Shelley. Paragraph: \"Mary Shelley was born in London on 30 August 1797 to the philosopher William Godwin and the writer Mary Wollstonecraft. Her mother died eleven days after the birth.\" Claim: \"Her mother died eleven days after the birth.\"",
+    "{\"fact\": \"Mary Wollstonecraft, the mother of Mary Shelley, died eleven days after Mary's birth in 1797.\", \"queries\": [\"Wollstonecraft died 1797\", \"Wollstonecraft \\\"eleven days\\\" daughter\", \"\\\"Mary Wollstonecraft\\\" death September 1797\"], \"terms\": [[\"1797\"], [\"Wollstonecraft\"], [\"died\", \"death\"], [\"eleven days\", \"11 days\"], [\"daughter\", \"Mary\"]]}",
+    "",
+    "Example 2. Article: Golden Gate Bridge. Paragraph: \"Joseph Strauss led the design. The bridge opened to vehicle traffic on 28 May 1937, a day after its pedestrian opening.\" Claim: \"The bridge opened to vehicle traffic on 28 May 1937.\"",
+    "{\"fact\": \"The Golden Gate Bridge opened to vehicle traffic on 28 May 1937.\", \"queries\": [\"\\\"Golden Gate Bridge\\\" 1937 traffic\", \"\\\"Golden Gate\\\" \\\"May 28\\\" opened\", \"\\\"Golden Gate\\\" 1937 automobiles\"], \"terms\": [[\"1937\"], [\"Golden Gate\"], [\"May 28\", \"28 May\", \"28th of May\"], [\"opened\", \"opening\", \"dedicated\"], [\"traffic\", \"vehicles\", \"automobiles\", \"cars\"]]}"
+  ].join('\n');
+
+  var LIB_BOOKS_SYSTEM = [
+    "You are a reference librarian. A Wikipedia editor needs a published book that states a claim. Name the books most likely to state it: standard biographies, histories, monographs and reference works on the subject, older public-domain works included. Only books you are sure exist; a wrong title wastes a search.",
+    "",
+    "Reply with JSON only: {\"books\": [{\"title\": \"the book's title\", \"author\": \"the first author's surname\", \"year\": 1900}]}, up to six, most likely first."
+  ].join('\n');
+
+  var LIB_JUDGE_SYSTEM = [
+    "You decide, for each book, whether its passages state a claim from a Wikipedia article. The passages are OCR text from scans: noisy, and cut mid-sentence.",
+    "",
+    "- \"supports\": the book's passages state the claim's fact, with its specific content (who, what, and any number or date).",
+    "- \"partial\": they state a substantial part of what the claim asserts (the event but not the date, or one of two facts), enough to cite for that part.",
+    "- \"no\": they are only about the same topic, use the same names or numbers in a different statement, only confirm a background detail of the claim (where a place is, who someone was), or are unrelated.",
+    "",
+    "Be strict: shared words are not support. Judge each book only on its own passages, not on what it probably says elsewhere and not on another book's passages. A book may name a person or place differently from the article (a title instead of a name, another spelling or language); use what you know to connect them.",
+    "",
+    "For \"supports\" and \"partial\", quote the words in that book's passages that state it, exactly as written.",
+    "",
+    "Reply with JSON only: {\"books\": [{\"id\": \"B1\", \"verdict\": \"supports\", \"quote\": \"...\", \"why\": \"one short sentence\"}]}, one entry per book, in order."
+  ].join('\n');
+
+  // The Worker allows 20 requests a minute per address: this page stays under
+  // 18, and waits out a 429 or a 5xx a few times (10, 20, then 40 seconds).
+  var WORKER_PER_MINUTE = 18;
+  var WORKER_RETRIES = 3;
+  var WORKER_RETRY_WAIT_MS = 10000;
+  var workerCalls = [];
+
+  function workerTurn() {
+    var now = Date.now();
+    workerCalls = workerCalls.filter(function (t) { return now - t < 60000; });
+    if (workerCalls.length < WORKER_PER_MINUTE) {
+      workerCalls.push(now);
+      return Promise.resolve();
+    }
+    return sleep(workerCalls[0] + 60000 - now).then(workerTurn);
+  }
+
+  function workerRequestBody(model, system, user, maxTokens, effort) {
+    var body = {
+      model: model,
+      max_tokens: maxTokens,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ]
+    };
+    if (effort) body.reasoning_effort = effort;
+    return JSON.stringify(body);
+  }
+
+  // One chat completion through the Worker's /hf route: the reply text.
+  // `effort` is sent as reasoning_effort.
+  function callWorkerModel(model, system, user, maxTokens, effort, attempt) {
+    attempt = attempt || 0;
+    return workerTurn().then(function () {
+      return fetch(PROXY_BASE + '/hf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: workerRequestBody(model, system, user, maxTokens, effort)
+      });
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        if (workerShouldRetry(res.status, text, attempt)) {
+          return sleep(WORKER_RETRY_WAIT_MS * Math.pow(2, attempt)).then(function () {
+            return callWorkerModel(model, system, user, maxTokens, effort, attempt + 1);
+          });
+        }
+        return workerReplyText(res.status, text);
+      });
+    });
+  }
+
+  // A 429, up to three times; a 5xx (the Worker's own minute ran out) or a
+  // reply with no answer, once.
+  function workerShouldRetry(status, text, attempt) {
+    if (status === 429) return attempt < WORKER_RETRIES;
+    if (status >= 500) return attempt < 1;
+    return status >= 200 && status < 300 && workerReplyContent(text) === null && attempt < 1;
+  }
+
+  function workerParseReply(text) {
+    try { return JSON.parse(text); } catch (e) { return null; }
+  }
+
+  // A chat-completions reply's message content, or null when it has none.
+  function workerReplyContent(text) {
+    var data = workerParseReply(text);
+    var content = data && data.choices && data.choices[0] && data.choices[0].message &&
+      data.choices[0].message.content;
+    return typeof content === 'string' && content.trim() ? content : null;
+  }
+
+  function workerReplyText(status, text) {
+    if (status < 200 || status >= 300) {
+      var data = workerParseReply(text);
+      var err = data && data.error;
+      var message = (err && typeof err === 'object' ? err.message : err) || String(text).slice(0, 200);
+      throw new Error('Worker ' + status + ': ' + String(message));
+    }
+    var content = workerReplyContent(text);
+    if (content === null) throw new Error('Worker: empty reply');
+    return content;
+  }
+
+  // Characters the full-text search's parser rejects or reads as syntax. A "/"
+  // starts a regular expression even inside quotes, "~" is proximity, "[" and
+  // "]" a range: each fails the query with HTTP 400, as does an unbalanced
+  // quote. ":" and the brackets name fields and groups.
+  var LIB_QUERY_SYNTAX = /[/\\~[\]{}^*?:()!+&|<>=]/g;
+
+  // A term for a quoted phrase: no quotes and none of the parser's syntax.
+  function libSafeTerm(term) {
+    return String(term == null ? '' : term).replace(LIB_QUERY_SYNTAX, ' ').replace(/"/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  // A model's query the parser accepts: no syntax characters, quotes
+  // balanced, no term starting with "-".
+  function libSafeQuery(query) {
+    var q = String(query == null ? '' : query).replace(LIB_QUERY_SYNTAX, ' ');
+    if ((q.match(/"/g) || []).length % 2) q = q.replace(/"/g, ' ');
+    return q
+      .replace(/"([^"]*)"/g, function (_, inner) { return inner.trim() ? '"' + inner.trim() + '"' : ' '; })
+      .replace(/(^|\s)-+/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // The first JSON object in a reply, whatever surrounds it.
+  function libJsonObjectIn(text) {
+    var start = text.indexOf('{');
+    var end = text.lastIndexOf('}');
+    if (start === -1 || end <= start) return null;
+    try {
+      var v = JSON.parse(text.slice(start, end + 1));
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function libClip(text, chars) {
+    var t = String(text == null ? '' : text).replace(/\s+/g, ' ').trim();
+    return t.length > chars ? t.slice(0, chars) + '…' : t;
+  }
+
+  function libArticleName(title) {
+    return String(title).replace(/_/g, ' ');
+  }
+
+  function libUnique(list) {
+    return list.filter(function (x, i) { return list.indexOf(x) === i; });
+  }
+
+  // 1. Plan: the restated claim, the queries a book would match, and what a
+  // passage stating the claim must mention.
+  function libPlanPrompt(c) {
+    return 'Article: ' + libArticleName(c.articleTitle) + '\n' +
+      'Section: ' + (c.section || '(lead)') + '\n' +
+      'Paragraph: ' + libClip(c.paragraph, LIB_PARAGRAPH_CHARS) + '\n\n' +
+      'Claim: ' + c.claim;
+  }
+
+  function libStrings(v) {
+    if (!Array.isArray(v)) return [];
+    return v.flat(3)
+      .filter(function (x) { return typeof x === 'string' || typeof x === 'number'; })
+      .map(String);
+  }
+
+  // Small models nest a term list one level too deep, or give a query as an
+  // array; both are read.
+  function libParsePlan(text) {
+    var j = libJsonObjectIn(text);
+    if (!j) return null;
+    var fact = typeof j.fact === 'string' ? j.fact.replace(/\s+/g, ' ').trim() : '';
+    var queries = (Array.isArray(j.queries) ? j.queries : [])
+      .map(function (q) { return Array.isArray(q) ? libStrings(q).join(' ') : typeof q === 'string' ? q : ''; })
+      .map(libSafeQuery)
+      .filter(function (q) { return q.length >= 3; });
+    var terms = (Array.isArray(j.terms) ? j.terms : [])
+      .map(function (g) { return Array.isArray(g) ? libStrings(g) : libStrings([g]); })
+      .map(function (g) {
+        return libUnique(g.map(function (x) { return x.replace(/\s+/g, ' ').trim(); })
+          .filter(function (x) { return x.length >= 2; }));
+      })
+      .filter(function (g) { return g.length > 0; });
+    if (!queries.length && !terms.length) return null;
+    return { fact: fact, queries: libUnique(queries).slice(0, LIB_PLAN_MAX_QUERIES), terms: terms.slice(0, 6) };
+  }
+
+  // A number, then a name, then anything else.
+  function libSpecificity(group) {
+    if (group.some(function (a) { return /\d/.test(a); })) return 0;
+    if (group.some(function (a) { return /^\p{Lu}/u.test(a.trim()); })) return 1;
+    return 2;
+  }
+
+  // The terms every lead is searched inside for: the plan's most telling
+  // concepts, or without a plan the claim's numbers, names and key phrases.
+  function libTellingTerms(plan, terms) {
+    var out = [];
+    function add(t) {
+      var v = libSafeTerm(t);
+      if (v.length >= 2 && !out.some(function (o) { return foldText(o) === foldText(v); })) out.push(v);
+    }
+    if (plan && plan.terms.length) {
+      plan.terms.map(function (g, i) { return { g: g, i: i }; })
+        .sort(function (a, b) { return libSpecificity(a.g) - libSpecificity(b.g) || a.i - b.i; })
+        .forEach(function (x) { add(x.g[0]); });
+    } else {
+      terms.numbers.concat(terms.names, terms.phrases).forEach(add);
+    }
+    return out.slice(0, LIB_SHELF_TERMS);
+  }
+
+  function libNameConcepts(terms) {
+    return terms.filter(function (g) { return libSpecificity(g) === 1; });
+  }
+
+  // Folded words, hyphens as spaces: "Saxe-Coburg-Gotha" holds "Saxe-Coburg".
+  function libSplitKey(text) {
+    return foldText(String(text == null ? '' : text)).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  }
+
+  // A passage's words two ways, padded: hyphenation joined ("com- pleted"),
+  // and hyphens as spaces.
+  function libWordingsOf(text) {
+    return { joined: ' ' + libQuoteKey(text) + ' ', split: ' ' + libSplitKey(text) + ' ' };
+  }
+
+  function libWordsIn(padded, words) {
+    if (!words) return false;
+    if (padded.indexOf(' ' + words + ' ') !== -1) return true;
+    return /\p{L}$/u.test(words) &&
+      (padded.indexOf(' ' + words + 's ') !== -1 || padded.indexOf(' ' + words + 'es ') !== -1);
+  }
+
+  // Whether a concept's wording is in a passage as whole words, a plural
+  // allowed: "23" is not in "1923", nor "Carl" in "Carlisle".
+  function libMentions(t, alt) {
+    return libWordsIn(t.joined, libQuoteKey(alt)) || libWordsIn(t.split, libSplitKey(alt));
+  }
+
+  function libPlanCoverage(text, terms) {
+    var t = libWordingsOf(text);
+    return terms.filter(function (alts) {
+      return alts.some(function (a) { return libMentions(t, a); });
+    }).length;
+  }
+
+  function libPlanMatched(text, terms) {
+    var t = libWordingsOf(text);
+    return terms.filter(function (alts) {
+      return alts.some(function (a) { return libMentions(t, a); });
+    }).map(function (alts) { return foldText(alts[0]); });
+  }
+
+  // 2. Name books likely to state the fact.
+  function libBooksPrompt(c) {
+    return 'Article: ' + libArticleName(c.articleTitle) + '\nParagraph: ' +
+      libClip(c.paragraph, LIB_PARAGRAPH_CHARS) + '\n\nClaim: ' + c.claim;
+  }
+
+  function libParseBooks(text) {
+    var j = libJsonObjectIn(text);
+    var list = j && Array.isArray(j.books) ? j.books : [];
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var b = list[i];
+      if (!b || typeof b !== 'object') continue;
+      var title = typeof b.title === 'string' ? b.title.replace(/\s+/g, ' ').trim() : '';
+      if (title.length < 3) continue;
+      var author = typeof b.author === 'string' && b.author.trim() ? b.author.replace(/\s+/g, ' ').trim() : null;
+      var year = Number.parseInt(String(b.year == null ? '' : b.year), 10);
+      out.push({ title: title, author: author, year: Number.isFinite(year) ? year : null });
+      if (out.length >= LIB_MAX_NAMED_BOOKS) break;
+    }
+    return out;
+  }
+
+  // A named book's catalogue search: the title's longer words and the
+  // author's surname.
+  // Short title words a catalogue search does without.
+  var LIB_TITLE_STOPWORDS = ('the and for its his her our are was who how why les des der die das und ' +
+    'von del los las une con per').split(' ');
+
+  function libCatalogueQuery(book) {
+    var words = book.title.replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
+      .filter(function (w) { return w.length >= 3 && LIB_TITLE_STOPWORDS.indexOf(w.toLowerCase()) === -1; })
+      .slice(0, 5);
+    if (!words.length) return null;
+    var surname = (String(book.author || '').trim().split(/\s+/).pop() || '')
+      .replace(/[\u2018\u2019`]/g, "'")
+      .replace(/[^\p{L}'-]/gu, '')
+      .replace(/^'+|'+$/g, '');
+    return 'title:(' + words.join(' AND ') + ')' + (surname.length > 2 ? ' AND creator:(' + surname + ')' : '');
+  }
+
+  // Mirrors catalogueUrl in src/core/internetArchive.ts.
+  function iaCatalogueUrl(query, rows) {
+    var fields = ['identifier', 'title', 'creator', 'year', 'date', 'collection', 'mediatype']
+      .map(function (f) { return '&fl[]=' + f; }).join('');
+    return IA_CATALOGUE_URL + '?q=' + encodeURIComponent('(' + query + ') AND mediatype:texts') +
+      fields + '&rows=' + rows + '&output=json';
+  }
+
+  function parseCatalogueHits(response, query) {
+    var raw = (response && response.response && response.response.docs) || [];
+    var out = [];
+    raw.forEach(function (d, rank) {
+      if (!d || typeof d !== 'object') return;
+      var identifier = iaFirst(d.identifier);
+      if (!identifier) return;
+      var year = iaYearOf(d.year);
+      out.push({
+        identifier: identifier,
+        title: iaFirst(d.title) || identifier,
+        creator: iaFirst(d.creator),
+        year: year !== null ? year : iaYearOf(d.date),
+        mediatype: iaFirst(d.mediatype),
+        collections: iaAll(d.collection),
+        file: null,
+        highlights: [],
+        rank: rank,
+        query: query
+      });
+    });
+    return out;
+  }
+
+  // 3. Search inside the shortlist. An identifier with a dot (the Digital
+  // Library of India's) is never matched by identifier:, and one left
+  // unquoted empties the whole query.
+  function libShelfSearchable(identifier) {
+    return identifier.indexOf('.') === -1;
+  }
+
+  function libShelfQueries(term, identifiers) {
+    var ids = identifiers.filter(libShelfSearchable);
+    var out = [];
+    for (var i = 0; i < ids.length; i += LIB_SHELF_SIZE) {
+      var shelf = ids.slice(i, i + LIB_SHELF_SIZE);
+      out.push({
+        query: '"' + term + '" identifier:(' + shelf.map(function (id) { return '"' + id + '"'; }).join(' OR ') + ')',
+        size: shelf.length
+      });
+    }
+    return out;
+  }
+
+  // The planner's hits, one per book, best covered first; a book must be about
+  // the claim (two concepts in one passage, and one of its names when the plan
+  // has any). Mirrors rankPlannedHits in src/core/archiveSources.ts.
+  // A plan with fewer than two concepts cannot tell, and adds no book. A book
+  // found by several queries is judged on all its highlights together.
+  function rankPlannedHits(lists, terms) {
+    if (terms.length < 2) return [];
+    var names = libNameConcepts(terms);
+    var byId = Object.create(null);
+    var books = [];
+    for (var i = 0; lists.some(function (l) { return i < l.length; }); i++) {
+      for (var k = 0; k < lists.length; k++) {
+        var h = lists[k][i];
+        if (!h) continue;
+        var known = byId[h.identifier];
+        if (!known) {
+          known = byId[h.identifier] = Object.assign({}, h, { highlights: h.highlights.slice() });
+          books.push(known);
+          continue;
+        }
+        h.highlights.forEach(function (t) { if (known.highlights.indexOf(t) === -1) known.highlights.push(t); });
+      }
+    }
+    var out = [];
+    books.forEach(function (h) {
+      var gate = archiveGate(h);
+      if (!gate.ok || !h.highlights.length) return;
+      var passages = h.highlights.map(function (text) {
+        return { text: text, score: 0, matched: libPlanMatched(text, terms) };
+      }).sort(function (a, b) { return b.matched.length - a.matched.length; });
+      if (passages[0].matched.length < 2) return;
+      if (names.length && libPlanCoverage(h.highlights.join(' '), names) === 0) return;
+      var cover = libPlanCoverage(h.highlights.join(' '), terms);
+      var score = Math.round((cover / terms.length) * 100) / 100;
+      out.push({ s: { hit: h, access: gate.access, passages: passages, score: score }, cover: cover, order: out.length });
+    });
+    return out.sort(function (a, b) { return b.cover - a.cover || a.order - b.order; })
+      .map(function (x) { return x.s; });
+  }
+
+  // The librarian's leads, added to `added`, and every lead's passages extended
+  // by a search inside it for the claim's telling terms. Mirrors librarianLeads
+  // in src/core/archiveSources.ts: failures are noted in the funnel, in the
+  // same order, and never fail the stage.
+  function librarianLeads(planning, naming, terms, shortlist, added, funnel) {
+    return Promise.all([planning, naming]).then(function (r) {
+      var plan = r[0].plan;
+      var named = r[1].books;
+      if (r[0].error) funnel.errors.push(r[0].error);
+      if (r[1].error) funnel.errors.push(r[1].error);
+      var lib = { plan: plan, planned: 0, named: named, namedFound: 0, shelfTerms: [], shelfQueries: 0, added: 0 };
+      var concepts = plan ? plan.terms : [];
+
+      var searching = Promise.all((plan ? plan.queries : []).map(function (query) {
+        return iaSearch(query, IA_PLANNER_HITS).then(function (response) {
+          return { hits: parseArchiveHits(response, query), error: null };
+        }, function (err) {
+          return { hits: [], error: 'search failed: ' + err.message };
+        });
+      }));
+      var finding = Promise.all(named.map(function (book) {
+        var q = libCatalogueQuery(book);
+        if (!q) return { scans: [], error: null };
+        return iaFetchJson(iaCatalogueUrl(q, IA_NAMED_ROWS)).then(function (response) {
+          return {
+            scans: parseCatalogueHits(response, q).filter(function (h) {
+              return archiveGate(h).ok && libShelfSearchable(h.identifier);
+            }).slice(0, IA_NAMED_SCANS),
+            error: null
+          };
+        }, function (err) {
+          return { scans: [], error: 'catalogue: ' + err.message };
+        });
+      }));
+
+      return Promise.all([searching, finding]).then(function (rs) {
+        var lists = rs[0];
+        var found = rs[1];
+        lists.forEach(function (l) { if (l.error) funnel.errors.push(l.error); });
+        var planned = rankPlannedHits(lists.map(function (l) { return l.hits; }), concepts);
+        lib.planned = planned.length;
+        found.forEach(function (f) { if (f.error) funnel.errors.push(f.error); });
+        lib.namedFound = found.filter(function (f) { return f.scans.length > 0; }).length;
+
+        // One lead per work, beyond the search's own. A planner hit on a book
+        // already shown adds its passages to it.
+        var taken = shortlist.map(function (s) { return s.hit; });
+        function isNew(h) {
+          return !taken.some(function (t) { return t.identifier === h.identifier || iaSameWork(t, h); });
+        }
+        function addPassages(s, texts) {
+          var known = Object.create(null);
+          s.passages.forEach(function (p) { known[p.text] = true; });
+          texts.forEach(function (text) {
+            if (known[text]) return;
+            known[text] = true;
+            s.passages.push({ text: text, score: 0, matched: libPlanMatched(text, concepts) });
+          });
+        }
+        var fromPlanner = 0;
+        for (var i = 0; i < planned.length; i++) {
+          var same = shortlist.filter(function (x) { return x.hit.identifier === planned[i].hit.identifier; })[0];
+          if (same) addPassages(same, planned[i].passages.map(function (p) { return p.text; }));
+          if (fromPlanner >= IA_PLANNER_LEADS) continue;
+          if (!isNew(planned[i].hit)) continue;
+          added.push({ s: planned[i], via: 'planner' });
+          taken.push(planned[i].hit);
+          fromPlanner++;
+        }
+        // Each named book's scans as one group: after the search inside, the
+        // first scan with a passage stands for the book.
+        found.forEach(function (f, g) {
+          var scans = f.scans.filter(isNew);
+          scans.forEach(function (h) {
+            var gate = archiveGate(h);
+            if (!gate.ok) return;
+            added.push({ s: { hit: h, access: gate.access, passages: [], score: 0 }, via: 'named', group: g });
+          });
+          taken = taken.concat(scans);
+        });
+
+        // Search inside every lead, one query per telling term.
+        var everyone = shortlist.concat(added.map(function (x) { return x.s; }));
+        lib.shelfTerms = libTellingTerms(plan, terms);
+        var ids = everyone.map(function (s) { return s.hit.identifier; });
+        var shelf = [];
+        lib.shelfTerms.forEach(function (t) { shelf = shelf.concat(libShelfQueries(t, ids)); });
+        lib.shelfQueries = shelf.length;
+        return Promise.all(shelf.map(function (q) {
+          return iaSearch(q.query, q.size).then(function (response) {
+            return { hits: parseArchiveHits(response, q.query), error: null };
+          }, function (err) {
+            return { hits: [], error: 'shelf search failed: ' + err.message };
+          });
+        })).then(function (replies) {
+          var inside = Object.create(null);
+          replies.forEach(function (rep) {
+            if (rep.error) funnel.errors.push(rep.error);
+            rep.hits.forEach(function (h) {
+              inside[h.identifier] = (inside[h.identifier] || []).concat(h.highlights);
+            });
+          });
+          everyone.forEach(function (s) { addPassages(s, inside[s.hit.identifier] || []); });
+          // The librarian's leads show their best-covered passage first; one
+          // with no passage has nothing to show or check, and a named book
+          // needs only one scan.
+          var kept = Object.create(null);
+          for (var k = 0; k < added.length; k++) {
+            var s = added[k].s;
+            var group = added[k].group;
+            if (!s.passages.length || (group !== undefined && kept[group])) {
+              added.splice(k--, 1);
+              continue;
+            }
+            if (group !== undefined) kept[group] = true;
+            s.passages.sort(function (x, y) { return y.matched.length - x.matched.length; });
+            if (concepts.length) {
+              var cover = libPlanCoverage(s.passages.map(function (p) { return p.text; }).join(' '), concepts);
+              s.score = Math.max(s.score, Math.round((cover / concepts.length) * 100) / 100);
+            }
+          }
+          return lib;
+        });
+      });
+    });
+  }
+
+  // 4. Check: every book's passages against the claim, in one call.
+  function libJudgePrompt(c, books) {
+    var head = 'Article: ' + libArticleName(c.articleTitle) + '\n' +
+      'Claim: ' + c.claim + '\n' +
+      (c.fact && c.fact !== c.claim ? 'What the claim says, with the names its paragraph gives: ' + c.fact + '\n' : '') +
+      "The claim's paragraph, for context only: " + libClip(c.paragraph, 1200) + '\n';
+    var list = books.map(function (b, i) {
+      var used = 0;
+      var lines = [];
+      for (var k = 0; k < b.passages.length; k++) {
+        var t = libClip(b.passages[k], 600);
+        if (used + t.length > LIB_JUDGE_BOOK_CHARS && lines.length) break;
+        lines.push('- ' + t);
+        used += t.length;
+      }
+      return 'B' + (i + 1) + '. ' + libClip(b.title, 160) + (b.year ? ' (' + b.year + ')' : '') + '\n' +
+        (lines.join('\n') || '- (no passage)');
+    });
+    return head + '\n' + list.join('\n\n');
+  }
+
+  // Folded, hyphenation joined, punctuation dropped: how a quote is looked for
+  // in OCR text.
+  function libQuoteKey(text) {
+    return foldText(String(text == null ? '' : text))
+      .replace(/(\p{L})-\s+(\p{L})/gu, '$1$2')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
+  }
+
+  // A quote counts when every piece of it between ellipses is in the passages,
+  // three words at least: a model that cannot point at the words has not read
+  // them.
+  function libQuoteInPassages(quote, passages) {
+    var pieces = String(quote == null ? '' : quote)
+      .split(/\.\.\.|…|\[\s*\.\.\.\s*\]/)
+      .map(libQuoteKey)
+      .filter(function (p) { return p.length > 0; });
+    if (!pieces.length) return false;
+    if (pieces.join(' ').split(' ').length < 3) return false;
+    // Compared without spaces: "Saxe- Coburg" broken across OCR lines is
+    // "Saxe-Coburg" in the quote, and "Saxe Coburg" if the model drops the hyphen.
+    var hay = passages.map(libQuoteKey).join(' ').replace(/ /g, '');
+    return pieces.every(function (p) { return hay.indexOf(p.replace(/ /g, '')) !== -1; });
+  }
+
+  // A verdict per book, in order (null where the reply gives none). A
+  // "supports" or "partial" whose quote is not in that book's passages counts
+  // as not stating the claim.
+  function libParseJudgement(text, books) {
+    var j = libJsonObjectIn(text);
+    var list = j && Array.isArray(j.books) ? j.books : null;
+    if (!list) throw new Error('check: the model gave no verdicts');
+    var byId = Object.create(null);
+    list.forEach(function (e, i) {
+      if (!e || typeof e !== 'object') return;
+      var id = String(e.id == null ? 'B' + (i + 1) : e.id).trim().toUpperCase();
+      if (!byId[id]) byId[id] = e;
+    });
+    return books.map(function (b, i) {
+      var r = byId['B' + (i + 1)];
+      if (!r) return null;
+      var v = String(r.verdict == null ? '' : r.verdict).trim().toLowerCase();
+      var reason = typeof r.why === 'string' ? r.why.trim() : '';
+      var quote = typeof r.quote === 'string' ? r.quote.trim() : '';
+      if (v === 'no' || v === 'unsupported') return { verdict: 'unsupported', quote: '', reason: reason };
+      if (v !== 'supports' && v !== 'partial') return null;
+      if (!libQuoteInPassages(quote, b.passages)) {
+        return { verdict: 'unsupported', quote: '', reason: ('Not counted: its quote is not in the passages. ' + reason).trim() };
+      }
+      return { verdict: v, quote: quote, reason: reason };
+    });
+  }
+
   // ---- Checking the Archive passages against the claim ------------------
   // The search matches words, and most passages that share a claim's words do
-  // not say what it says. Each lead's passages are sent to the Verify API
-  // (POST /v1/verify, alex-o-748/citation-checker-script's docs/verify-api.md),
-  // the same benchmarked claim-vs-source check the citation-checker userscript
-  // runs. It needs no key, so the check runs whenever the search finds leads.
-  // Override the host with window.cnfirmedVerifyUrl (e.g. a local server).
+  // not say what it says. Every lead's passages go to the judge model in one
+  // call, with the restated claim (above, step 4); a verdict counts only when
+  // its quote is in the passages. With no judge model, or when the call fails,
+  // each lead goes to the Verify API instead (POST /v1/verify,
+  // alex-o-748/citation-checker-script's docs/verify-api.md), the benchmarked
+  // claim-vs-source check the citation-checker userscript runs, also with the
+  // restated claim. Neither needs a key, so the check runs whenever the search
+  // finds leads. Override the Verify API host with window.cnfirmedVerifyUrl.
 
   var VERIFY_API_BASE = String(window.cnfirmedVerifyUrl || 'https://citation-verifier.toolforge.org')
     .replace(/\/+$/, '');
@@ -3086,17 +3835,49 @@
     };
   }
 
-  // One call per lead, one after another, to go easy on the shared budget.
-  // A verdict per candidate, in order.
-  function checkArchiveCandidates(ctx, candidates) {
+  // One Verify API call per lead, one after another, to go easy on the shared
+  // budget. A verdict per candidate, in order. `claim` is the restated claim
+  // when the planner gave one.
+  function checkArchiveCandidates(ctx, candidates, claim) {
     var out = [];
     return candidates.reduce(function (chain, c) {
       return chain.then(function () {
-        return callVerifyApi(ctx.claim, archiveSourceContent(c)).then(function (r) {
+        return callVerifyApi(claim || ctx.claim, archiveSourceContent(c)).then(function (r) {
           out.push(toArchiveVerdict(r));
         });
       });
     }, Promise.resolve()).then(function () { return out; });
+  }
+
+  // The check of a claim's leads: the judge model in one call, or the Verify
+  // API when there is none or the call fails. Resolves to the verdicts, in
+  // order, and what gave them.
+  function checkArchiveLeads(ctx, plan, candidates) {
+    var fact = plan && plan.fact ? plan.fact : null;
+    function viaVerifyApi() {
+      return checkArchiveCandidates(ctx, candidates, fact).then(function (verdicts) {
+        return { verdicts: verdicts, by: 'verify-api' };
+      });
+    }
+    if (!LIB_MODELS.judge) return viaVerifyApi();
+    var books = candidates.map(function (c) {
+      return { title: c.title, year: c.evidence.year, passages: c.evidence.passages };
+    });
+    var input = {
+      articleTitle: mw.config.get('wgTitle') || pageTitle,
+      section: ctx.section,
+      paragraph: ctx.context,
+      claim: ctx.claim,
+      fact: fact
+    };
+    return callWorkerModel(LIB_MODELS.judge, LIB_JUDGE_SYSTEM, libJudgePrompt(input, books), LIB_JUDGE_MAX_TOKENS)
+      .then(function (text) {
+        return { verdicts: libParseJudgement(text, books), by: LIB_MODELS.judge };
+      })
+      .catch(function (err) {
+        console.warn('[CNfirmed] the judge model failed; checking with the Verify API instead:', err);
+        return viaVerifyApi();
+      });
   }
 
   function archiveCheckWanted(verdict) {
@@ -3111,12 +3892,13 @@
     if (a.checking) return a.checking;
     a.check = { status: 'running' };
     renderPanel(index);
-    a.checking = checkArchiveCandidates(claimContexts[index], a.candidates)
-      .then(function (verdicts) {
-        a.candidates.forEach(function (c, k) { c.check = verdicts[k]; });
-        a.check = { status: 'done', by: 'verify-api' };
-        console.log('[CNfirmed] Internet Archive claim', index, 'checked:',
-          verdicts.map(function (v) { return v ? v.verdict : 'none'; }).join(', '));
+    var plan = a.funnel && a.funnel.librarian ? a.funnel.librarian.plan : null;
+    a.checking = checkArchiveLeads(claimContexts[index], plan, a.candidates)
+      .then(function (r) {
+        a.candidates.forEach(function (c, k) { c.check = r.verdicts[k]; });
+        a.check = { status: 'done', by: r.by };
+        console.log('[CNfirmed] Internet Archive claim', index, 'checked by', r.by + ':',
+          r.verdicts.map(function (v) { return v ? v.verdict : 'none'; }).join(', '));
       }, function (err) {
         console.error('[CNfirmed] Internet Archive check failed for claim', index, ':', err);
         a.check = { status: 'error', error: (err && err.message) || String(err) };
@@ -3332,20 +4114,24 @@
     }).join('\n\n');
   }
 
+  // Paced with the Internet Archive stage's calls: the Worker counts both
+  // against one limit.
   function callHfChat(system, user) {
-    return fetch(PROXY_BASE + '/hf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: modelFor('tavilyhf'),
-        // gpt-oss reasons before it answers, and that counts against this.
-        max_tokens: 8000,
-        temperature: 0,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ]
-      })
+    return workerTurn().then(function () {
+      return fetch(PROXY_BASE + '/hf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelFor('tavilyhf'),
+          // gpt-oss reasons before it answers, and that counts against this.
+          max_tokens: 8000,
+          temperature: 0,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user }
+          ]
+        })
+      });
     }).then(function (res) {
       return res.text().then(function (t) {
         var data;
@@ -3660,7 +4446,7 @@
     var a = archiveState[i] || { status: 'idle' };
     var s = state[i] || { status: 'idle' };
     var books;
-    if (archiveQueriesFor(i).length === 0) books = 'none';
+    if (archiveNothingToSearch(i)) books = 'none';
     else if (a.status !== 'done') books = a.status;
     else if ((a.candidates || []).length && (!a.check || a.check.status === 'running')) books = 'running';
     else books = 'done';
@@ -4356,7 +5142,7 @@
     var free = el('div', 'cnf-free');
     free.appendChild(el('b', null, 'Free, no key needed'));
     free.appendChild(el('p', 'cnf-note', 'Citations already on Wikipedia (this article and other languages), ' +
-      'books on the Internet Archive, and the check of their passages by the Verify API.'));
+      'and books on the Internet Archive, found and checked with open-weight models through the CNfirmed Worker.'));
     pad.appendChild(free);
 
     var done = el('div');

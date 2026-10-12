@@ -174,6 +174,11 @@ plan anticipated, done on the passages rather than through `verifySource`
 scored against the hand labels by `eval/run.ts --check`, but not yet
 measured: the eval's key had no credit when it was built.
 
+*October 2026:* searching the way a librarian does, with a small model writing
+the queries and one query per term searching inside a shortlist of books
+(`identifier:(a OR b …)`), took the claims with a book that states them from 2
+to 9 of the 46 book-plausible ones. See `internet-archive-search-ideas.md`.
+
 Query construction doesn't need a model either: wikilinks are pre-resolved
 entities (with QIDs), dates/numbers/proper nouns extract with regexes, and
 the section heading plus infobox type give topical scope and a cheap

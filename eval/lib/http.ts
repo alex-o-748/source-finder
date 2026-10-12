@@ -36,6 +36,8 @@ export interface CassetteOptions {
   mode: CassetteMode;
   /** Minimum gap between two live requests to the same host (default 1000 ms). */
   minIntervalMs?: number;
+  /** The same, for particular hosts: the CNfirmed Worker allows 20 requests a minute. */
+  hostMinIntervalMs?: Record<string, number>;
   /**
    * Live requests in flight per host (default 1). The Internet Archive's
    * full-text search takes 20-odd seconds to answer; two at a time is still
@@ -57,6 +59,14 @@ export interface CassetteOptions {
    * would hide the gap from the next --record.
    */
   recordOnlyOk?: string[];
+  /**
+   * Hosts whose client retries its own server errors: a 5xx is handed back
+   * at once (a 429 is still waited out here), so a billed call is not
+   * repeated twice over.
+   */
+  clientRetries5xx?: string[];
+  /** A response that is not to be recorded, though it is no error: say, a model's reply with no answer. */
+  skipRecording?: (host: string, status: number, body: string) => boolean;
   log?: (line: string) => void;
   /** Sees every response body, replayed or live, and how long it took live. */
   observe?: (key: string, body: string, ms: number | undefined) => void;
@@ -112,11 +122,13 @@ export function cassettePath(dir: string, key: string): string {
 
 /**
  * A failure worth retrying and never worth recording. The Internet Archive's
- * full-text search reports its own backend failing (an upstream 502) as a 400.
+ * full-text search reports its own backend failing as a 400, but serves that
+ * failure for the same URL for some 20 minutes, so asking again is no use:
+ * it is recorded, and the client asks for one more hit instead
+ * (`searchWithRetry` in src/core/internetArchive.ts).
  */
-export function isTransient(status: number, body: string): boolean {
-  if (status === 429 || status >= 500) return true;
-  return status === 400 && body.includes("search backend encountered an exception");
+export function isTransient(status: number, _body: string): boolean {
+  return status === 429 || status >= 500;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -155,9 +167,12 @@ export function installCassette(options: CassetteOptions): CassetteStats {
   ): Promise<{ res: Response; body: string; ms: number }> {
     const timeout = options.hostTimeouts?.[host] ?? { ms: 60_000, retryNetworkErrors: true };
     for (let attempt = 0; ; attempt++) {
-      const wait = (lastSent.get(host) ?? 0) + minInterval / lanes - Date.now();
-      if (wait > 0) await sleep(wait);
-      lastSent.set(host, Date.now());
+      // The slot is taken before the wait, so lanes waiting together go out
+      // one gap apart.
+      const gap = options.hostMinIntervalMs?.[host] ?? minInterval / lanes;
+      const at = Math.max(Date.now(), (lastSent.get(host) ?? 0) + gap);
+      lastSent.set(host, at);
+      if (at > Date.now()) await sleep(at - Date.now());
       let res: Response;
       const started = Date.now();
       try {
@@ -174,7 +189,8 @@ export function installCassette(options: CassetteOptions): CassetteStats {
         continue;
       }
       const body = await res.text();
-      if (isTransient(res.status, body) && attempt < maxRetries) {
+      const clientRetries = res.status >= 500 && options.clientRetries5xx?.includes(host);
+      if (isTransient(res.status, body) && !clientRetries && attempt < maxRetries) {
         const ms = retryAfterMs(res, attempt);
         stats.retries++;
         log(`  ${res.status} from ${host}, waiting ${Math.round(ms / 1000)}s`);
@@ -218,7 +234,11 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     // Rate limits and server errors that outlived the retries are not facts
     // about the world; everything else (200, 404, a MediaWiki error) is.
     options.observe?.(key, text, ms);
-    if (!isTransient(res.status, text) && (res.ok || !options.recordOnlyOk?.includes(host))) {
+    if (
+      !isTransient(res.status, text) &&
+      (res.ok || !options.recordOnlyOk?.includes(host)) &&
+      !options.skipRecording?.(host, res.status, text)
+    ) {
       const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body: text, ms };
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, gzipSync(JSON.stringify(rec)));

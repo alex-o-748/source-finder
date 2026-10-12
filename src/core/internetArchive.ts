@@ -10,6 +10,8 @@
  *   - Item metadata (`/metadata/{id}`), for what a hit lacks: the publisher,
  *     and the access-restriction flag, checked once more for the few books
  *     kept.
+ *   - The catalogue search (`/advancedsearch.php`), to find a book a model
+ *     named by its title and author.
  *
  * Only `archive.org` is on Wikipedia's CSP allowlist, so these are the
  * endpoints the user script can reach too — checked from the console on a
@@ -26,14 +28,20 @@ import { USER_AGENT } from "./mediawiki.js";
 export const SEARCH_URL = "https://archive.org/services/search/beta/page_production/";
 export const METADATA_URL = "https://archive.org/metadata/";
 export const STREAM_URL = "https://archive.org/stream/";
+/** The catalogue search (titles, creators, subjects): how a book named by title is found. */
+export const CATALOGUE_URL = "https://archive.org/advancedsearch.php";
 
-const REQUEST_TIMEOUT_MS = 30_000;
+/** The full-text search takes 20 to 60 seconds under load, longer for a long `identifier:(…)` list. */
+const REQUEST_TIMEOUT_MS = 120_000;
 /** Longest `Retry-After` honoured on a 429 before giving up. */
 const MAX_RETRY_AFTER_S = 30;
 
 /** The search response, as far as it is read. */
 export type SearchResponse = {
   response?: { body?: { hits?: { total?: unknown; hits?: unknown[] } } | null };
+};
+export type CatalogueResponse = {
+  response?: { docs?: unknown[] } | null;
 };
 export type MetadataResponse = {
   metadata?: Record<string, unknown>;
@@ -52,6 +60,8 @@ export interface SearchRequest {
 export interface ArchiveClient {
   fullTextSearch(request: SearchRequest): Promise<SearchResponse>;
   metadata(identifier: string): Promise<MetadataResponse>;
+  /** Catalogue search, texts only: the fields a hit needs, `rows` at most. */
+  catalogue?(query: string, rows: number): Promise<CatalogueResponse>;
   /** The `/stream/` page holding an open book's whole OCR text (HTML, the text in a `<pre>`). */
   streamPage?(identifier: string, file: string): Promise<string>;
 }
@@ -73,6 +83,14 @@ export function searchParams(request: SearchRequest): URLSearchParams {
     user_query: request.query,
     hits_per_page: String(request.size),
   });
+}
+
+/** The catalogue search's fields: what the access gate and a citation need. The user script builds the same URL. */
+export function catalogueUrl(query: string, rows: number): string {
+  const fields = ["identifier", "title", "creator", "year", "date", "collection", "mediatype"]
+    .map((f) => `&fl[]=${f}`)
+    .join("");
+  return `${CATALOGUE_URL}?q=${encodeURIComponent(`(${query}) AND mediatype:texts`)}${fields}&rows=${rows}&output=json`;
 }
 
 async function get(url: string, accept: string, retried = false): Promise<Response> {
@@ -97,9 +115,36 @@ async function get(url: string, accept: string, retried = false): Promise<Respon
   }
   if (!res.ok) {
     // Status text is empty over HTTP/2, so the code alone.
-    throw new Error(`Internet Archive: HTTP ${res.status}`);
+    throw Object.assign(new Error(`Internet Archive: HTTP ${res.status}`), { status: res.status });
   }
   return res;
+}
+
+/** Waits before the second and third try of a failed full-text search: its backend fails in bursts. */
+export const SEARCH_RETRY_WAITS_MS = [5_000, 15_000];
+
+/**
+ * A full-text search, asked twice more, each time for one more hit, when it
+ * fails with a 400. The search's backend now and then fails a query it
+ * accepts ("the search backend encountered an exception", an upstream 502),
+ * and archive.org then serves that failure for the same URL for some 20
+ * minutes (checked live, 2026-10): asking again is the same failure, a
+ * different `hits_per_page` is a fresh search. The failures come in bursts,
+ * so each try waits a little longer.
+ */
+export async function searchWithRetry(
+  request: SearchRequest,
+  search: (request: SearchRequest) => Promise<SearchResponse>,
+  waitsMs: number[] = SEARCH_RETRY_WAITS_MS,
+): Promise<SearchResponse> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await search({ ...request, size: request.size + attempt });
+    } catch (err) {
+      if ((err as { status?: number }).status !== 400 || attempt >= waitsMs.length) throw err;
+      if (waitsMs[attempt] > 0) await new Promise((r) => setTimeout(r, waitsMs[attempt]));
+    }
+  }
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -109,10 +154,15 @@ async function getJson<T>(url: string): Promise<T> {
 /** The live client. */
 export const httpArchiveClient: ArchiveClient = {
   fullTextSearch(request) {
-    return getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(request).toString()}`);
+    // CNFIRMED_ARCHIVE_RETRY_WAIT=0: replaying recorded failures needs no wait.
+    const waits = process.env.CNFIRMED_ARCHIVE_RETRY_WAIT === "0" ? SEARCH_RETRY_WAITS_MS.map(() => 0) : SEARCH_RETRY_WAITS_MS;
+    return searchWithRetry(request, (r) => getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(r).toString()}`), waits);
   },
   metadata(identifier) {
     return getJson<MetadataResponse>(METADATA_URL + encodeURIComponent(identifier));
+  },
+  catalogue(query, rows) {
+    return getJson<CatalogueResponse>(catalogueUrl(query, rows));
   },
   async streamPage(identifier, file) {
     return (await get(streamUrl(identifier, file), "text/html")).text();
@@ -143,6 +193,13 @@ export function recordingClient(inner: ArchiveClient, dir: string): ArchiveClien
       save(`metadata-${identifier}`, r);
       return r;
     },
+    ...(inner.catalogue && {
+      async catalogue(query: string, rows: number) {
+        const r = await inner.catalogue!(query, rows);
+        save(`catalogue-${query}`, { query, rows, response: r });
+        return r;
+      },
+    }),
     ...(inner.streamPage && {
       async streamPage(identifier: string, file: string) {
         const r = await inner.streamPage!(identifier, file);

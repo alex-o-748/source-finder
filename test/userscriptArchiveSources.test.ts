@@ -21,7 +21,7 @@ import {
   streamText,
   toArchiveCandidate,
 } from "../src/core/archiveSources.js";
-import { SEARCH_URL, searchParams } from "../src/core/internetArchive.js";
+import { SEARCH_RETRY_WAITS_MS, SEARCH_URL, httpArchiveClient, searchParams, searchWithRetry } from "../src/core/internetArchive.js";
 import { loadUserScript } from "./userscriptLoader.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -89,6 +89,47 @@ test("the user script asks archive.org for the same search", () => {
   );
 });
 
+test("both ask a failed full-text search once more, for one more hit", async () => {
+  const realFetch = globalThis.fetch;
+  const run = async (statuses: number[], search: () => Promise<unknown>) => {
+    const sizes: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      sizes.push(new URL(url).searchParams.get("hits_per_page")!);
+      const status = statuses.shift()!;
+      return status === 200 ? Response.json({ response: { body: { hits: { total: 0, hits: [] } } } }) : new Response("{}", { status });
+    }) as typeof fetch;
+    let out: string;
+    try { await search(); out = "ok"; } catch (e) { out = (e as Error).message; }
+    return { out, sizes };
+  };
+  try {
+    const noWait = loadUserScript({}, { window: { cnfirmedArchiveRetryWait: 0 } });
+    process.env.CNFIRMED_ARCHIVE_RETRY_WAIT = "0";
+    for (const [statuses, want] of [
+      [[200], { out: "ok", sizes: ["9"] }],
+      // The backend's failure is served again for the same URL; one more hit is a fresh search.
+      [[400, 200], { out: "ok", sizes: ["9", "10"] }],
+      [[400, 400, 200], { out: "ok", sizes: ["9", "10", "11"] }],
+      [[400, 400, 400], { out: "Internet Archive: HTTP 400", sizes: ["9", "10", "11"] }],
+      [[404], { out: "Internet Archive: HTTP 404", sizes: ["9"] }],
+    ] as const) {
+      assert.deepEqual(await run([...statuses], () => noWait.iaSearch('"1938"', 9)), want);
+      assert.deepEqual(await run([...statuses], () => httpArchiveClient.fullTextSearch({ query: '"1938"', size: 9 })), want);
+    }
+    // Live, the second and third tries wait 5 and 15 seconds.
+    assert.deepEqual(SEARCH_RETRY_WAITS_MS, [5_000, 15_000]);
+    const tries: number[] = [];
+    await assert.rejects(
+      searchWithRetry({ query: "q", size: 9 }, async (r) => { tries.push(r.size); throw Object.assign(new Error("x"), { status: 400 }); }, [1, 2]),
+      /x/,
+    );
+    assert.deepEqual(tries, [9, 10, 11]);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.CNFIRMED_ARCHIVE_RETRY_WAIT;
+  }
+});
+
 test("the user script parses the recorded response the same way", () => {
   assert.deepEqual(script.parseArchiveHits(SEARCH, "q"), parseSearchHits(SEARCH, "q"));
 });
@@ -113,7 +154,11 @@ test("both implementations keep, score and cite the same books", () => {
 
 test("the user script's live flow matches the core's", async () => {
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
-  const eiffel = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  // The word search alone; the librarian has its own test below.
+  const eiffel = loadUserScript(
+    { wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" },
+    { window: { cnfirmedArchiveLibrarian: false } },
+  );
   const claim = CLAIMS[1];
   eiffel.setClaimContexts([{ claim, context: claim, section: null, links: [] }]);
 
@@ -158,7 +203,7 @@ test("with the switch on, the user script reads whole texts as the core does", a
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
   const eiffel = loadUserScript(
     { wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" },
-    { window: { cnfirmedArchiveFullText: true } },
+    { window: { cnfirmedArchiveFullText: true, cnfirmedArchiveLibrarian: false } },
   );
   const claim = CLAIMS[1];
   eiffel.setClaimContexts([{ claim, context: claim, section: null, links: [] }]);

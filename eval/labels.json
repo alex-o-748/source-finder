@@ -23,6 +23,10 @@
     "ia:in.ernet.dli.2015.54366": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:romanvillasgreat0000will": {
+      "verdict": "topic",
+      "why": "Describes a different object, a tombstone \"of a woman from Cumbria. It shows a funeral banquet\"; it is not the relief in the claim and has no connection to the Silvae."
     }
   },
   "Iranian peoples@1371323076#78171": {
@@ -107,6 +111,22 @@
     "ia:1-christoph-baumer-the-history-of-central-asia-4-volume-set-2018-i.-b.-tauris-libgen.li_202609#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:anastasia-a-don-bluth-gary-goldman-film-my-anastasia-memory-book": {
+      "verdict": "partial",
+      "why": "States \"1801 Tsar Paul strangled (March 12). Georgia annexed by Russia. Alexander I (1801-1825)\", covering the assassination and succession (with a March 12 date), but nothing on the December 1800 decision or Alexander's policy toward the eastern Caucasus khanates."
+    },
+    "ia:cu31924028754616": {
+      "verdict": "unknown",
+      "why": "The fragment \", Georgia, by a manifesto (18th December 1800) of the Emperor Paul, who was then\" breaks off before saying what the manifesto did, so annexation is never stated, and the other passages are index or context lines."
+    },
+    "ia:russia-and-iran-1780-1828-muriel-atkin": {
+      "verdict": "partial",
+      "why": "Mentions \"Tsar Paul's decision in 1800 to annex Georgia\" and an incident \"in which Paul was killed\", with no date for the killing and nothing on Alexander I's activist policy toward the khanates."
+    },
+    "ia:makingofgeorgian0000rona": {
+      "verdict": "partial",
+      "why": "States \"On December 18, 1800, Tsar Paul ... declared Kartli-Kakheti's annexation\" and names \"Paul's son, Tsar Alexander I (1801-1825)\", but gives no assassination date and nothing on a policy toward the eastern Caucasus khanates."
     }
   },
   "Royal Marine Police@1368542794#3076": {
@@ -295,6 +315,10 @@
     "ia:1986-jan-feb#text": {
       "verdict": "topic",
       "why": "Armour of the BMP-1 and BMP-2; nothing on ammunition storage."
+    },
+    "ia:osprey-duel-079-uss-lawrence-vs-hms-detroit-the-war-of-1812-on-the-great-lakes_202607": {
+      "verdict": "topic",
+      "why": "Discusses BMP-1/BMP-2 armament and tank ammunition (\"main ammo storage in the hull and turret. If the ammunition store was hit or cooked off\") without saying the BMP's ammunition is stored in or near the troop compartment."
     }
   },
   "Junkers Ju 52@1374490506#15921": {
@@ -415,6 +439,10 @@
     "ia:FC20241211": {
       "verdict": "unrelated",
       "why": "First flights of other aircraft; matched 'flight'."
+    },
+    "ia:me163rocketinter0002rans": {
+      "verdict": "topic",
+      "why": "Mentions an Me 163 refurbished \"prior to display at the Royal Scottish Museum of Flight at East\" Fortune, but does not say a Walter HWK 109-509 engine is displayed there."
     }
   },
   "A-Imdugud@1358747319#1777": {
@@ -497,6 +525,18 @@
     "ia:newcatholicencyc08cath": {
       "verdict": "partial",
       "why": "A pupil studying at Évora cathedral with Manuel Mendes: one composer's link, not the list."
+    },
+    "ia:MusicTreatisesAndArtesParaTangerIn": {
+      "verdict": "partial",
+      "why": "States \"Duarte Lobo, himself a pupil of the Manuel Mendes at Evora\" and \"his time as chapelmaster in Evora ... Aranda\", but never mentions Filipe de Magalhães."
+    },
+    "ia:OEstiloAntigoNaPraticaMusicalReligiosaPaulistaEMineiraDosSeculos": {
+      "verdict": "topic",
+      "why": "Lists Duarte Lobo, \"Filipe de Magalhães (? - após 1648)\" and Aranda's \"Tractado de canto mensurable\" and cites the Sé de Évora archive, but never connects these composers to the cathedral."
+    },
+    "ia:newgrovedictiona0003stan": {
+      "verdict": "topic",
+      "why": "An entry on Cardoso, a pupil not in the claim, which only mentions Mendes in passing (\"choir school maintained by the cathedral in Évora. There his teachers were Manuel Mendes\"); Aranda, Lobo and Magalhães are absent."
     }
   },
   "Vipakasutra@1242493963#775": {
@@ -595,6 +635,10 @@
     "ia:magazine-of-fantasy-science-fiction-1951-2008#text": {
       "verdict": "supports",
       "why": "F&SF: the novel 'centers on the preeminent environmental issue of our times — global warming'."
+    },
+    "ia:oapen-20.500.12657-31273": {
+      "verdict": "topic",
+      "why": "Discusses the novel (\"In Forty Signs of Rain, regular blackouts bring the 'shadow of the future'\") and quotes on global warming, but never says global warming is its principal subject or that its thrust is entirely ecological."
     }
   },
   "Lance Fung Gallery@1200606096#1353": {
@@ -717,6 +761,10 @@
     "ia:cretaceouscroco28sere": {
       "verdict": "topic",
       "why": "Beds of Cenomanian age, ca. 95 Mya; not when the Upper Cenomanian starts."
+    },
+    "ia:geovagando-in-fvg-01": {
+      "verdict": "topic",
+      "why": "\"upper Cenomanian (95 million years ago)\" is the age of the fossils, not when the substage begins; another passage gives the Cenomanian as \"about 100 to 95 million years ago\", which makes 95 its end, so the number is used for something else."
     }
   },
   "Tyson Miller@1373361987#9190": {
@@ -759,6 +807,10 @@
     "ia:isbn_9781599210278": {
       "verdict": "unrelated",
       "why": "A different Miller at a 1986 Astros game."
+    },
+    "ia:strib-06-17-2022": {
+      "verdict": "partial",
+      "why": "In the report of the Astros' 9-2 win, \"The first nine faced fill-in starter Tyson Miller (0-1)\" shows he started and took the loss against Houston, but the six runs, four hits, two walks and two-thirds of an inning are not given."
     }
   },
   "Popular Problems@1351791401#1453": {
@@ -893,6 +945,10 @@
     "ia:unita_2005-08-19#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:lastampa_2003-06-06": {
+      "verdict": "topic",
+      "why": "Mentions \"19th Fajr International Film Festival 2001. Nomination Miglior...\" and Baran \"con Hossein Abedini\", but shows no Best Actor win for Abedini, only an unspecified nomination."
     }
   },
   "Goodrich Quality Theaters@1373115973#4818": {
@@ -1017,6 +1073,10 @@
     "ia:computer-games-issue-127-june-2001#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:computer-games-issue-127-june-2001": {
+      "verdict": "topic",
+      "why": "Says only that \"Guido Henkel is working with a startup called eMusement, Inc.\"; nothing about SquareSoft, the cancellation after six months, or the company shutting down."
     }
   },
   "Brian Kernighan@1371976733#7302": {
@@ -1071,6 +1131,10 @@
     "ia:bitsavers_cdcmp32173olsDec82_3727528": {
       "verdict": "topic",
       "why": "Mentions the Software Tools book; not the BASIC edition."
+    },
+    "ia:unix-a-history-and-a-memoir": {
+      "verdict": "topic",
+      "why": "Says \"Software Tools, which was published in 1976, presented Ratfor\" for people \"writing Fortran on non-Unix systems\"; nothing about spreading C/Unix thinking or makeovers for BASIC."
     }
   },
   "Rail shooter@1365330287#5172": {
@@ -1157,6 +1221,30 @@
     "ia:leo-7551": {
       "verdict": "unrelated",
       "why": "A Santa Cruz newspaper; nothing on the company's CEO."
+    },
+    "ia:libraryofcongres0000libr_e1l1": {
+      "verdict": "unrelated",
+      "why": "Library of Congress classification index lines for Bolivian places such as \"Santa Cruz (Bolivia) City: F3351.S3\"; nothing about the airline Viva or Ryan Alvarez."
+    },
+    "ia:classificationcl0000vari_03Edition": {
+      "verdict": "unrelated",
+      "why": "Classification index entries (\"Santa Cruz, Bolivia City: F 3351.83\") that match only on 'Bolivia' and 'City'; nothing about Viva or its CEO."
+    },
+    "ia:superlccs96sched0000dros": {
+      "verdict": "unrelated",
+      "why": "Schedule index lines (\"Santa Cruz (Bolivia) City: F3351.S3\") with no mention of Viva or Ryan Alvarez."
+    },
+    "ia:hapithesaurusnam0000valk_n5v5": {
+      "verdict": "unrelated",
+      "why": "Thesaurus lists of place names (\"Cochabamba, Bolivia (City)\") that share only the word 'Bolivia'; nothing about the airline or its CEO."
+    },
+    "ia:bwb_P8-BVC-742": {
+      "verdict": "unrelated",
+      "why": "General Bolivian geography and history (\"rival Santa Cruz, the fastest-growing large city\") from a 1991 country study; nothing about Viva or Ryan Alvarez."
+    },
+    "ia:historia-de-la-conquista-del-oriente-boliviano": {
+      "verdict": "unrelated",
+      "why": "Colonial history of Santa Cruz de la Sierra (\"la ciudad de Santa Cruz de la Sierra\"); nothing about the airline or its CEO."
     }
   },
   "Belstaff@1369795595#5996": {
@@ -1179,6 +1267,14 @@
     "ia:US.NN.FIT.SC.362.1.1.260.20140818#text": {
       "verdict": "topic",
       "why": "A Belstaff event with David Beckham in 2014; not the Outlaws film."
+    },
+    "ia:Marie_Claire_December_2015": {
+      "verdict": "partial",
+      "why": "A December 2015 issue mentions a film \"for Belstaff called Outlaws, filmed in the Mexican desert\" and \"David Beckham about his new short film\", but names none of Keitel, Waterston or Moriarty."
+    },
+    "ia:Now_October_12_2015_UK": {
+      "verdict": "partial",
+      "why": "An October 2015 issue mentions \"a screening of the Belstaff short film Outlaws\", but the passage never names any of the cast."
     }
   },
   "Democracy in Mexico@1369756707#49059": {
@@ -1299,6 +1395,14 @@
     "ia:Bedrosian2019EAMCRCA#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:isbn_0132762889": {
+      "verdict": "partial",
+      "why": "States that \"authorities have identified the site with the Philoteria built by Ptolemy II Philadelphus\" but never says he named it for his sister."
+    },
+    "ia:hellenisticcivil0000tche_v3f5": {
+      "verdict": "supports",
+      "why": "\"Philoteria is generally identified with Hirbat el-Kerak\" and credits \"Philadelphus as founder of the city, for Philotera was the sister of Philadelphus\"."
     }
   },
   "Takaharu Mitsui@1366505112#345": {
@@ -1363,6 +1467,14 @@
     "ia:2007NAC38": {
       "verdict": "topic",
       "why": "Didius Julianus bought the throne at auction; not his reign as a turning point."
+    },
+    "ia:the-decline-of-roman-empire-1-500": {
+      "verdict": "topic",
+      "why": "Only Gibbon's chapter titles \"Sale Of The Empire To Didius Julianus\" appear; no passage says his reign is a common dividing point in the decline and fall."
+    },
+    "ia:bwb_S0-AKO-892": {
+      "verdict": "topic",
+      "why": "Has the chapter heading \"PUBLIC SALE OF THE EMPIRE TO DIDIUS JULIANUS BY THE PRAETORIAN GUARDS\" and an emperor list, but nothing calls his reign a common dividing point in the decline."
     }
   },
   "Abigail May Alcott Nieriker@1373256207#9938": {
@@ -1381,6 +1493,10 @@
     "ia:georgesbraquelif0000zurc": {
       "verdict": "topic",
       "why": "A biography heading for Abigail May Alcott (Nieriker); not the 1871 events."
+    },
+    "ia:worldoflouisamay0000ande": {
+      "verdict": "partial",
+      "why": "Reports that while in Rome in 1871 Louisa and May were \"shocked to receive news that Anna's husband John Pratt died on November 29\", but says nothing about Louisa going back to Concord or May staying in Europe to study."
     }
   },
   "Muazzez Sultan@1370515564#2311": {
@@ -1429,6 +1545,22 @@
     "ia:memoirsbaronsto01stocgoog#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:kingwithoutcrown0000benn": {
+      "verdict": "supports",
+      "why": "States \"in 1814, Emich Karl died, leaving the twenty-nine-year-old Victoire\", which is the death of Feodora's father, Prince Emich Karl of Leiningen, in 1814."
+    },
+    "ia:aldens-manifold-cyclopedia-of-knowledge-and-language-v-10": {
+      "verdict": "supports",
+      "why": "States \"husband of Princess V.'s mother, the Prince of Leiningen, died 1814\", which is Feodora's father dying in 1814."
+    },
+    "ia:newimperialencyc38unse": {
+      "verdict": "supports",
+      "why": "States \"Princess V.'s mother, the Prince of Leiningen, died 1814\", so the Prince of Leiningen (Feodora's father) died in 1814."
+    },
+    "ia:lifetimesofqueen01wils": {
+      "verdict": "supports",
+      "why": "States \"When the Prince of Leiningen died, in 1814, his widow...\", giving the year Feodora's father died."
     }
   },
   "September 1954@1348095199#6345": {
@@ -1497,6 +1629,18 @@
     "ia:armorial-general-precede-dun-dictionnaire-des-termes-du-blason#text": {
       "verdict": "partial",
       "why": "King Ostoja's war against Ragusa, and Ragusa sending envoys to King Sigismund of Hungary; the alliance is implied, not stated."
+    },
+    "ia:enes-dedic-the-bosnian-kingdom-and-the-serbian-despotate-1402-1459pdf": {
+      "verdict": "partial",
+      "why": "States \"Ostoja found the reason for the attack on Ragusa in giving shelter to Pavle\", but never says Ragusa was then an ally of Hungary."
+    },
+    "ia:bosnianchurchnew0000fine": {
+      "verdict": "topic",
+      "why": "It says only that Ostoja \"was about to attack Dubrovnik\" and later \"made peace with Dubrovnik\", which implies a conflict but never states that he waged war, and it says nothing about an alliance with Hungary."
+    },
+    "ia:dubrovnikhistory0000robi": {
+      "verdict": "partial",
+      "why": "Two overlapping passages read \"went to war with Dubrovnik in 1403 and 1404. But the Ragusans crucially managed to turn Hrvoje against Ostoja\", which shows Ostoja's war on Ragusa, but nothing says Ragusa was allied with Hungary."
     }
   },
   "Afuzhiluo@1337056068#3140": {
@@ -1515,6 +1659,18 @@
     "ia:sogdian-traders-a-history-handbook-of-oriental-studies-handbook-of-oriental-studies_compress#text": {
       "verdict": "topic",
       "why": "Afuzhiluo's envoy to the Wei; not the Hephthalites at Karashahr."
+    },
+    "ia:898nar_Sas": {
+      "verdict": "partial",
+      "why": "Says \"the Hephthalites held sway over Karashahr\" (as its \"easternmost\" extremity), but nothing on this being the first time, on Qiongqi's death, or on Mi'etu being taken hostage."
+    },
+    "ia:the-huns-hyun-jin-kim": {
+      "verdict": "partial",
+      "why": "\"These Hephthalites after eliminating\" the Rouran, and \"between 497 AD and 509 AD Karashahr and the region of modern day Urumchi\" were occupied: the expansion to Karashahr, but not Qiongqi or Mi'etu."
+    },
+    "ia:kim-hyun-jin-2016.-the-huns": {
+      "verdict": "topic",
+      "why": "The Hephthalites taking over from the Rouran, and hostages of other peoples; nothing on Karashahr, Qiongqi or Mi'etu."
     }
   },
   "Transcendental Meditation movement@1374321389#44979": {
@@ -1549,6 +1705,10 @@
     "ia:in.ernet.dli.2015.264976": {
       "verdict": "topic",
       "why": "The All India Ayurvedic Conference in 1907; nothing on the Maharishi's system."
+    },
+    "ia:oapen-20.500.12657-27375": {
+      "verdict": "partial",
+      "why": "States \"Maharishi Ayurveda as a seal of quality supported by the All India Ayurvedic Congress\" but gives no 1997 date (the 1997s in the passages refer to other works)."
     }
   },
   "Jelena Skerlić Ćorović@1371735455#3111": {
@@ -1669,6 +1829,14 @@
     "ia:ssaki0000unse": {
       "verdict": "unknown",
       "why": "An otter-like animal with broad webbed feet and closable nostrils, perhaps the otter civet; the passage does not name it."
+    },
+    "ia:guidetolargemamm0000john": {
+      "verdict": "unknown",
+      "why": "The named Otter Civet entry says only \"strongly adapted for aquatic life with dense woolly undercoat\"; the line \"It has partially webbed feet. The tail is short for a civet\" does not name which animal it describes."
+    },
+    "ia:encyclopediaofen00eman": {
+      "verdict": "supports",
+      "why": "\"The otter civet derives its common name from its semi-aquatic habits\" and \"Feet are slightly webbed to facilitate swimming, but the otter civet is also a good climber.\""
     }
   },
   "Endocrine system@1356929510#9852": {
@@ -1683,6 +1851,14 @@
     "ia:ray-optics-optical-instruements#text": {
       "verdict": "supports",
       "why": "'pancreatic acini secrete digestive enzymes.'"
+    },
+    "ia:98hhjk": {
+      "verdict": "supports",
+      "why": "States \"Digestive enzymes secreted by the pancreatic acini include...\"."
+    },
+    "ia:biology_books_collection": {
+      "verdict": "partial",
+      "why": "\"Pancreatic acinar cells secrete enzymes in active and inactive forms\" says the acinar cells secrete enzymes but never calls them digestive, so it supports only part of the claim."
     }
   },
   "Diagonal band of Broca@1220886502#2424": {
@@ -1709,6 +1885,10 @@
     "ia:bwb_S0-CEK-395#text": {
       "verdict": "topic",
       "why": "A figure legend naming the diagonal band and subcallosal gyrus; not what connects to what."
+    },
+    "ia:neuroanatomy0000moye": {
+      "verdict": "topic",
+      "why": "Fibres \"emerge from that gyrus [subcallosal] as the diagonal band of Broca\", but no passage says the band connects it with the hippocampus or the lateral olfactory area."
     }
   },
   "Nitroxinil@1352698310#3075": {
@@ -1739,6 +1919,14 @@
     "ia:veterinaryformul0000unse": {
       "verdict": "topic",
       "why": "Nitroxinil's target worms, Haemonchus among them; not resistance to benzimidazoles."
+    },
+    "ia:asociatia-medicilor-revista-romana-de-medicina-veterinara-vol.-5-nr.-2-din-1995": {
+      "verdict": "unknown",
+      "why": "One passage names \"nitrofenolii (ex. nitroxinil)\" and another says \"eficace împotriva suşelor rezistente de Haemonchus contortus\", but that second passage never names which drug is effective, so you would have to read the source to tell."
+    },
+    "ia:handbuchderexper0077unse": {
+      "verdict": "topic",
+      "why": "Nitroxynil and \"benzimidazole-resistant Haemonchus contortus\" occur only in separate references and passages (e.g. \"Nitroxynil at a dose of 10 mg/kg body weight given\"); no passage says nitroxynil is used against resistant strains."
     }
   },
   "MS Ilos@1368787865#9100": {
@@ -1831,6 +2019,10 @@
     "ia:importanta-si-actualitatea-dialogului-interreligios-pentru-lumea-contemporan-ist": {
       "verdict": "topic",
       "why": "A footnote citing her essay; not her work with the councils."
+    },
+    "ia:notwithoutmyneig0000aria": {
+      "verdict": "partial",
+      "why": "Names \"Diana Eck, moderator of the WCC Sub-unit on Dialogue\" and says she \"was for many years\" (cut off), which supports her WCC interfaith work but never mentions the National Council of Churches."
     }
   },
   "Fear and Trembling (novel)@1373905722#6796": {
@@ -1849,6 +2041,14 @@
     "ia:ad1000livingonbr0000rich#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:livingnorthofluc0000ging": {
+      "verdict": "topic",
+      "why": "Says an earlier emperor \"was considered a true living god\" and mentions the 1947 constitution, but says nothing about the novel or a protocol of showing reverence with fear and trembling."
+    },
+    "ia:internationalism0000dura": {
+      "verdict": "topic",
+      "why": "\"According to National Shinto, the emperor of Japan was a living god\" and \"In 1947, Japan adopted a new constitution\", but nothing about the novel or the fear-and-trembling protocol."
     }
   },
   "Genny Lim@1371387863#3125": {
@@ -1905,6 +2105,10 @@
     "ia:santa-ana-daily-evening-register-1919-06-02#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:bwb_S0-ASO-178": {
+      "verdict": "topic",
+      "why": "Exhibitions and gifts at the California Club (\"presented a View of the Grand Canyon to the California Club\") and entries on Wendt, Lauritz, Brandriff and Bischoff, but nothing on the clubhouse's collection."
     }
   },
   "Lankaran-Astara Economic Region@1373625035#8298": {
@@ -2085,6 +2289,22 @@
     "ia:internationaldic0000cudd_m2x2": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:2024-setembro-22": {
+      "verdict": "partial",
+      "why": "Supports fullback and fly-half (\"Santiago Carreras, fullback por naturaleza\", \"el ex apertura titular\", \"un excelente 10\"); the line \"puede jugar de 10, de wing, de fullback\" does not name who it is about, so wing is not established."
+    },
+    "ia:los-andes": {
+      "verdict": "partial",
+      "why": "Has fullback (\"Santiago Carreras reemplazará a Juan Cruz Mallía como fullback\") and fly-half (\"mantendrá la conducción con la camiseta número\" 10) but never wing."
+    },
+    "ia:2024-setembro-01": {
+      "verdict": "partial",
+      "why": "Has fullback (\"Mallía pasó a jugar de wing y Santiago Carreras de fullback\") and fly-half (\"10 Santiago Carreras\", \"El apertura\"); the wing there is Mallía, not Carreras."
+    },
+    "ia:2024-julho-07": {
+      "verdict": "partial",
+      "why": "Has fullback (\"pasó a jugar de fullback\") and fly-half (\"Santiago Carreras, que otra vez fue el apertura\") but no wing."
     }
   },
   "Al Hodge (rock musician)@1375828388#2605": {
@@ -2133,6 +2353,10 @@
     "ia:PSW_Issue_014_2003_09_Next_Gaming_AU": {
       "verdict": "unrelated",
       "why": "A video game magazine; matched common words."
+    },
+    "ia:radio-song-playlists-philippines-archive": {
+      "verdict": "topic",
+      "why": "A playlist entry \"One Of My Kind - Rogue Traders vs INXS\" names the song but says nothing about it being the second single from We Know What You're Up To."
     }
   },
   "Michael J. Kohut@1357063490#1962": {
@@ -2179,6 +2403,22 @@
     "ia:eparlib.nic.in.1339#text": {
       "verdict": "topic",
       "why": "The Jharkhand Mukti Morcha; nothing on Kumar."
+    },
+    "ia:in.gazette.central.e.2012-05-04.009": {
+      "verdict": "supports",
+      "why": "Gazette lists \"Shri Sanjiv Kumar, H.No. 92A ... Tundi ... Dhanbad, Jharkhand sponsored by Jharkhand Mukti Morcha\"."
+    },
+    "ia:in.gazette.central.e.2012-05-04.34108": {
+      "verdict": "supports",
+      "why": "Gazette lists \"Shri Sanjiv Kumar, , sponsored by ... Jharkhand Mukti Morcha\"."
+    },
+    "ia:in.gazette.central.e.2012-03-31.014": {
+      "verdict": "supports",
+      "why": "Candidate list pairs him with his party: \"Shri Sanjiv Kumar Jharkhand Mukti Morcha\"."
+    },
+    "ia:in.gazette.central.e.2012-03-31.32365": {
+      "verdict": "supports",
+      "why": "Candidate list reads \"3. Shri Sanjiv Kumar ... Jharkhand Mukti Morcha\"."
     }
   },
   "2010 Yeonpyeongdo bombardment@1376755701#61635": {
@@ -2251,6 +2491,10 @@
     "ia:pubmed-PMC3178873": {
       "verdict": "unrelated",
       "why": "A WHO department in an author affiliation."
+    },
+    "ia:eu_SciAm_2010-01_OCR": {
+      "verdict": "topic",
+      "why": "Says partnerships \"came together in 2006 to form the Global Network for NTDs\" and names \"THE GRISLY SEVEN\" diseases, but never names the SCI as a founding partner."
     }
   },
   "Eileen Ascroft@1353902884#2491": {
@@ -2261,6 +2505,10 @@
     "ia:GOLSMITHSHANDOUTS#text": {
       "verdict": "topic",
       "why": "The Mirror's readership in 1938; nothing on Ascroft's book."
+    },
+    "ia:belmooneyslifeli0000moon": {
+      "verdict": "partial",
+      "why": "Says Ascroft \"wrote a weekly 'charm' lesson in the Daily Mirror\" and the \"columns were collected into a manual called The Magic Key to Charm\", but gives neither the 1938 date nor the Mirror as publisher."
     }
   },
   "Baalshamin@1362034634#6870": {
@@ -2271,6 +2519,22 @@
     "ia:aziz-al-azmeh-works-#text": {
       "verdict": "topic",
       "why": "Zeus Olympios as an epithet; not Baalshamin in Syriac writers."
+    },
+    "ia:bwb_P8-DCR-920": {
+      "verdict": "topic",
+      "why": "Says \"Baalshamin resembles Zeus Olympios\" and was \"equated\" in the Hellenistic period, but nothing about Syriac writers calling him Zeus Olympios; the Syriac hits are only bibliography lines."
+    },
+    "ia:mesopotamianreli0000down": {
+      "verdict": "topic",
+      "why": "The passages say only that a temple \"might then have been dedicated to Zeus Olympios\" and that \"the Syriac text of Maccabees gives the name of the god as 'Baalshamin'\"; they never say which Greek name the Syriac replaces, and they say nothing of \"Zeus who shines\", so the Syriac equation with Zeus Olympios is left for the reader to infer."
+    },
+    "ia:godlistintreatyb0000barr_u9v9": {
+      "verdict": "partial",
+      "why": "States that \"Zeus Olympios of 2 Maccabees corresponds to Syriac b'lšmyn\", which covers the Zeus Olympios part, but nothing in the passages gives the \"Zeus who shines\" name."
+    },
+    "ia:bookofdaniel0000laco": {
+      "verdict": "topic",
+      "why": "Speaks of \"the Baal Shamin of the Syrians who had become Zeus Olympios\" (an equation among Syrians), not of Syriac writers' usage; the Syriac passages are about unrelated words."
     }
   },
   "Methyl isobutyl ketone@1353925244#7532": {
@@ -2297,6 +2561,38 @@
     "ia:best-gay-erotica#text": {
       "verdict": "topic",
       "why": "Dink Flamingo of ActiveDuty.com; not Dirty Bird Pictures."
+    }
+  },
+  "Spotted corydoras@1355298494#2999": {
+    "ia:youyouraquarium0000mill": {
+      "verdict": "unknown",
+      "why": "\"such food ranges from aquatic worms, crustaceans and insect larvae, to green plant matter\" matches the diet but never names the fish, and the only corydoras passage (\"Black-spotted Corydoras It isn't easy to...\") gives no diet."
+    },
+    "ia:youyouraquariumc0000mill": {
+      "verdict": "unknown",
+      "why": "\"such food ranges from aquatic worms, crustaceans and insect larvae, to green plant matter\" matches the diet but never names the fish, and the only corydoras passage (\"Black-spotted Corydoras It isn't easy to distinguish...\") gives no diet."
+    },
+    "ia:homeaquariuminco0000unse": {
+      "verdict": "unrelated",
+      "why": "The worm and crustacean passages are about marine invertebrates and live aquarium foods, and the only corydoras line (\"Black-spotted corydoras Length: up to 7cm\") gives a length, not a diet."
+    },
+    "ia:tropicalfishiden0000walk": {
+      "verdict": "topic",
+      "why": "Names \"Peppered Corydoras; Spotted Corydoras ... Corydoras paleatus\", but the feeding lines (\"Live foods, especially small worms such as white worms\") are not tied to it and do not give the claimed diet."
+    },
+    "ia:freshwaterfishes0000gunt": {
+      "verdict": "unrelated",
+      "why": "The diet passages (\"worms, insect-larvae, various crustaceans and small fishes\") describe other fishes, and the corydoras lines are only captions and breeding notes for the Peppered Corydoras."
+    },
+    "ia:bwb_Y0-AID-488": {
+      "verdict": "unrelated",
+      "why": "Passages are about albino Corydoras paleatus breeding and how to culture live foods (\"White worms ... relatives of Tubifex\"), not this fish's diet."
+    }
+  },
+  "Elena Aiello@1374070223#5056": {
+    "ia:TheIncredibleLifeStoryOfSisterElenaAielloTheCalabrianHolyNun": {
+      "verdict": "topic",
+      "why": "The passages cover her visit to the freemason \"Alessandro A.\" and his \"Sacraments from Father Eugenio Scotti and, for three months to the very day of his happy death, he received\", but the three months is something he received, not her tending him, and no promise conditional on her care is given."
     }
   }
 }

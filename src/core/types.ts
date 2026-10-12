@@ -128,6 +128,8 @@ export interface ArchiveEvidence {
   viewerUrl: string;
   /** The best passage was read from the book's whole text, not the search's highlights. */
   fullText?: true;
+  /** Found by the librarian: the planner's queries, or a book a model named. */
+  via?: "planner" | "named";
 }
 
 /** A book on the Internet Archive, open or borrowable, with a passage matching the claim. */

@@ -92,14 +92,16 @@ program
   .option("--max-claims <n>", "cap the number of claims processed", parseIntArg)
   .option("--record <dir>", "save every raw Internet Archive response to <dir>, as fixtures")
   .option("--full-text", "read the whole text of open books for a longer passage (slower)", false)
+  .option("--no-librarian", "skip the models: no planner queries, named books or search inside the leads")
+  .option("--check", "check every lead's passages against the claim (one model call per claim)", false)
   .option("--json", "emit machine-readable JSON", false)
   .description(
-    "Free stage only: look for books on the Internet Archive — open or borrowable — whose text carries each claim. No model, no API key.",
+    "Free stage only: look for books on the Internet Archive — open or borrowable — whose text carries each claim. No API key: open-weight models through the CNfirmed Worker (CNFIRMED_PROXY_URL) write the queries, name books and check the leads.",
   )
   .action(
     async (
       urlOrTitle: string,
-      opts: { maxClaims?: number; record?: string; fullText: boolean; json: boolean },
+      opts: { maxClaims?: number; record?: string; fullText: boolean; librarian: boolean; check: boolean; json: boolean },
     ) => {
       await archiveCommand({ urlOrTitle, ...opts });
     },

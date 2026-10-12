@@ -26,9 +26,11 @@ test("the core and the user script share a recording for the same query", () => 
 test("rate limits and the Archive's backend failures are transient", () => {
   assert.equal(isTransient(429, ""), true);
   assert.equal(isTransient(503, ""), true);
+  // The full-text search's backend failure is served again for the same URL:
+  // recorded, and the client asks for one more hit instead.
   assert.equal(
     isTransient(400, '{"error":{"message":"The search backend encountered an exception"}}'),
-    true,
+    false,
   );
   assert.equal(isTransient(400, '{"error":"bad query"}'), false);
   assert.equal(isTransient(404, ""), false);

@@ -17,3 +17,6 @@ eval/results/latest*.json
 
 # Whole book texts recorded by `eval/run.ts --full-text`: a megabyte each.
 eval/cassettes-fulltext/
+
+# Responses recorded by eval/experiments/: searches, whole book texts, model calls.
+eval/cassettes-experiments/

@@ -16,8 +16,10 @@
  *   npx tsx eval/run.ts --full-text        # also read open books' whole text (recorded to
  *                                          # eval/cassettes-fulltext/, not committed)
  *   npx tsx eval/run.ts --check --name check
- *                                          # also check the Archive leads' passages with the
- *                                          # Verify API, as the user script does
+ *                                          # also check the Archive leads' passages, as the
+ *                                          # user script does (its judge model, or the Verify API)
+ *   npx tsx eval/run.ts --no-librarian     # the Archive's word search alone, without the models'
+ *                                          # queries, named books and search inside the leads
  *
  * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record (the check needs no key):
  * replaying a recorded call needs no key. The key travels in a header, and headers are
@@ -35,6 +37,7 @@ import { join } from "node:path";
 import { fetchArticle } from "../src/core/fetchArticle.js";
 import { findWikiCandidates, loadWikiCorpus } from "../src/core/wikiSources.js";
 import { findArchiveCandidates } from "../src/core/archiveSources.js";
+import { WORKER_URL, replyContent, workerChatClient } from "../src/core/archiveLibrarian.js";
 import type { ArchiveFunnel } from "../src/core/archiveSources.js";
 import { installCassette } from "./lib/http.js";
 import { indexOfClaim, loadScriptArticle } from "./lib/userscript.js";
@@ -61,8 +64,10 @@ if (engine !== "userscript" && engine !== "core") throw new Error(`unknown engin
 
 const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
 const web = process.argv.includes("--web");
-/** Check the Archive leads with the Verify API, as the user script does. */
+/** Check the Archive leads as the user script does: its judge model, or the Verify API. */
 const check = process.argv.includes("--check");
+/** The Archive's models: planner queries, named books, the search inside every lead (default on, as shipped). */
+const librarian = !process.argv.includes("--no-librarian");
 /** Read the whole text of open books too (option off in the shipped script until archive.org allows it). */
 const fullText = process.argv.includes("--full-text");
 const limit = arg("limit") ? Number(arg("limit")) : undefined;
@@ -73,6 +78,12 @@ if (arg("search-tool")) scriptWindow.cnfirmedSearchToolClaude = arg("search-tool
 // Node has no CORS, so the whole-text switch can be tried here before
 // archive.org allows it in a browser.
 if (fullText) scriptWindow.cnfirmedArchiveFullText = true;
+if (!librarian) scriptWindow.cnfirmedArchiveLibrarian = false;
+// A replayed search failure needs no wait before the next try.
+if (!record) {
+  scriptWindow.cnfirmedArchiveRetryWait = 0;
+  process.env.CNFIRMED_ARCHIVE_RETRY_WAIT = "0";
+}
 // Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
 const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
 if ((web || check) && engine !== "userscript") {
@@ -102,13 +113,24 @@ function tallyUsage(key: string, body: string, ms: number | undefined): void {
   }
 }
 
+const WORKER_HOST = new URL(WORKER_URL).host;
 const stats = installCassette({
   dir: CASSETTE_DIR,
   dirFor: (key) => (key.startsWith("GET archive.org/stream/") ? FULLTEXT_CASSETTE_DIR : CASSETTE_DIR),
   mode: record ? "record" : "replay",
-  hostConcurrency: { "archive.org": 2, "api.anthropic.com": 4 },
-  hostTimeouts: { "api.anthropic.com": { ms: 600_000, retryNetworkErrors: false } },
-  recordOnlyOk: ["api.anthropic.com"],
+  hostConcurrency: { "archive.org": 3, "api.anthropic.com": 4, [WORKER_HOST]: 3 },
+  // The Worker allows 20 requests a minute per address.
+  hostMinIntervalMs: { [WORKER_HOST]: 3500 },
+  // A model call is billed even when abandoned: a long wait, and no retry.
+  hostTimeouts: {
+    "api.anthropic.com": { ms: 600_000, retryNetworkErrors: false },
+    [WORKER_HOST]: { ms: 300_000, retryNetworkErrors: false },
+  },
+  recordOnlyOk: ["api.anthropic.com", WORKER_HOST],
+  // The librarian's client tries a 504 or an answerless reply once more
+  // itself; recording the answerless one would replay it to that retry.
+  clientRetries5xx: [WORKER_HOST],
+  skipRecording: (host, status, body) => host === WORKER_HOST && status === 200 && replyContent(body) === null,
   log: (line) => console.error(line),
   observe: tallyUsage,
 });
@@ -146,6 +168,8 @@ export interface ClaimResult {
   wikiWarnings: string[];
   archive: Lead[];
   archiveFunnel: Omit<ArchiveFunnel, "passages"> | null;
+  /** With --check: what checked the Archive leads (the judge model, or "verify-api"). */
+  checkedBy?: string;
   /** The paid web search, when run with --web. */
   web?: Lead[];
   errors: string[];
@@ -234,7 +258,8 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
     for (const e of archive.funnel.errors) result.errors.push(`archive: ${e}`);
     if (check && archive.candidates.length) {
       try {
-        const verdicts = await page.checkArchive(index, archive.candidates);
+        const { verdicts, by } = await page.checkArchive(index, archive.candidates, archive.funnel.librarian?.plan ?? null);
+        result.checkedBy = by;
         result.archive.forEach((lead, k) => {
           lead.check = verdicts[k] ? { verdict: verdicts[k].verdict, reason: verdicts[k].reason } : null;
         });
@@ -298,7 +323,10 @@ async function runCoreClaim(c: EvalClaim): Promise<ClaimResult> {
   }
 
   try {
-    const archive = await findArchiveCandidates(claim, article.title, { fullText });
+    const archive = await findArchiveCandidates(claim, article.title, {
+      fullText,
+      ...(librarian && { librarian: { client: workerChatClient() } }),
+    });
     const { passages: _p, ...funnel } = archive.funnel;
     void _p;
     result.archiveFunnel = funnel;

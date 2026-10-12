@@ -38,8 +38,12 @@ export interface ScriptArticle {
   findArchive(index: number): Promise<{ candidates: Json[]; funnel: Json }>;
   /** The paid stage: one Claude call with web search, as the script makes it. */
   findWeb(index: number, apiKey: string): Promise<Json[]>;
-  /** One Verify API call per Archive lead, judging its passages: a verdict per lead, or null. */
-  checkArchive(index: number, candidates: Json[]): Promise<Json[]>;
+  /**
+   * The check of the Archive leads, as the script makes it: the judge model in
+   * one call with the planner's restated claim, or the Verify API. A verdict
+   * per lead (or null), and what gave them.
+   */
+  checkArchive(index: number, candidates: Json[], plan: Json | null): Promise<{ verdicts: Json[]; by: string }>;
 }
 
 export async function loadScriptArticle(
@@ -75,8 +79,8 @@ export async function loadScriptArticle(
     findWiki: (index) => script.findWikiCandidates(corpus, index),
     findArchive: (index) => script.findArchiveCandidates(index),
     findWeb: (index, apiKey) => script.callClaude(script.getClaimContexts()[index], apiKey),
-    checkArchive: (index, candidates) =>
-      script.checkArchiveCandidates(script.getClaimContexts()[index], candidates),
+    checkArchive: (index, candidates, plan) =>
+      script.checkArchiveLeads(script.getClaimContexts()[index], plan, candidates),
   };
 }
 

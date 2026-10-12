@@ -1,0 +1,654 @@
+[
+ {
+  "id": "Didius Julianus@1370266531#1728",
+  "title": "Didius Julianus",
+  "claim": "His reign is a common delineation in the decline and fall of the Roman Empire.",
+  "plan": {
+   "fact": "Marcus Didius Julianus's reign is a common delineation in the decline and fall of the Roman Empire.",
+   "fulltext_queries": [
+    "\"Marcus Didius Julianus\" \"reign\" decline \"Roman Empire\"",
+    "\"Marcus Didius Julianus\" \"Year of the Five Emperors\" decline fall",
+    "\"Marcus Didius Julianus\" \"reign\" \"common delineation\" \"Roman Empire\""
+   ],
+   "catalogue_queries": [
+    "Marcus Didius Julianus biography",
+    "Year of the Five Emperors",
+    "Decline and fall of the Roman Empire"
+   ],
+   "evidence": [
+    [
+     "Marcus Didius Julianus"
+    ],
+    [
+     "reign"
+    ],
+    [
+     "decline"
+    ],
+    [
+     "fall"
+    ],
+    [
+     "Roman Empire"
+    ],
+    [
+     "common delineation"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Baalshamin@1362034634#6870",
+  "title": "Baalshamin",
+  "claim": "Writers in Syriac refer to Baalshamin as Zeus Olympios Zeus who shines.",
+  "plan": {
+   "fact": "Syriac writers refer to Baalshamin as Zeus Olympios, the shining Zeus.",
+   "fulltext_queries": [
+    "\"Baalshamin\" \"Zeus Olympios\" shining",
+    "\"Syriac\" \"Baalshamin\" \"Zeus Olympios\"",
+    "\"Zeus Olympios\" shining \"Syriac\""
+   ],
+   "catalogue_queries": [
+    "Baalshamin Syriac",
+    "Zeus Olympios Baalshamin",
+    "Syriac literature"
+   ],
+   "evidence": [
+    [
+     "Baalshamin"
+    ],
+    [
+     "Zeus Olympios"
+    ],
+    [
+     "shining"
+    ],
+    [
+     "Syriac writers"
+    ],
+    [
+     "refer"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Abigail May Alcott Nieriker@1373256207#9938",
+  "title": "Abigail May Alcott Nieriker",
+  "claim": "After the death of Anna Alcott's husband John Pratt in 1871, Louisa returned to Concord, while May stayed in Europe to begin serious study.",
+  "plan": {
+   "fact": "After the death of Anna Alcott's husband John Pratt in 1871, Louisa May Alcott returned to Concord, while Abigail May Alcott Nieriker stayed in Europe to begin serious study.",
+   "fulltext_queries": [
+    "\"John Pratt\" 1871 \"Louisa May Alcott\" Concord",
+    "\"Abigail May Alcott\" Europe \"serious study\"",
+    "\"John Pratt\" 1871 \"Abigail May Alcott\" Europe"
+   ],
+   "catalogue_queries": [
+    "\"Louisa May Alcott\" biography",
+    "\"Abigail May Alcott\" Europe",
+    "\"John Pratt\" 1871"
+   ],
+   "evidence": [
+    [
+     "1871"
+    ],
+    [
+     "death",
+     "died",
+     "deceased"
+    ],
+    [
+     "John Pratt"
+    ],
+    [
+     "Anna Alcott"
+    ],
+    [
+     "Louisa May Alcott"
+    ],
+    [
+     "Concord"
+    ],
+    [
+     "Europe"
+    ],
+    [
+     "serious study"
+    ],
+    [
+     "Abigail May Alcott"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Muazzez Sultan@1370515564#2311",
+  "title": "Muazzez Sultan",
+  "claim": "She was the most beautiful of all of Ibrahim's concubine and was known for her mild character and good manners in the palace.",
+  "plan": {
+   "fact": "Muazzez Sultan, concubine of Ottoman Sultan Ibrahim, was considered the most beautiful of all of Ibrahim's concubines and was known for her mild character and good manners in the palace.",
+   "fulltext_queries": [
+    "\"Muazzez Sultan\" \"most beautiful\" concubine Ibrahim",
+    "\"Muazzez Sultan\" \"mild character\" \"good manners\" palace",
+    "\"Muazzez Sultan\" concubine Ibrahim palace"
+   ],
+   "catalogue_queries": [
+    "Muazzez Sultan biography",
+    "Ibrahim concubines",
+    "Ottoman harem 17th century"
+   ],
+   "evidence": [
+    [
+     "Muazzez Sultan"
+    ],
+    [
+     "most beautiful"
+    ],
+    [
+     "concubine"
+    ],
+    [
+     "Ibrahim"
+    ],
+    [
+     "mild character"
+    ],
+    [
+     "good manners"
+    ],
+    [
+     "palace"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Giovanna of Savoy@1366086768#3780",
+  "title": "Giovanna of Savoy",
+  "claim": "Stress and a heart condition were the official reasons for his death.",
+  "plan": {
+   "fact": "Stress and a heart condition were the official reasons for the death of Tsar Boris of Bulgaria.",
+   "fulltext_queries": [
+    "\"Tsar Boris\" \"heart condition\" \"official reasons\"",
+    "\"Tsar Boris\" stress death Bulgaria",
+    "Berlin \"August 1943\" \"Tsar Boris\" \"heart condition\""
+   ],
+   "catalogue_queries": [
+    "Boris I Bulgaria",
+    "Bulgaria WWII",
+    "Boris I death"
+   ],
+   "evidence": [
+    [
+     "Tsar Boris",
+     "Boris I",
+     "Tsar Boris of Bulgaria"
+    ],
+    [
+     "death",
+     "died"
+    ],
+    [
+     "official reasons",
+     "official cause",
+     "officially cited"
+    ],
+    [
+     "stress",
+     "stress-related"
+    ],
+    [
+     "heart condition",
+     "cardiac condition",
+     "heart disease"
+    ],
+    [
+     "1943",
+     "August 1943"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Erasmus Darwin House@1344721583#4434",
+  "title": "Erasmus Darwin House",
+  "claim": "After the Darwins moved into the new front of their house, a wooden bridge was thrown across the ditch and a twin-tier terrace was built, causing alterations to be made to the basement windows.",
+  "plan": {
+   "fact": "After the Darwin family moved into the new front of their house, a wooden bridge was thrown across the ditch and a twin-tier terrace was built, causing alterations to the basement windows.",
+   "fulltext_queries": [
+    "\"Darwin family\" \"wooden bridge\" ditch",
+    "\"Darwin family\" \"twin-tier terrace\" \"basement windows\"",
+    "\"Darwin family\" \"new front\" \"basement windows\""
+   ],
+   "catalogue_queries": [
+    "Erasmus Darwin house",
+    "Darwin family Lichfield",
+    "Darwin house Lichfield"
+   ],
+   "evidence": [
+    [
+     "Darwin family",
+     "Darwin family"
+    ],
+    [
+     "wooden bridge",
+     "wooden bridge"
+    ],
+    [
+     "ditch",
+     "ditch"
+    ],
+    [
+     "twin-tier terrace",
+     "twin-tier terrace"
+    ],
+    [
+     "basement windows",
+     "basement windows"
+    ],
+    [
+     "new front",
+     "new front"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Uintah Lake@1370072314#3368",
+  "title": "Uintah Lake",
+  "claim": "Although it has a slightly different spelling, the name of the lake has the same etymology as the mountain range in which it is located.",
+  "plan": {
+   "fact": "The name of Uintah Lake, although spelled slightly differently, has the same etymology as the Uintah Mountains in which it is located.",
+   "fulltext_queries": [
+    "\"Uintah Lake\" \"etymology\" \"Uintah Mountains\"",
+    "\"Uintah Lake\" \"spelling\" \"etymology\"",
+    "\"Uintah Mountains\" \"etymology\" \"lake\""
+   ],
+   "catalogue_queries": [
+    "Uintah Lake etymology",
+    "Uintah Mountains origin",
+    "Uintah etymology"
+   ],
+   "evidence": [
+    [
+     "Uintah Lake",
+     "Lake Uintah"
+    ],
+    [
+     "Uintah Mountains",
+     "Mountains of Uintah"
+    ],
+    [
+     "etymology",
+     "origin of the name"
+    ],
+    [
+     "spelling",
+     "orthography"
+    ],
+    [
+     "same etymology",
+     "identical etymology"
+    ],
+    [
+     "different spelling",
+     "slightly different spelling"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Xi Sagittarii@1369728394#573",
+  "title": "Xi Sagittarii",
+  "claim": "The last occultation of ξ² Sagittarii by a planet took place on 22 December 1810, when it was occulted by Venus.",
+  "plan": {
+   "fact": "The last occultation of the star ξ² Sagittarii by a planet occurred on 22 December 1810, when it was occulted by Venus.",
+   "fulltext_queries": [
+    "\"xi^2 Sagittarii\" \"22 December 1810\" Venus",
+    "\"xi^2 Sagittarii\" \"occulted by Venus\" 1810",
+    "\"xi^2 Sagittarii\" Venus \"occultation\" 1810"
+   ],
+   "catalogue_queries": [
+    "xi Sagittarii occultation",
+    "Venus occultation 1810",
+    "planetary occultations 1810"
+   ],
+   "evidence": [
+    [
+     "22 December 1810"
+    ],
+    [
+     "occultation",
+     "occulted"
+    ],
+    [
+     "xi^2 Sagittarii",
+     "xi 2 Sagittarii"
+    ],
+    [
+     "Venus"
+    ],
+    [
+     "last",
+     "final"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Methyl isobutyl ketone@1353925244#7532",
+  "title": "Methyl isobutyl ketone",
+  "claim": "It has a similar polarity to ethyl acetate, but greater stability towards aqueous acids and bases.",
+  "plan": {
+   "fact": "Methyl isobutyl ketone has a polarity similar to ethyl acetate but is more stable toward aqueous acids and bases.",
+   "fulltext_queries": [
+    "\"methyl isobutyl ketone\" polarity ethyl acetate",
+    "\"methyl isobutyl ketone\" stability aqueous acids",
+    "\"methyl isobutyl ketone\" stability aqueous bases"
+   ],
+   "catalogue_queries": [
+    "\"methyl isobutyl ketone\"",
+    "\"ketone solvents\"",
+    "\"industrial extraction\""
+   ],
+   "evidence": [
+    [
+     "methyl isobutyl ketone",
+     "MIBK"
+    ],
+    [
+     "polarity"
+    ],
+    [
+     "ethyl acetate"
+    ],
+    [
+     "stability"
+    ],
+    [
+     "aqueous acids"
+    ],
+    [
+     "bases"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Okhrana@1370650714#4928",
+  "title": "Okhrana",
+  "claim": "The communists blamed the Okhrana in part for the Bloody Sunday event of January 1905.",
+  "plan": {
+   "fact": "Communists blamed the Okhrana in part for the Bloody Sunday event of January 1905.",
+   "fulltext_queries": [
+    "\"communists blamed\" Okhrana \"Bloody Sunday\" \"January 1905\"",
+    "\"Okhrana\" \"Bloody Sunday\" 1905",
+    "\"communists\" Okhrana \"Bloody Sunday\""
+   ],
+   "catalogue_queries": [
+    "Okhrana Bloody Sunday",
+    "Tsarist police 1905",
+    "Communist Okhrana"
+   ],
+   "evidence": [
+    [
+     "communists",
+     "Communists"
+    ],
+    [
+     "blamed",
+     "blame",
+     "accused"
+    ],
+    [
+     "Okhrana",
+     "Okhrana"
+    ],
+    [
+     "Bloody Sunday",
+     "Bloody Sunday"
+    ],
+    [
+     "January 1905",
+     "January 1905",
+     "1905"
+    ]
+   ]
+  },
+  "leads": [
+   {
+    "strategy": "llm-books",
+    "identifier": "a-peoples-tragedy-a-history-of-the-russian-revolution",
+    "title": "A People's Tragedy A History Of The Russian Revolution (1997)",
+    "year": 1997,
+    "access": "open",
+    "verdict": "no"
+   },
+   {
+    "strategy": "llm-books",
+    "identifier": "russianrevolutio00shei",
+    "title": "The Russian Revolution",
+    "year": 1982,
+    "access": "borrow",
+    "verdict": "no"
+   }
+  ],
+  "verdicts": {
+   "a-peoples-tragedy-a-history-of-the-russian-revolution": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages explicitly state that communists blamed the Okhrana for Bloody Sunday."
+   },
+   "russianrevolutio00shei": {
+    "verdict": "no",
+    "quote": "",
+    "why": "None of the passages mention the Okhrana or the communists blaming it for Bloody Sunday."
+   }
+  },
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [
+    {
+     "title": "The Russian Revolution",
+     "author": "Figes",
+     "year": 2004
+    },
+    {
+     "title": "The Russian Revolution",
+     "author": "Pipes",
+     "year": 1990
+    },
+    {
+     "title": "The Russian Revolution",
+     "author": "Fitzpatrick",
+     "year": 2008
+    },
+    {
+     "title": "The Russian Revolution",
+     "author": "Service",
+     "year": 2009
+    },
+    {
+     "title": "The Russian Revolution",
+     "author": "Merriman",
+     "year": 2000
+    },
+    {
+     "title": "The Russian Revolution",
+     "author": "Galeotti",
+     "year": 2014
+    }
+   ],
+   "found": [
+    "a-peoples-tragedy-a-history-of-the-russian-revolution",
+    "russianrevolutio00shei"
+   ]
+  }
+ },
+ {
+  "id": "Diagonal band of Broca@1220886502#2424",
+  "title": "Diagonal band of Broca",
+  "claim": "It interconnects the subcallosal gyrus in the septal area with the hippocampus and lateral olfactory area.",
+  "plan": {
+   "fact": "The diagonal band of Broca interconnects the subcallosal gyrus in the septal area with the hippocampus and the lateral olfactory area.",
+   "fulltext_queries": [
+    "\"diagonal band of Broca\" subcallosal gyrus hippocampus",
+    "\"subcallosal gyrus\" \"septal area\" \"lateral olfactory area\"",
+    "\"diagonal band of Broca\" hippocampus \"lateral olfactory area\""
+   ],
+   "catalogue_queries": [
+    "diagonal band of Broca",
+    "subcallosal gyrus",
+    "lateral olfactory area"
+   ],
+   "evidence": [
+    [
+     "diagonal band of Broca"
+    ],
+    [
+     "interconnects"
+    ],
+    [
+     "subcallosal gyrus"
+    ],
+    [
+     "septal area"
+    ],
+    [
+     "hippocampus"
+    ],
+    [
+     "lateral olfactory area"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ },
+ {
+  "id": "Chakapa@1291746289#1676",
+  "title": "Chakapa",
+  "claim": "Shamans have a large variety of chakapa movements that create different sounds and energy waves; these movements match the coinciding icaro and healing that is being done at the time.",
+  "plan": {
+   "fact": "Shamans have a large variety of chakapa movements that create different sounds and energy waves, and these movements match the coinciding icaro and healing that is being done at the time.",
+   "fulltext_queries": [
+    "chakapa icaro shaman \"energy waves\"",
+    "chakapa icaro healing ceremony",
+    "chakapa icaro movement sound"
+   ],
+   "catalogue_queries": [
+    "chakapa",
+    "icaro",
+    "ayahuasca ceremony"
+   ],
+   "evidence": [
+    [
+     "chakapa"
+    ],
+    [
+     "icaro"
+    ],
+    [
+     "shaman",
+     "shamans"
+    ],
+    [
+     "energy waves",
+     "energy wave"
+    ],
+    [
+     "healing",
+     "heal",
+     "healings"
+    ]
+   ]
+  },
+  "leads": [],
+  "verdicts": {},
+  "confirmed": {},
+  "errors": [],
+  "shortlist": {
+   "named": [],
+   "found": []
+  }
+ }
+]

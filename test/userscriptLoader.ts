@@ -46,10 +46,44 @@ const EXPOSED = [
   "checkArchiveCandidates",
   "archiveSourceContent",
   "toArchiveVerdict",
+  "checkArchiveLeads",
+  "workerReplyText",
+  "workerRequestBody",
+  "workerShouldRetry",
+  "workerReplyContent",
+  "callWorkerModel",
+  "libSafeTerm",
+  "libSafeQuery",
+  "iaPhrase",
+  "iaSearch",
+  "archiveQueriesFor",
+  "archiveNothingToSearch",
+  "libJsonObjectIn",
+  "libPlanPrompt",
+  "libParsePlan",
+  "libTellingTerms",
+  "libPlanCoverage",
+  "libPlanMatched",
+  "libNameConcepts",
+  "libBooksPrompt",
+  "libParseBooks",
+  "libCatalogueQuery",
+  "iaCatalogueUrl",
+  "parseCatalogueHits",
+  "libShelfSearchable",
+  "libShelfQueries",
+  "rankPlannedHits",
+  "libJudgePrompt",
+  "libQuoteKey",
+  "libQuoteInPassages",
+  "libParseJudgement",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UserScriptModule = Record<string, (...args: any[]) => any> & {
+  prompts: { plan: string; books: string; judge: string };
+  models: { planner: string | null; books: string | null; judge: string | null };
+  limits: { plan: number; books: number; judge: number; booksEffort: string };
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
   getClaimContexts(): { claim: string; context: string; section: string | null; links: string[] }[];
@@ -75,6 +109,9 @@ export function loadUserScript(
   const exposed = `
     return {
       ${EXPOSED.map((name) => `${name}: ${name},`).join("\n      ")}
+      prompts: { plan: LIB_PLAN_SYSTEM, books: LIB_BOOKS_SYSTEM, judge: LIB_JUDGE_SYSTEM },
+      models: LIB_MODELS,
+      limits: { plan: LIB_PLAN_MAX_TOKENS, books: LIB_BOOKS_MAX_TOKENS, judge: LIB_JUDGE_MAX_TOKENS, booksEffort: LIB_BOOKS_EFFORT },
       setClaimContexts: function (v) { claimContexts = v; },
       setCnSups: function (v) { cnSups = v; },
       getClaimContexts: function () { return claimContexts; }
