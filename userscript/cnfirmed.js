@@ -2756,17 +2756,23 @@
     });
   }
 
-  // A full-text search, asked once more for one more hit when it fails with a
-  // 400: the search's backend now and then fails a query it accepts, and
-  // archive.org then serves that failure for the same URL for some 20
-  // minutes. A different hits_per_page is a fresh search. Mirrors
+  // A full-text search, asked twice more, each time for one more hit, when it
+  // fails with a 400: the search's backend now and then fails a query it
+  // accepts, and archive.org then serves that failure for the same URL for
+  // some 20 minutes. A different hits_per_page is a fresh search; the
+  // failures come in bursts, so each try waits a little longer. Mirrors
   // searchWithRetry in src/core/internetArchive.ts.
+  var IA_RETRY_WAITS_MS = window.cnfirmedArchiveRetryWait === 0 ? [0, 0] : [5000, 15000];
+
   function iaSearch(query, size) {
     size = size || IA_MAX_HITS;
-    return iaFetchJson(iaSearchUrl(query, size)).catch(function (err) {
-      if (err.status !== 400) throw err;
-      return iaFetchJson(iaSearchUrl(query, size + 1));
-    });
+    function attempt(n) {
+      return iaFetchJson(iaSearchUrl(query, size + n)).catch(function (err) {
+        if (err.status !== 400 || n >= IA_RETRY_WAITS_MS.length) throw err;
+        return sleep(IA_RETRY_WAITS_MS[n]).then(function () { return attempt(n + 1); });
+      });
+    }
+    return attempt(0);
   }
 
   // An open book's whole OCR text. archive.org does not send a CORS header on

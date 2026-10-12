@@ -79,6 +79,11 @@ if (arg("search-tool")) scriptWindow.cnfirmedSearchToolClaude = arg("search-tool
 // archive.org allows it in a browser.
 if (fullText) scriptWindow.cnfirmedArchiveFullText = true;
 if (!librarian) scriptWindow.cnfirmedArchiveLibrarian = false;
+// A replayed search failure needs no wait before the next try.
+if (!record) {
+  scriptWindow.cnfirmedArchiveRetryWait = 0;
+  process.env.CNFIRMED_ARCHIVE_RETRY_WAIT = "0";
+}
 // Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
 const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
 if ((web || check) && engine !== "userscript") {

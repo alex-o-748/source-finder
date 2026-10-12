@@ -21,7 +21,7 @@ import {
   streamText,
   toArchiveCandidate,
 } from "../src/core/archiveSources.js";
-import { SEARCH_URL, httpArchiveClient, searchParams } from "../src/core/internetArchive.js";
+import { SEARCH_RETRY_WAITS_MS, SEARCH_URL, httpArchiveClient, searchParams, searchWithRetry } from "../src/core/internetArchive.js";
 import { loadUserScript } from "./userscriptLoader.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -103,18 +103,30 @@ test("both ask a failed full-text search once more, for one more hit", async () 
     return { out, sizes };
   };
   try {
+    const noWait = loadUserScript({}, { window: { cnfirmedArchiveRetryWait: 0 } });
+    process.env.CNFIRMED_ARCHIVE_RETRY_WAIT = "0";
     for (const [statuses, want] of [
       [[200], { out: "ok", sizes: ["9"] }],
       // The backend's failure is served again for the same URL; one more hit is a fresh search.
       [[400, 200], { out: "ok", sizes: ["9", "10"] }],
-      [[400, 400], { out: "Internet Archive: HTTP 400", sizes: ["9", "10"] }],
+      [[400, 400, 200], { out: "ok", sizes: ["9", "10", "11"] }],
+      [[400, 400, 400], { out: "Internet Archive: HTTP 400", sizes: ["9", "10", "11"] }],
       [[404], { out: "Internet Archive: HTTP 404", sizes: ["9"] }],
     ] as const) {
-      assert.deepEqual(await run([...statuses], () => script.iaSearch('"1938"', 9)), want);
+      assert.deepEqual(await run([...statuses], () => noWait.iaSearch('"1938"', 9)), want);
       assert.deepEqual(await run([...statuses], () => httpArchiveClient.fullTextSearch({ query: '"1938"', size: 9 })), want);
     }
+    // Live, the second and third tries wait 5 and 15 seconds.
+    assert.deepEqual(SEARCH_RETRY_WAITS_MS, [5_000, 15_000]);
+    const tries: number[] = [];
+    await assert.rejects(
+      searchWithRetry({ query: "q", size: 9 }, async (r) => { tries.push(r.size); throw Object.assign(new Error("x"), { status: 400 }); }, [1, 2]),
+      /x/,
+    );
+    assert.deepEqual(tries, [9, 10, 11]);
   } finally {
     globalThis.fetch = realFetch;
+    delete process.env.CNFIRMED_ARCHIVE_RETRY_WAIT;
   }
 });
 

@@ -120,22 +120,30 @@ async function get(url: string, accept: string, retried = false): Promise<Respon
   return res;
 }
 
+/** Waits before the second and third try of a failed full-text search: its backend fails in bursts. */
+export const SEARCH_RETRY_WAITS_MS = [5_000, 15_000];
+
 /**
- * A full-text search, asked once more for one more hit when it fails with a
- * 400. The search's backend now and then fails a query it accepts ("the
- * search backend encountered an exception"), and archive.org then serves that
- * failure for the same URL for some 20 minutes (checked live, 2026-10): asking
- * again is the same failure, a different `hits_per_page` is a fresh search.
+ * A full-text search, asked twice more, each time for one more hit, when it
+ * fails with a 400. The search's backend now and then fails a query it
+ * accepts ("the search backend encountered an exception", an upstream 502),
+ * and archive.org then serves that failure for the same URL for some 20
+ * minutes (checked live, 2026-10): asking again is the same failure, a
+ * different `hits_per_page` is a fresh search. The failures come in bursts,
+ * so each try waits a little longer.
  */
 export async function searchWithRetry(
   request: SearchRequest,
   search: (request: SearchRequest) => Promise<SearchResponse>,
+  waitsMs: number[] = SEARCH_RETRY_WAITS_MS,
 ): Promise<SearchResponse> {
-  try {
-    return await search(request);
-  } catch (err) {
-    if ((err as { status?: number }).status !== 400) throw err;
-    return search({ ...request, size: request.size + 1 });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await search({ ...request, size: request.size + attempt });
+    } catch (err) {
+      if ((err as { status?: number }).status !== 400 || attempt >= waitsMs.length) throw err;
+      if (waitsMs[attempt] > 0) await new Promise((r) => setTimeout(r, waitsMs[attempt]));
+    }
   }
 }
 
@@ -146,7 +154,9 @@ async function getJson<T>(url: string): Promise<T> {
 /** The live client. */
 export const httpArchiveClient: ArchiveClient = {
   fullTextSearch(request) {
-    return searchWithRetry(request, (r) => getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(r).toString()}`));
+    // CNFIRMED_ARCHIVE_RETRY_WAIT=0: replaying recorded failures needs no wait.
+    const waits = process.env.CNFIRMED_ARCHIVE_RETRY_WAIT === "0" ? SEARCH_RETRY_WAITS_MS.map(() => 0) : SEARCH_RETRY_WAITS_MS;
+    return searchWithRetry(request, (r) => getJson<SearchResponse>(`${SEARCH_URL}?${searchParams(r).toString()}`), waits);
   },
   metadata(identifier) {
     return getJson<MetadataResponse>(METADATA_URL + encodeURIComponent(identifier));
