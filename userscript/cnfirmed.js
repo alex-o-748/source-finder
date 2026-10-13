@@ -4,18 +4,20 @@
  * CNfirmed user script — finds and verifies sources for {{citation needed}}
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
  * the user's own API key (stored in localStorage) — or by searching with
- * Tavily (the user's Tavily key) and judging the results with GPT-OSS on
- * Hugging Face, both through the publicai-proxy Worker, since Wikipedia's CSP
- * blocks those services. Internet Archive books are found and checked with
- * open-weight models through the same Worker, which needs no key (the Verify
- * API, https://citation-verifier.toolforge.org, when the Worker cannot).
+ * Tavily and judging the results with GPT-OSS on Hugging Face, both through
+ * the publicai-proxy Worker, since Wikipedia's CSP blocks those services.
+ * Tavily searches are free, on the Worker's own key, while its credits last;
+ * after that they need the user's Tavily key. Internet Archive books are
+ * found and checked with open-weight models through the same Worker, which
+ * needs no key (the Verify API, https://citation-verifier.toolforge.org,
+ * when the Worker cannot).
  *
  * Add to User:Yourname/common.js:
  *
  *   importScript('User:Alaexis/cnfirmed.js');
  *
- * The first time you click a 🔍 badge or "Verify all", you'll be prompted for
- * an API key for the selected provider. Keys are kept in localStorage on the
+ * A web search with Claude, Gemini or OpenAI asks for an API key for that
+ * provider the first time. Keys are kept in localStorage on the
  * Wikipedia origin and never leave your browser except in the request to the
  * provider you chose.
  *
@@ -77,12 +79,14 @@
     // Tavily does the searching and an open-weight model on Hugging Face reads
     // what it found; the model never searches on its own. Both go through
     // the Worker (Wikipedia's CSP blocks the services themselves), which
-    // pays for the model, so the only key is the user's Tavily key.
+    // pays for the model, and for the searches too while its Tavily credits
+    // last. After that the user's own Tavily key pays for them.
     tavilyhf: {
       name: 'Tavily + GPT-OSS',
       keyStorage: 'cnfirmed-key-tavily',
       keyLabel: 'Tavily API key',
       keyService: 'Tavily',
+      freeSearches: true,
       // Must be in the Worker's HF_ALLOWED_MODELS.
       defaultModel: 'openai/gpt-oss-20b',
       modelOverride: 'cnfirmedModelHf',
@@ -95,8 +99,10 @@
     return p.keyLabel || p.name + ' API key';
   }
 
+  // Someone who never picked a provider gets the one that needs no key,
+  // unless they already saved a Claude key under the old default.
   function getProvider() {
-    var p = localStorage.getItem('cnfirmed-provider') || 'claude';
+    var p = localStorage.getItem('cnfirmed-provider') || (getKey('claude') ? 'claude' : 'tavilyhf');
     return PROVIDERS[p] ? p : 'claude';
   }
 
@@ -113,6 +119,58 @@
     var key = (value || '').trim();
     if (key) localStorage.setItem(PROVIDERS[providerId].keyStorage, key);
     else localStorage.removeItem(PROVIDERS[providerId].keyStorage);
+  }
+
+  // ---- Free web searches ------------------------------------------------
+  // The Worker answers 402 free_credits_exhausted once its Tavily credits are
+  // spent. That is remembered for a while, so every claim does not have to
+  // fail first to find out, and checked again with the Worker when a panel
+  // opens on a later page.
+
+  var FREE_SPENT_STORAGE = 'cnfirmed-free-searches-spent';
+  var FREE_SPENT_FOR_MS = 6 * 60 * 60 * 1000;
+  var NO_FREE_SEARCHES = 'No free web searches left. Add your own Tavily key to keep searching ' +
+    'the web, or switch to Claude, Gemini or OpenAI, which search the web themselves (with your key).';
+
+  function freeSearchesSpent() {
+    var at = Number(localStorage.getItem(FREE_SPENT_STORAGE)) || 0;
+    return at > 0 && Date.now() - at < FREE_SPENT_FOR_MS;
+  }
+
+  function setFreeSearchesSpent(spent) {
+    if (spent) localStorage.setItem(FREE_SPENT_STORAGE, String(Date.now()));
+    else localStorage.removeItem(FREE_SPENT_STORAGE);
+  }
+
+  // Searching on the Worker's credits: no key of the user's own.
+  function onFreeSearches(providerId) {
+    return !!PROVIDERS[providerId].freeSearches && !getKey(providerId);
+  }
+
+  function canSearchWeb(providerId) {
+    return !!getKey(providerId) || (onFreeSearches(providerId) && !freeSearchesSpent());
+  }
+
+  // Once a page: does the Worker still have credits? Redraws if it changed.
+  var freeSearchesChecked = false;
+  function checkFreeSearches() {
+    if (freeSearchesChecked) return;
+    freeSearchesChecked = true;
+    fetch(PROXY_BASE + '/tavily').then(function (res) {
+      return res.ok ? res.json() : null;
+    }).then(function (data) {
+      if (!data || typeof data.shared !== 'boolean') return;
+      var was = freeSearchesSpent();
+      setFreeSearchesSpent(!data.shared);
+      // Not under someone typing a key.
+      if (was !== !data.shared && panelView !== 'settings') renderPanel();
+    }).catch(function () { /* the next search finds out */ });
+  }
+
+  function noFreeSearchesError() {
+    var err = new Error(NO_FREE_SEARCHES);
+    err.noFreeSearches = true;
+    return err;
   }
 
   function modelFor(providerId) {
@@ -796,6 +854,7 @@
     var s = state[i];
     if (s && s.status !== 'idle') return;
     if (collectItems(i).items.length > 0) return;
+    // Free searches are shared, so they wait for a click.
     if (!getKey(getProvider())) return;
     runOne(i);
   }
@@ -803,8 +862,8 @@
   function runOne(i) {
     var providerId = getProvider();
     var key = getKey(providerId);
-    if (!key) {
-      toast('Add your ' + keyLabel(providerId) + ' first');
+    if (!canSearchWeb(providerId)) {
+      toast(onFreeSearches(providerId) ? NO_FREE_SEARCHES : 'Add your ' + keyLabel(providerId) + ' first');
       openSettings();
       return;
     }
@@ -828,6 +887,14 @@
         persist(); renderPanel(i);
       })
       .catch(function (err) {
+        if (err && err.noFreeSearches) {
+          // Not this claim's failure: it is left unsearched, and the panel
+          // says why and asks for a key.
+          delete state[i];
+          toast(NO_FREE_SEARCHES);
+          persist(); renderPanel(i);
+          return;
+        }
         var msg = (err && err.message) ? err.message : String(err);
         state[i] = { status: 'error', error: msg, provider: providerId };
         persist(); renderPanel(i);
@@ -875,7 +942,7 @@
 
   function searchWebForNothing() {
     var providerId = getProvider();
-    if (!getKey(providerId)) {
+    if (!canSearchWeb(providerId)) {
       openSettings();
       return;
     }
@@ -905,6 +972,10 @@
                 };
               })
               .catch(function (err) {
+                if (err && err.noFreeSearches) {
+                  delete state[k];
+                  return;
+                }
                 state[k] = {
                   status: 'error',
                   error: (err && err.message) ? err.message : String(err),
@@ -914,8 +985,11 @@
               .then(function () {
                 inFlight--;
                 persist(); renderPanel(k);
+                // Free searches running out leaves the rest unsearched.
+                if (!canSearchWeb(providerId)) idx = queue.length;
                 if (idx >= queue.length && inFlight === 0) {
-                  toast('CNfirmed: web search finished');
+                  toast(canSearchWeb(providerId) ? 'CNfirmed: web search finished' : NO_FREE_SEARCHES);
+                  renderPanel();
                   resolve();
                 } else {
                   next();
@@ -4180,10 +4254,13 @@
     return q.length > TAVILY_MAX_QUERY ? q.slice(0, TAVILY_MAX_QUERY) : q;
   }
 
+  // Without a key of the user's own, the Worker searches on its own key.
   function tavilySearch(ctx, apiKey) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers.Authorization = 'Bearer ' + apiKey;
     return fetch(PROXY_BASE + '/tavily', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      headers: headers,
       body: JSON.stringify({
         query: tavilyQuery(ctx),
         search_depth: 'advanced',
@@ -4195,7 +4272,12 @@
       })
     }).then(function (res) {
       return res.text().then(function (t) {
+        if (res.status === 402 && !apiKey && /"free_credits_exhausted"/.test(t)) {
+          setFreeSearchesSpent(true);
+          throw noFreeSearchesError();
+        }
         if (!res.ok) throw new Error('Tavily API ' + res.status + ': ' + truncate(t, 200));
+        if (!apiKey) setFreeSearchesSpent(false);
         var data = JSON.parse(t);
         return (data.results || []).filter(function (r) {
           return r && typeof r.url === 'string' && !isUnreliableDomain(r.url);
@@ -5162,6 +5244,7 @@
     if (!panel) return;
     var where = panelView + ':' + currentIndex;
     var scroll = panel.body.scrollTop;
+    if (onFreeSearches(getProvider())) checkFreeSearches();
     drawHeader();
     drawClaimBox();
     panel.body.textContent = '';
@@ -5365,6 +5448,7 @@
   }
 
   function webCostNote(providerId) {
+    if (onFreeSearches(providerId)) return 'One free search';
     return providerId === 'tavilyhf' ? 'One search, billed to your Tavily key' : 'One API call, billed to your key';
   }
 
@@ -5438,8 +5522,10 @@
       section.appendChild(sourceRow('Web', webWhere, 'done', c && c.total
         ? plural(c.total, 'result') + ': ' + bits.join(', ')
         : 'No usable source found'));
-    } else if (getKey(providerId)) {
+    } else if (canSearchWeb(providerId)) {
       section.appendChild(sourceRow('Web', webWhere, 'idle', webCostNote(providerId), 'Search', function () { runOne(i); }));
+    } else if (onFreeSearches(providerId)) {
+      section.appendChild(sourceRow('Web', webWhere, 'idle', NO_FREE_SEARCHES, 'Add key', openSettings));
     } else {
       section.appendChild(sourceRow('Web', webWhere, 'idle', 'Needs a ' + keyLabel(providerId), 'Add key', openSettings));
     }
@@ -5504,16 +5590,18 @@
     var forWeb = batch ? [] : claimsForWeb();
     if (forWeb.length) {
       var providerId = getProvider();
-      var hasKey = !!getKey(providerId);
+      var canSearch = canSearchWeb(providerId);
       var n = forWeb.length;
+      var searches = n + (n === 1 ? ' search' : ' searches') + ' with ' + PROVIDERS[providerId].name;
       var box = el('div', 'cnf-box');
       box.appendChild(el('div', 'cnf-box-title', 'Search the web for the ' + plural(n, 'claim') + ' with nothing'));
-      box.appendChild(el('p', null, hasKey
-        ? n + (n === 1 ? ' search' : ' searches') + ' with ' + PROVIDERS[providerId].name + ', billed to your ' +
-          (providerId === 'tavilyhf' ? 'Tavily key.' : 'API key.')
-        : 'Needs a ' + keyLabel(providerId) + '.'));
-      box.appendChild(button('cnf-btn cnf-btn-pri', hasKey ? 'Search the web (' + n + ')' : 'Add key',
-        hasKey ? searchWebForNothing : openSettings));
+      box.appendChild(el('p', null, !canSearch
+        ? (onFreeSearches(providerId) ? NO_FREE_SEARCHES : 'Needs a ' + keyLabel(providerId) + '.')
+        : onFreeSearches(providerId)
+          ? searches + ', free while CNfirmed’s shared searches last.'
+          : searches + ', billed to your ' + (providerId === 'tavilyhf' ? 'Tavily key.' : 'API key.')));
+      box.appendChild(button('cnf-btn cnf-btn-pri', canSearch ? 'Search the web (' + n + ')' : 'Add key',
+        canSearch ? searchWebForNothing : openSettings));
       pad.appendChild(box);
     }
   }
@@ -5522,7 +5610,8 @@
     claude: 'Anthropic. Uses your API key.',
     gemini: 'Google. Uses your API key.',
     openai: 'Uses your API key.',
-    tavilyhf: 'Tavily searches, GPT-OSS reads the results. Uses your Tavily key.'
+    tavilyhf: 'Tavily searches, GPT-OSS reads the results. Free while CNfirmed’s shared searches last; ' +
+      'then uses your Tavily key.'
   };
 
   function drawSettings(pad) {
@@ -5554,7 +5643,7 @@
     var p = PROVIDERS[current];
     var hasKey = !!getKey(current);
     var keyBlock = el('div');
-    var keyName = el('label', 'cnf-field-label', keyLabel(current));
+    var keyName = el('label', 'cnf-field-label', keyLabel(current) + (p.freeSearches ? ' (optional)' : ''));
     keyName.htmlFor = 'cnfirmed-key';
     var row = el('div', 'cnf-keyrow');
     var input = el('input', 'cnf-input');
@@ -5576,6 +5665,10 @@
     row.appendChild(save);
     keyBlock.appendChild(keyName);
     keyBlock.appendChild(row);
+    if (p.freeSearches && !hasKey) {
+      keyBlock.appendChild(el('p', 'cnf-note', freeSearchesSpent() ? NO_FREE_SEARCHES
+        : 'Not needed while CNfirmed’s free searches last. Add one to search on your own Tavily credits.'));
+    }
     keyBlock.appendChild(el('p', 'cnf-note', 'Kept in this browser’s localStorage. Sent only to ' +
       (p.keyService || p.name) + (p.keyService ? ', through the CNfirmed proxy.' : '.')));
     if (hasKey) {
