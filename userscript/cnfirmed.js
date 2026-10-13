@@ -2703,9 +2703,12 @@
   }
 
   var IA_SEARCH_PHRASE_WORDS = 6;
+  var IA_SEARCH_PHRASE_MIN_WORDS = 3;
 
-  // Words of a passage to search the book for, quoted: a single common word
-  // ("July") is found on every other page. Mirrors searchPhrase.
+  // Words of a passage to search the book for, quoted: three to six of them,
+  // the claim's terms first, then content words, never across an ellipsis or
+  // a word broken across OCR lines; a single common word ("July", "Pantheon")
+  // is found on every other page. Mirrors searchPhrase.
   function iaSearchPhrase(text, terms) {
     var wanted = tokenSetOf([terms.subject].concat(terms.numbers, terms.names, terms.phrases)
       .join(' ').replace(/-/g, ' '));
@@ -2714,24 +2717,34 @@
         return n + (wanted[t] ? (/\d/.test(t) ? 2 : 1) : 0);
       }, 0);
     };
-    var ws = String(text).replace(/…/g, ' ').split(/\s+/).filter(function (w) { return w.length > 0; });
-    var size = Math.min(IA_SEARCH_PHRASE_WORDS, ws.length);
+    var content = function (w) {
+      return Object.keys(tokenSetOf(w.replace(/-/g, ' '))).length > 0 ? 1 : 0;
+    };
     var best = null;
-    for (var i = 0; i + size <= ws.length; i++) {
-      var win = ws.slice(i, i + size);
-      // "com-" ends an OCR line: the book's text has the word whole.
-      if (win.some(function (w) { return /-$/.test(w); })) continue;
-      var score = win.reduce(function (n, w) { return n + weight(w); }, 0);
-      if (!best || score > best.score) best = { from: i, score: score };
-    }
-    if (!best || best.score < 2) return null;
-    var run = ws.slice(best.from, best.from + size);
-    while (run.length && weight(run[0]) === 0) run.shift();
-    while (run.length && weight(run[run.length - 1]) === 0) run.pop();
-    var phrase = libSafeTerm(run.map(function (w) {
-      return w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
-    }).join(' '));
-    return phrase.indexOf(' ') !== -1 ? '"' + phrase + '"' : null;
+    String(text).split(/\.\.\.|…/).forEach(function (piece) {
+      var spans = [[]];
+      var raw = piece.split(/\s+/).filter(function (w) { return w.length > 0; });
+      raw.forEach(function (w, i) {
+        var clean = libSafeTerm(w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''));
+        var broken = /-$/.test(w) || (i > 0 && /-$/.test(raw[i - 1]));
+        if (broken || clean.indexOf(' ') !== -1) spans.push([]);
+        else if (clean) spans[spans.length - 1].push(clean);
+      });
+      spans.forEach(function (ws) {
+        var size = Math.min(IA_SEARCH_PHRASE_WORDS, ws.length);
+        if (size < IA_SEARCH_PHRASE_MIN_WORDS) return;
+        for (var i = 0; i + size <= ws.length; i++) {
+          var run = ws.slice(i, i + size);
+          var score = run.reduce(function (n, x) { return n + 3 * weight(x) + content(x); }, 0);
+          if (!best || score > best.score) best = { run: run, score: score };
+        }
+      });
+    });
+    if (!best) return null;
+    var out = best.run.slice();
+    while (out.length > IA_SEARCH_PHRASE_MIN_WORDS && content(out[0]) === 0) out.shift();
+    while (out.length > IA_SEARCH_PHRASE_MIN_WORDS && content(out[out.length - 1]) === 0) out.pop();
+    return '"' + out.join(' ') + '"';
   }
 
   function iaViewerUrl(url, passage, terms) {
