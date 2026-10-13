@@ -4314,6 +4314,208 @@
     return { template: template, ref: '<ref>' + template + '</ref>', kind: kind };
   }
 
+  // ---- A full {{cite book}} from the ISBN ----------------------------------
+  // Mirrors src/core/citoid.ts. What ProveIt and VisualEditor's "Automatic"
+  // tab do: ask Citoid for the ISBN's catalogue record and write each field
+  // into the parameter the template's TemplateData `maps.citoid` names. The
+  // Archive link, |url-access= and |via= stay; the catalogue wins on the rest.
+
+  function citoidNamePairs(first, last) {
+    var pairs = [[first, last]];
+    for (var n = 2; n <= 9; n++) pairs.push([first + n, last + n]);
+    return pairs;
+  }
+
+  var CITE_BOOK_CITOID_MAP = {
+    title: 'title',
+    bookTitle: 'title',
+    edition: 'edition',
+    series: 'series',
+    volume: 'volume',
+    publisher: 'publisher',
+    place: 'location',
+    date: 'date',
+    language: 'language',
+    ISBN: ['isbn'],
+    ISSN: ['issn'],
+    oclc: 'oclc',
+    DOI: 'doi',
+    url: 'url',
+    author: citoidNamePairs('first', 'last'),
+    editor: citoidNamePairs('editor-first', 'editor-last'),
+    translator: citoidNamePairs('translator-first', 'translator-last'),
+    contributor: 'others'
+  };
+  var CITOID_KEEP = ['url', 'url-access', 'via', 'access-date'];
+  var CITOID_FIELD_ORDER = [
+    'title', 'edition', 'series', 'volume', 'others', 'publisher', 'location',
+    'date', 'year', 'language', 'isbn', 'issn', 'oclc', 'doi',
+    'url', 'url-access', 'via', 'access-date'
+  ];
+  var CITOID_TIMEOUT_MS = 8000;
+
+  function normaliseIsbn(raw) {
+    var digits = String(raw).replace(/[^0-9Xx]/g, '').toUpperCase();
+    return /^(?:\d{9}[\dX]|\d{13})$/.test(digits) ? digits : null;
+  }
+
+  function citoidClean(value) {
+    return typeof value === 'string' || typeof value === 'number'
+      ? String(value).replace(/\s+/g, ' ').trim().replace(/\|/g, '{{!}}')
+      : '';
+  }
+
+  function citoidParams(item, map) {
+    var params = {};
+    function set(param, value) {
+      var v = citoidClean(value);
+      if (typeof param === 'string' && param && v && !params[param]) params[param] = v;
+    }
+    Object.keys(map).forEach(function (field) {
+      var target = map[field];
+      var value = item[field];
+      if (value === undefined || value === null) return;
+      var values = Array.isArray(value) ? value : [value];
+      if (typeof target === 'string') { set(target, values[0]); return; }
+      target.forEach(function (param, i) {
+        var v = values[i];
+        if (Array.isArray(param)) {
+          var name = Array.isArray(v) ? v : [];
+          var first = citoidClean(name[0]);
+          var last = citoidClean(name[1]);
+          set(param[1], last || first);
+          if (last) set(param[0], first);
+        } else {
+          set(param, v);
+        }
+      });
+    });
+    return params;
+  }
+
+  function citoidOrderKey(param) {
+    var m = /^(?:(editor|translator)-)?(last|first|author)(\d*)$/.exec(param);
+    if (m) {
+      var group = m[1] === 'editor' ? 1 : m[1] === 'translator' ? 2 : 0;
+      return [group, Number(m[3] || 1), m[2] === 'first' ? 1 : 0];
+    }
+    var i = CITOID_FIELD_ORDER.indexOf(param);
+    return [3, i < 0 ? CITOID_FIELD_ORDER.length : i, 0];
+  }
+
+  function mergeCiteBook(existing, catalogue) {
+    if (!catalogue.title) return null;
+    var out = {};
+    Object.keys(catalogue).forEach(function (k) { if (k !== 'url') out[k] = catalogue[k]; });
+    var hasAuthor = Object.keys(out).some(function (k) { return /^(?:last|author)1?$/.test(k); });
+    Object.keys(existing).forEach(function (k) {
+      if (CITOID_KEEP.indexOf(k) !== -1) out[k] = existing[k];
+      else if (k === 'author' ? hasAuthor : k === 'year' ? Boolean(out.date) : Boolean(out[k])) return;
+      else out[k] = existing[k];
+    });
+    var ordered = {};
+    Object.keys(out)
+      .map(function (k, i) { return { k: k, i: i, key: citoidOrderKey(k) }; })
+      .sort(function (a, b) {
+        return a.key[0] - b.key[0] || a.key[1] - b.key[1] || a.key[2] - b.key[2] || a.i - b.i;
+      })
+      .forEach(function (e) { ordered[e.k] = out[e.k]; });
+    return ordered;
+  }
+
+  function citeBookTemplate(params) {
+    return '{{cite book |' + Object.keys(params).map(function (k) {
+      return k + '=' + params[k];
+    }).join(' |') + '}}';
+  }
+
+  function citationTemplateBody(citation) {
+    return citation.template.replace(/^\{\{/, '').replace(/\}\}$/, '');
+  }
+
+  function completeCitation(citation, items, map) {
+    var item = Array.isArray(items) ? items[0] : null;
+    if (!item || typeof item !== 'object') return citation;
+    var parsed = parseTemplateBody(citationTemplateBody(citation));
+    if (parsed.name !== 'cite book') return citation;
+    var merged = mergeCiteBook(parsed.named, citoidParams(item, map));
+    if (!merged) return citation;
+    var template = citeBookTemplate(merged);
+    return { template: template, ref: '<ref>' + template + '</ref>', kind: 'cite book' };
+  }
+
+  function citationIsbn(citation) {
+    if (!citation || citation.kind !== 'cite book' || !citation.template) return null;
+    var isbn = parseTemplateBody(citationTemplateBody(citation)).named.isbn;
+    return isbn ? normaliseIsbn(isbn) : null;
+  }
+
+  // Same-origin: the wiki's own REST and action APIs, as ProveIt calls them.
+  function citoidOrigin() {
+    return 'https://' + WIKI_CODE + '.wikipedia.org';
+  }
+
+  var citeBookMapPromise = null;
+  function citeBookMap() {
+    if (!citeBookMapPromise) {
+      citeBookMapPromise = mwApiGet(WIKI_CODE, {
+        action: 'templatedata', titles: 'Template:Cite book', redirects: '1'
+      }).then(function (data) {
+        var pages = data && data.pages ? Object.keys(data.pages).map(function (k) { return data.pages[k]; }) : [];
+        var maps = pages[0] && pages[0].maps;
+        return (maps && maps.citoid) || CITE_BOOK_CITOID_MAP;
+      }).catch(function () { return CITE_BOOK_CITOID_MAP; });
+    }
+    return citeBookMapPromise;
+  }
+
+  function citoidLookup(isbn) {
+    return fetch(citoidOrigin() + '/api/rest_v1/data/citation/mediawiki/' + encodeURIComponent(isbn), {
+      headers: { accept: 'application/json' }
+    }).then(function (res) {
+      if (!res.ok) throw new Error('Citoid: HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  // One lookup per citation, shared by the warm-up on opening a book and the
+  // Insert / Copy buttons; a failed or slow one leaves the citation as it was.
+  var citoidPending = Object.create(null);
+  function completeFromIsbn(citation) {
+    var isbn = citationIsbn(citation);
+    if (!isbn || citation.citoid) return Promise.resolve(citation);
+    var key = citation.template;
+    if (!citoidPending[key]) {
+      citoidPending[key] = Promise.all([citeBookMap(), citoidLookup(isbn)]).then(function (r) {
+        var done = completeCitation(citation, r[1], r[0]);
+        done.citoid = true;
+        return done;
+      }).catch(function () {
+        delete citoidPending[key];
+        return citation;
+      });
+    }
+    var timer;
+    var timeout = new Promise(function (resolve) {
+      timer = setTimeout(function () { resolve(citation); }, CITOID_TIMEOUT_MS);
+    });
+    return Promise.race([citoidPending[key], timeout]).then(function (result) {
+      clearTimeout(timer);
+      return result;
+    });
+  }
+
+  // The candidate keeps the full citation, so the cache and the next click have it.
+  function completeBookCitation(c) {
+    return completeFromIsbn(c.citation).then(function (citation) {
+      if (citation !== c.citation && citation.citoid) {
+        c.citation = citation;
+        persistArchive();
+      }
+      return citation;
+    });
+  }
+
   // ---- What was found, in one list ---------------------------------------
   // Every search's results become the same kind of item, ranked by how sure
   // we are that the source states the claim — not by which search found it:
@@ -4414,7 +4616,8 @@
       quote: words || (ev.fullText ? c.snippet : '…' + c.snippet + '…'),
       warnings: [],
       note: notes.join(' '),
-      ref: c.citation && c.citation.ref
+      ref: c.citation && c.citation.ref,
+      book: citationIsbn(c.citation) ? c : null
     };
   }
 
@@ -4874,10 +5077,13 @@
 
     var actions = el('div', 'cnf-actions');
     if (item.ref) {
+      // A book with an ISBN: look the catalogue record up now, so the
+      // buttons usually have the full citation by the time they are clicked.
+      if (item.book) completeBookCitation(item.book);
       actions.appendChild(button('cnf-btn cnf-btn-pri', 'Insert in editor', function () {
-        openEditorWithRef(i, { citation: { ref: item.ref } });
+        refFor(item).then(function (ref) { openEditorWithRef(i, { citation: { ref: ref } }); });
       }, 'Open the section editor with this <ref> in place of the {{citation needed}} tag'));
-      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { copyRef(item.ref); }));
+      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { refFor(item).then(copyRef); }));
     }
     if (item.url) {
       var open = el('a', 'cnf-open', 'Open source');
@@ -4890,6 +5096,11 @@
     detail.appendChild(actions);
     wrap.appendChild(detail);
     return wrap;
+  }
+
+  function refFor(item) {
+    if (!item.book) return Promise.resolve(item.ref);
+    return completeBookCitation(item.book).then(function (citation) { return citation.ref; });
   }
 
   function copyRef(ref) {
