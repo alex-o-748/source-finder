@@ -162,6 +162,8 @@ test("both search a book for the same words, and tell a bundled book apart the s
     "effective June 24, 1942. He was promoted to lieutenant general on July 7. Unlike most commanders",
     "…the tower was com- pleted in 1889, rising 300 metres under Gustave Eiffel…",
     "Agreement on an initial Allied course of action came in July 1942.",
+    "because the strength of the structure lies in the concrete core and not in the facing … the whole structure",
+    "the facing of … masonry over the",
     "",
   ];
   for (const [claim, title] of [[ike, "Dwight_D._Eisenhower"], [CLAIMS[1], TITLE]]) {

@@ -296,10 +296,17 @@ test("viewerUrl searches the book for the passage's words, quoted, not one commo
     viewerUrl("https://archive.org/details/ike", IKE_PASSAGE, terms),
     "https://archive.org/details/ike?q=%22promoted%20to%20lieutenant-general%20on%20July%207%22",
   );
-  // A passage sharing one word with the claim: its strongest anchor, as before.
-  const july = "Agreement on an initial Allied course of action came in July 1942.";
-  assert.equal(searchPhrase(july, terms), null);
-  assert.equal(viewerUrl("https://archive.org/details/ike", july, terms), "https://archive.org/details/ike?q=july");
+  // A passage is the page's own text: a run of it finds the page even when it
+  // shares little with the claim, its content words before its function words.
+  const pantheon = claimTerms("The Pantheon has a facing of masonry over a core of concrete.", "Masonry");
+  const quote =
+    "because the strength of the structure lies in the concrete core and not in the facing … " +
+    "the whole structure is in concrete faced with opus";
+  assert.equal(searchPhrase(quote, pantheon), '"structure lies in the concrete core"');
+  // Never across the ellipsis: "facing the whole" is not in the book.
+  assert.equal(searchPhrase("the facing … the whole", pantheon), null);
+  assert.equal(searchPhrase("the facing of … masonry over the", pantheon), '"the facing of"');
+  // Too short for a phrase: the claim's strongest anchor, as before.
   assert.equal(
     viewerUrl("https://archive.org/details/towerbook", "nothing here", claimTerms(CLAIM_TEXT, TITLE)),
     "https://archive.org/details/towerbook?q=1889",

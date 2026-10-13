@@ -975,12 +975,17 @@ export function detailsUrl(identifier: string, book?: string | null): string {
 }
 
 const SEARCH_PHRASE_WORDS = 6;
+const SEARCH_PHRASE_MIN_WORDS = 3;
 
 /**
  * Words of a passage to search the book for, so the viewer lands on its page:
- * the run of up to six words that carries most of the claim's terms, quoted,
- * trimmed to start and end on one. A single common word ("July") is found on
- * every other page. Null when no run carries two of the claim's terms.
+ * a run of three to six of its words, quoted. A passage is the page's own OCR
+ * text, so any run of it finds the page, where a single common word ("July",
+ * "Pantheon") is found on every other one. Of the runs, the one carrying most
+ * of the claim's terms, then most content words, with function words trimmed
+ * off its ends while it keeps three words. A run never crosses an ellipsis (the words either side are not next
+ * to each other in the book) nor takes a word broken across OCR lines ("com-").
+ * Null when the passage has no such run.
  */
 export function searchPhrase(text: string, terms: ClaimTerms): string | null {
   const wanted = tokenSet(
@@ -988,22 +993,33 @@ export function searchPhrase(text: string, terms: ClaimTerms): string | null {
   );
   const weight = (w: string): number =>
     [...tokenSet(w.replace(/-/g, " "))].reduce((n, t) => n + (wanted.has(t) ? (/\d/.test(t) ? 2 : 1) : 0), 0);
-  const ws = text.replace(/…/g, " ").split(/\s+/).filter((w) => w.length > 0);
-  const size = Math.min(SEARCH_PHRASE_WORDS, ws.length);
-  let best: { from: number; score: number } | null = null;
-  for (let i = 0; i + size <= ws.length; i++) {
-    const run = ws.slice(i, i + size);
-    // "com-" ends an OCR line: the book's text has the word whole.
-    if (run.some((w) => w.endsWith("-"))) continue;
-    const score = run.reduce((n, w) => n + weight(w), 0);
-    if (!best || score > best.score) best = { from: i, score };
+  const content = (w: string): number => (tokenSet(w.replace(/-/g, " ")).size > 0 ? 1 : 0);
+  let best: { run: string[]; score: number } | null = null;
+  for (const piece of text.split(/\.\.\.|…/)) {
+    const raw = piece.split(/\s+/).filter((w) => w.length > 0);
+    // Runs of whole words: none broken across lines, none punctuation alone.
+    const spans: string[][] = [[]];
+    raw.forEach((w, i) => {
+      const clean = safeTerm(w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""));
+      const broken = w.endsWith("-") || (i > 0 && raw[i - 1].endsWith("-"));
+      if (broken || clean.includes(" ")) spans.push([]);
+      else if (clean) spans[spans.length - 1].push(clean);
+    });
+    for (const ws of spans) {
+      const size = Math.min(SEARCH_PHRASE_WORDS, ws.length);
+      if (size < SEARCH_PHRASE_MIN_WORDS) continue;
+      for (let i = 0; i + size <= ws.length; i++) {
+        const run = ws.slice(i, i + size);
+        const score = run.reduce((n, w) => n + 3 * weight(w) + content(w), 0);
+        if (!best || score > best.score) best = { run, score };
+      }
+    }
   }
-  if (!best || best.score < 2) return null;
-  const run = ws.slice(best.from, best.from + size);
-  while (run.length && weight(run[0]) === 0) run.shift();
-  while (run.length && weight(run[run.length - 1]) === 0) run.pop();
-  const phrase = safeTerm(run.map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")).join(" "));
-  return phrase.includes(" ") ? `"${phrase}"` : null;
+  if (!best) return null;
+  const run = [...best.run];
+  while (run.length > SEARCH_PHRASE_MIN_WORDS && content(run[0]) === 0) run.shift();
+  while (run.length > SEARCH_PHRASE_MIN_WORDS && content(run[run.length - 1]) === 0) run.pop();
+  return `"${run.join(" ")}"`;
 }
 
 /**
