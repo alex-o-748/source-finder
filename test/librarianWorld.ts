@@ -81,6 +81,64 @@ const CATALOGUE: Record<string, unknown[]> = {
   ],
 };
 
+/**
+ * What the Worker's search inside page by page finds, by book: the book's
+ * name inside its item, how sure the Archive is of its page numbers, and per
+ * term (as the client quotes it) the paragraphs, as [leaf, printed page, text].
+ * Open books only: the client never asks for a borrowable one.
+ */
+export const PAGE_P1 =
+  "On 31 March 1889 the tower was completed, and Eiffel climbed to its summit, 300 metres above the Champ de Mars, to raise the flag.";
+export const PAGES: Record<string, { doc?: string; pageConfidence: number | null; matches: Record<string, [number, string | null, string][]> }> = {
+  tourdetroiscents00eiff: {
+    pageConfidence: 97,
+    matches: {
+      "1889": [[12, "iv", "Paris: Imprimerie Lemercier, 1889."], [57, "41", PAGE_P1]],
+      '"300 metres"': [[57, "41", PAGE_P1]],
+    },
+  },
+  // Its paragraph holds the planner's highlight, which goes.
+  "in.ernet.dli.2015.1234": {
+    doc: "2015.1234.Paris-Guide",
+    pageConfidence: null,
+    matches: { "1889": [[12, null, "The Eiffel Tower, finished in 1889, is 300 metres high, and from its summit all Paris may be seen."]] },
+  },
+  // Numbered, but the Archive is unsure of it: the leaf only.
+  eiffeltowerdescr00tiss: {
+    pageConfidence: 30,
+    matches: { Eiffel: [[33, "15", "The work was begun in January 1887; Eiffel's firm completed it in 1889, at a cost of six and a half million francs."]] },
+  },
+};
+
+/** The Worker's answer for a search inside, merged across terms as it merges them. */
+function insideReply(url: string, opts: WorldOptions): Response {
+  const u = new URL(url);
+  const id = u.searchParams.get("id") ?? "";
+  const status = opts.insideStatus?.[id];
+  if (status) return Response.json({ error: { code: "upstream_error", message: "x" } }, { status });
+  const book = PAGES[id];
+  if (!book) return Response.json({ error: { code: "no_text", message: "no searchable text" } }, { status: 404 });
+  const q = u.searchParams.getAll("q");
+  const seen = new Map<string, { text: string; terms: number[]; leaf: number; page: string | null }>();
+  q.forEach((term, i) => {
+    for (const [leaf, page, text] of book.matches[term] ?? []) {
+      const key = `${leaf} ${text}`;
+      const m = seen.get(key) ?? { text, terms: [], leaf, page };
+      m.terms.push(i);
+      seen.set(key, m);
+    }
+  });
+  const matches = [...seen.values()].sort((a, b) => b.terms.length - a.terms.length || a.leaf - b.leaf);
+  return Response.json({
+    id,
+    doc: u.searchParams.get("doc") ?? book.doc ?? id,
+    q,
+    counts: q.map((t) => (book.matches[t] ?? []).length),
+    pageConfidence: book.pageConfidence,
+    matches,
+  });
+}
+
 /** What a search inside finds, by book and term. */
 const INSIDE: Record<string, Record<string, string[]>> = {
   "eiffeltowertour0000loyr_b2c3": {
@@ -97,6 +155,8 @@ export interface WorldOptions {
   judgeStatus?: number;
   /** Fail the planner call with this status. */
   plannerStatus?: number;
+  /** Fail the search inside page by page of these books with these statuses. */
+  insideStatus?: Record<string, number>;
 }
 
 export interface Sent {
@@ -125,6 +185,7 @@ export function worldFetch(sent: Sent[], opts: WorldOptions = {}): typeof fetch 
       }
       throw new Error(`unexpected prompt: ${system.slice(0, 60)}`);
     }
+    if (url.includes("/archive/inside?")) return insideReply(url, opts);
     if (url.includes("/metadata/")) return Response.json({ metadata: {} });
     if (url.includes("/advancedsearch.php")) {
       const q = new URL(url).searchParams.get("q") ?? "";

@@ -17,13 +17,19 @@
  * endpoints the user script can reach too — checked from the console on a
  * Wikipedia page. The `ia` package's `be-api.us.archive.org` full-text host,
  * search-inside-the-book and OCR downloads (which redirect to numbered
- * `*.archive.org` servers) are all refused there, so neither front end uses
- * them: the CLI and the user script see the same data.
+ * `*.archive.org` servers) are all refused there, so neither front end calls
+ * them directly: the CLI and the user script see the same data.
+ *
+ * One of them goes through the CNfirmed Worker instead, which may call any
+ * host: the book reader's search inside one book (`/archive/inside`), every
+ * paragraph holding a term with the page it is on. Open books only: without an
+ * archive.org login it refuses a book in the lending library.
  */
 
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { USER_AGENT } from "./mediawiki.js";
+import { WORKER_URL } from "./archiveLibrarian.js";
 
 export const SEARCH_URL = "https://archive.org/services/search/beta/page_production/";
 export const METADATA_URL = "https://archive.org/metadata/";
@@ -58,6 +64,42 @@ export interface SearchRequest {
   size: number;
 }
 
+/** A search inside one book, page by page. */
+export interface InsideRequest {
+  identifier: string;
+  /** The book inside the item, as a hit's `file` names it; null for the item's one book. */
+  doc: string | null;
+  /** One to three, each searched on its own; a term in double quotes is a phrase. */
+  terms: string[];
+}
+
+/** A paragraph holding one of the terms, as the Worker returns it. */
+export interface InsideMatch {
+  /** The paragraph, cut to 1,500 characters around its hits. */
+  text: string;
+  /** The request's terms it holds, by index. */
+  terms: number[];
+  /** The scanned leaf it is on, and its printed page number when the Archive knows it. */
+  leaf: number | null;
+  page: string | null;
+  /** Set when the paragraph runs onto the next leaf. */
+  leafEnd?: number | null;
+  pageEnd?: string | null;
+}
+
+export interface InsideResponse {
+  id: string;
+  /** The book searched: `doc`, or the item's one book. */
+  doc: string;
+  q: string[];
+  /** Matches per term; null for a term whose search failed. */
+  counts: (number | null)[];
+  /** How sure the Archive is of the book's printed page numbers, 0-100. */
+  pageConfidence: number | null;
+  /** The most terms first, then in the book's order; at most 40. */
+  matches: InsideMatch[];
+}
+
 export interface ArchiveClient {
   fullTextSearch(request: SearchRequest): Promise<SearchResponse>;
   metadata(identifier: string): Promise<MetadataResponse>;
@@ -65,6 +107,21 @@ export interface ArchiveClient {
   catalogue?(query: string, rows: number): Promise<CatalogueResponse>;
   /** The `/stream/` page holding an open book's whole OCR text (HTML, the text in a `<pre>`). */
   streamPage?(identifier: string, file: string): Promise<string>;
+  /**
+   * Searches inside one book page by page, through the CNfirmed Worker.
+   * Throws with `status` on a refusal: 403 for a book in the lending library,
+   * 404 for one with no searchable text, 400 for an item of several books
+   * asked for none.
+   */
+  searchInside?(request: InsideRequest): Promise<InsideResponse>;
+}
+
+/** The Worker's search inside one book. The user script builds the same URL. */
+export function insideUrl(base: string, request: InsideRequest): string {
+  const params = new URLSearchParams({ id: request.identifier });
+  if (request.doc !== null) params.set("doc", request.doc);
+  for (const t of request.terms) params.append("q", t);
+  return `${base.replace(/\/+$/, "")}/archive/inside?${params.toString()}`;
 }
 
 /**
@@ -168,6 +225,9 @@ export const httpArchiveClient: ArchiveClient = {
   async streamPage(identifier, file) {
     return (await get(streamUrl(identifier, file), "text/html")).text();
   },
+  searchInside(request) {
+    return getJson<InsideResponse>(insideUrl(process.env.CNFIRMED_PROXY_URL || WORKER_URL, request));
+  },
 };
 
 /**
@@ -205,6 +265,13 @@ export function recordingClient(inner: ArchiveClient, dir: string): ArchiveClien
       async streamPage(identifier: string, file: string) {
         const r = await inner.streamPage!(identifier, file);
         save(`stream-${identifier}`, { length: r.length });
+        return r;
+      },
+    }),
+    ...(inner.searchInside && {
+      async searchInside(request: InsideRequest) {
+        const r = await inner.searchInside!(request);
+        save(`inside-${request.identifier}`, { request, response: r });
         return r;
       },
     }),

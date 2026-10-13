@@ -20,6 +20,10 @@
  *                                          # user script does (its judge model, or the Verify API)
  *   npx tsx eval/run.ts --no-librarian     # the Archive's word search alone, without the models'
  *                                          # queries, named books and search inside the leads
+ *   npx tsx eval/run.ts --no-page-search   # the librarian without searching open books page by page
+ *   NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --inside-url http://127.0.0.1:8787
+ *                                          # record the Worker's /archive/inside from a local copy
+ *                                          # (`wrangler dev`) before it is deployed
  *
  * The web search needs CNFIRMED_ANTHROPIC_API_KEY only to record (the check needs no key):
  * replaying a recorded call needs no key. The key travels in a header, and headers are
@@ -38,8 +42,9 @@ import { fetchArticle } from "../src/core/fetchArticle.js";
 import { findWikiCandidates, loadWikiCorpus } from "../src/core/wikiSources.js";
 import { findArchiveCandidates } from "../src/core/archiveSources.js";
 import { WORKER_URL, replyContent, workerChatClient } from "../src/core/archiveLibrarian.js";
+import { httpArchiveClient } from "../src/core/internetArchive.js";
 import type { ArchiveFunnel } from "../src/core/archiveSources.js";
-import { installCassette } from "./lib/http.js";
+import { installCassette, keyMatches } from "./lib/http.js";
 import { indexOfClaim, loadScriptArticle } from "./lib/userscript.js";
 import {
   CASSETTE_DIR,
@@ -70,6 +75,10 @@ const check = process.argv.includes("--check");
 const librarian = !process.argv.includes("--no-librarian");
 /** Read the whole text of open books too (option off in the shipped script until archive.org allows it). */
 const fullText = process.argv.includes("--full-text");
+/** Search inside open books page by page through the Worker (default on, as shipped). */
+const pageSearch = !process.argv.includes("--no-page-search");
+/** Where live /archive/inside requests go when the deployed Worker has no such route yet. */
+const insideUrl = arg("inside-url");
 const limit = arg("limit") ? Number(arg("limit")) : undefined;
 // The user script's own overrides, as an editor would set them in common.js.
 const scriptWindow: Record<string, unknown> = {};
@@ -79,6 +88,7 @@ if (arg("search-tool")) scriptWindow.cnfirmedSearchToolClaude = arg("search-tool
 // archive.org allows it in a browser.
 if (fullText) scriptWindow.cnfirmedArchiveFullText = true;
 if (!librarian) scriptWindow.cnfirmedArchiveLibrarian = false;
+if (!pageSearch) scriptWindow.cnfirmedArchivePageSearch = false;
 // A replayed search failure needs no wait before the next try.
 if (!record) {
   scriptWindow.cnfirmedArchiveRetryWait = 0;
@@ -114,11 +124,20 @@ function tallyUsage(key: string, body: string, ms: number | undefined): void {
 }
 
 const WORKER_HOST = new URL(WORKER_URL).host;
+/** The Worker's model route: its errors and answerless replies are never facts to record. */
+const WORKER_MODELS = [`${WORKER_HOST}/hf`];
+const INSIDE_BASE = `${WORKER_URL}/archive/inside`;
 const stats = installCassette({
   dir: CASSETTE_DIR,
   dirFor: (key) => (key.startsWith("GET archive.org/stream/") ? FULLTEXT_CASSETTE_DIR : CASSETTE_DIR),
   mode: record ? "record" : "replay",
-  hostConcurrency: { "archive.org": 3, "api.anthropic.com": 4, [WORKER_HOST]: 3 },
+  ...(insideUrl && {
+    liveUrl: (url: string) => (url.startsWith(INSIDE_BASE) ? `${insideUrl.replace(/\/+$/, "")}${url.slice(WORKER_URL.length)}` : url),
+  }),
+  hostConcurrency: {
+    "archive.org": 3, "api.anthropic.com": 4, [WORKER_HOST]: 3,
+    ...(insideUrl && { [new URL(insideUrl).host]: 4 }),
+  },
   // The Worker allows 20 requests a minute per address.
   hostMinIntervalMs: { [WORKER_HOST]: 3500 },
   // A model call is billed even when abandoned: a long wait, and no retry.
@@ -126,11 +145,12 @@ const stats = installCassette({
     "api.anthropic.com": { ms: 600_000, retryNetworkErrors: false },
     [WORKER_HOST]: { ms: 300_000, retryNetworkErrors: false },
   },
-  recordOnlyOk: ["api.anthropic.com", WORKER_HOST],
+  // A search inside's 403 (a lent book) or 404 (no text) is a fact; a model's error is not.
+  recordOnlyOk: ["api.anthropic.com", ...WORKER_MODELS],
   // The librarian's client tries a 504 or an answerless reply once more
   // itself; recording the answerless one would replay it to that retry.
-  clientRetries5xx: [WORKER_HOST],
-  skipRecording: (host, status, body) => host === WORKER_HOST && status === 200 && replyContent(body) === null,
+  clientRetries5xx: WORKER_MODELS,
+  skipRecording: (key, status, body) => keyMatches(key, WORKER_MODELS) && status === 200 && replyContent(body) === null,
   log: (line) => console.error(line),
   observe: tallyUsage,
 });
@@ -212,17 +232,19 @@ function wikiLead(w: any): Lead {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function archiveLead(a: any): Lead {
+  // Paragraphs from searching inside the book page by page are different
+  // evidence from the search's highlights, as a passage from the whole text
+  // is, so such a lead is judged on its own.
+  const paged = Array.isArray(a.evidence.pages) && a.evidence.pages.some(Boolean);
   return {
-    // A passage from the whole text is different evidence from the search's
-    // highlights, so it is judged on its own.
-    key: `ia:${a.evidence.identifier}${a.evidence.fullText ? "#text" : ""}`,
+    key: `ia:${a.evidence.identifier}${a.evidence.fullText ? "#text" : ""}${paged ? "#page" : ""}`,
     origin: "internet-archive",
     title: a.title,
     url: a.url,
     score: a.evidence.score,
     matchedAnchors: a.evidence.matchedAnchors,
     evidence: a.evidence.passages,
-    where: `${a.evidence.year ?? "n.d."}, ${a.evidence.access}${a.evidence.fullText ? ", whole text" : ""}`,
+    where: `${a.evidence.year ?? "n.d."}, ${a.evidence.access}${a.evidence.fullText ? ", whole text" : ""}${paged ? ", page search" : ""}`,
   };
 }
 
@@ -323,8 +345,11 @@ async function runCoreClaim(c: EvalClaim): Promise<ClaimResult> {
   }
 
   try {
+    const { searchInside: _paged, ...withoutPages } = httpArchiveClient;
+    void _paged;
     const archive = await findArchiveCandidates(claim, article.title, {
       fullText,
+      client: pageSearch ? httpArchiveClient : withoutPages,
       ...(librarian && { librarian: { client: workerChatClient() } }),
     });
     const { passages: _p, ...funnel } = archive.funnel;

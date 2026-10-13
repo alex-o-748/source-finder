@@ -34,6 +34,13 @@ export interface CassetteOptions {
    */
   dirFor?: (key: string) => string;
   mode: CassetteMode;
+  /**
+   * Where a live request goes, when not to its own URL: a Worker route not
+   * deployed yet, served by a local copy (`wrangler dev`). It is recorded
+   * under the URL the pipeline asked for, so a replay needs nothing local.
+   * Spacing, lanes, timeouts and retries follow the host it goes to.
+   */
+  liveUrl?: (url: string) => string;
   /** Minimum gap between two live requests to the same host (default 1000 ms). */
   minIntervalMs?: number;
   /** The same, for particular hosts: the CNfirmed Worker allows 20 requests a minute. */
@@ -54,19 +61,20 @@ export interface CassetteOptions {
    */
   hostTimeouts?: Record<string, { ms: number; retryNetworkErrors: boolean }>;
   /**
-   * Hosts whose error responses are never recorded. A model API's 400 or 401
-   * (no credit, a bad key) says nothing about the claim, and replaying it
-   * would hide the gap from the next --record.
+   * Hosts, or a host and the start of a path (`worker.dev/hf`), whose error
+   * responses are never recorded. A model API's 400 or 401 (no credit, a bad
+   * key) says nothing about the claim, and replaying it would hide the gap
+   * from the next --record.
    */
   recordOnlyOk?: string[];
   /**
-   * Hosts whose client retries its own server errors: a 5xx is handed back
-   * at once (a 429 is still waited out here), so a billed call is not
-   * repeated twice over.
+   * Hosts, or a host and the start of a path, whose client retries its own
+   * server errors: a 5xx is handed back at once (a 429 is still waited out
+   * here), so a billed call is not repeated twice over.
    */
   clientRetries5xx?: string[];
   /** A response that is not to be recorded, though it is no error: say, a model's reply with no answer. */
-  skipRecording?: (host: string, status: number, body: string) => boolean;
+  skipRecording?: (key: string, status: number, body: string) => boolean;
   log?: (line: string) => void;
   /** Sees every response body, replayed or live, and how long it took live. */
   observe?: (key: string, body: string, ms: number | undefined) => void;
@@ -112,6 +120,12 @@ export function requestKey(url: string, method = "GET", body?: string): string {
   const query = new URLSearchParams(params).toString();
   const digest = body ? `#${createHash("sha1").update(body).digest("hex").slice(0, 16)}` : "";
   return `${method.toUpperCase()} ${u.host}${u.pathname}${query ? `?${query}` : ""}${digest}`;
+}
+
+/** Whether a request key is for one of `targets`: a host, or a host and the start of a path. */
+export function keyMatches(key: string, targets: string[] | undefined): boolean {
+  const target = key.slice(key.indexOf(" ") + 1);
+  return (targets ?? []).some((t) => target === t || target.startsWith(t.includes("/") ? t : `${t}/`));
 }
 
 export function cassettePath(dir: string, key: string): string {
@@ -164,6 +178,7 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     init: RequestInit | undefined,
     host: string,
     lanes: number,
+    clientRetries: boolean,
   ): Promise<{ res: Response; body: string; ms: number }> {
     const timeout = options.hostTimeouts?.[host] ?? { ms: 60_000, retryNetworkErrors: true };
     for (let attempt = 0; ; attempt++) {
@@ -189,8 +204,7 @@ export function installCassette(options: CassetteOptions): CassetteStats {
         continue;
       }
       const body = await res.text();
-      const clientRetries = res.status >= 500 && options.clientRetries5xx?.includes(host);
-      if (isTransient(res.status, body) && !clientRetries && attempt < maxRetries) {
+      if (isTransient(res.status, body) && !(clientRetries && res.status >= 500) && attempt < maxRetries) {
         const ms = retryAfterMs(res, attempt);
         stats.retries++;
         log(`  ${res.status} from ${host}, waiting ${Math.round(ms / 1000)}s`);
@@ -222,13 +236,15 @@ export function installCassette(options: CassetteOptions): CassetteStats {
       throw new Error(`not recorded: ${key}`);
     }
 
-    const host = new URL(url).host;
+    const target = options.liveUrl?.(url) ?? url;
+    const host = new URL(target).host;
     const lanes = options.hostConcurrency?.[host] ?? 1;
     const turn = laneTurn.get(host) ?? 0;
     laneTurn.set(host, turn + 1);
     const lane = `${host}#${turn % lanes}`;
     const previous = queues.get(lane) ?? Promise.resolve();
-    const run = previous.catch(() => {}).then(() => live(url, init, host, lanes));
+    const clientRetries = keyMatches(key, options.clientRetries5xx);
+    const run = previous.catch(() => {}).then(() => live(target, init, host, lanes, clientRetries));
     queues.set(lane, run);
     const { res, body: text, ms } = await run;
     // Rate limits and server errors that outlived the retries are not facts
@@ -236,8 +252,8 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     options.observe?.(key, text, ms);
     if (
       !isTransient(res.status, text) &&
-      (res.ok || !options.recordOnlyOk?.includes(host)) &&
-      !options.skipRecording?.(host, res.status, text)
+      (res.ok || !keyMatches(key, options.recordOnlyOk)) &&
+      !options.skipRecording?.(key, res.status, text)
     ) {
       const rec: Recorded = { key, status: res.status, contentType: res.headers.get("content-type"), body: text, ms };
       mkdirSync(dirname(path), { recursive: true });

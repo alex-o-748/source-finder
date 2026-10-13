@@ -7,10 +7,23 @@
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import * as lib from "../src/core/archiveLibrarian.js";
-import { catalogueUrl } from "../src/core/internetArchive.js";
-import { claimTerms, findArchiveCandidates, parseCatalogueHits, rankPlannedHits } from "../src/core/archiveSources.js";
+import { catalogueUrl, insideUrl } from "../src/core/internetArchive.js";
+import type { InsideResponse } from "../src/core/internetArchive.js";
+import {
+  bestStretch,
+  citationWithPage,
+  claimTerms,
+  findArchiveCandidates,
+  formatArchiveCitation,
+  pagePassages,
+  parseCatalogueHits,
+  quotePage,
+  rankPlannedHits,
+  viewerUrl,
+} from "../src/core/archiveSources.js";
+import { librarianLine } from "../src/cli/commands/archive.js";
 import { loadUserScript } from "./userscriptLoader.js";
-import { BOOKS, CLAIM, PARAGRAPH, PLAN, worldFetch, type Sent } from "./librarianWorld.js";
+import { BOOKS, CLAIM, PAGE_P1, PARAGRAPH, PLAN, worldFetch, type Sent } from "./librarianWorld.js";
 
 const realFetch = globalThis.fetch;
 after(() => {
@@ -272,4 +285,90 @@ test("with the librarian off, the user script makes no model call", async () => 
   assert.equal(r.funnel.librarian, undefined);
   assert.ok(!sent.some((s) => s.url.endsWith("/hf")));
   assert.ok(!sent.some((s) => (new URL(s.url).searchParams.get("user_query") ?? "").includes("identifier:(")));
+});
+
+test("the user script searches inside page by page as the core does: terms, request, passages, pages", () => {
+  for (const t of ["Prince Charles", "1814", 'a/b "c"', "Saxe-Coburg"]) assert.equal(script.libInsideTerm(t), lib.insideTerm(t), t);
+  for (const r of [
+    { identifier: "magazines", doc: "2004/Issue 10 & 11", terms: ["1889", '"300 metres"'] },
+    { identifier: "in.ernet.dli.2015.1", doc: null, terms: ["x"] },
+  ]) {
+    assert.equal(script.iaInsideUrl("https://w.example/", r), insideUrl("https://w.example/", r));
+  }
+  const matched = (t: string) => lib.planMatched(t, PLAN.terms);
+  const long = `${"filler ".repeat(200)}The tower was completed in 1889 by Eiffel, 300 metres tall. ${"more ".repeat(200)}`;
+  for (const chars of [100, 600, 5000]) assert.equal(script.iaBestStretch(long, matched, chars), bestStretch(long, matched, chars));
+  const reply: InsideResponse = {
+    id: "b", doc: "b", q: ["1889"], counts: [5], pageConfidence: 70,
+    matches: [
+      { text: "Paris, 1889.", terms: [0], leaf: 3, page: "iv" },
+      { text: "Nothing to do with it.", terms: [0], leaf: 4, page: "v" },
+      { text: long, terms: [0], leaf: 9, page: "3", leafEnd: 10, pageEnd: "4" },
+      { text: PAGE_P1, terms: [0], leaf: 57, page: "41" },
+      { text: "Eiffel in 1889.", terms: [0], leaf: null, page: null },
+    ],
+  };
+  for (const confidence of [70, 10, null]) {
+    const r = { ...reply, pageConfidence: confidence };
+    assert.deepEqual(script.iaPagePassages(r, matched), pagePassages(r, matched), String(confidence));
+  }
+});
+
+test("the user script gives a checked quote's page to the citation and the viewer as the core does", () => {
+  const cite = formatArchiveCitation({ identifier: "tour", title: "La tour", creator: "Eiffel", year: 1900 }, "borrow", { publisher: "P", isbn: null });
+  for (const at of [{ leaf: 57, page: "41" }, { leaf: 57, page: "41", leafEnd: 58, pageEnd: "42" }, { leaf: 57, page: null }, { leaf: 3, page: "xii" }]) {
+    assert.deepEqual(script.iaCitationWithPage(cite, at), citationWithPage(cite, at), JSON.stringify(at));
+  }
+  const odd = { template: "{{Cite book |title=T |url= |page=}}", ref: "", kind: "cite book" as const };
+  assert.deepEqual(script.iaCitationWithPage(odd, { leaf: 1, page: "2" }), citationWithPage(odd, { leaf: 1, page: "2" }));
+  const evidence = { passages: ["Eiffel completed it in 1889.", PAGE_P1], pages: [null, { leaf: 57, page: "41" }] };
+  for (const q of ["the tower was completed, and Eiffel climbed to its summit", "Eiffel completed it in 1889", ""]) {
+    assert.deepEqual(script.iaQuotePage(evidence, q), quotePage(evidence, q), q);
+  }
+  const terms = claimTerms(CLAIM, "Eiffel Tower");
+  assert.equal(script.iaViewerUrl("https://archive.org/details/tour", PAGE_P1, script.iaClaimTerms(CLAIM, "Eiffel Tower"), { leaf: 57, page: "41" }),
+    viewerUrl("https://archive.org/details/tour", PAGE_P1, terms, { leaf: 57, page: "41" }));
+
+  // The panel: the link opens on the quote's page, and the note gives the page.
+  const c = {
+    url: "https://archive.org/details/tour", title: "La tour", snippet: PAGE_P1, citation: citationWithPage(cite, { leaf: 57, page: "41" }),
+    evidence: { ...evidence, year: 1900, access: "open", viewerUrl: "https://archive.org/details/tour?q=x" },
+    check: { verdict: "supports", quote: "the tower was completed, and Eiffel climbed to its summit", reason: "States it." },
+  };
+  const item = script.archiveItem(c, "supports", true, "k", script.iaClaimTerms(CLAIM, "Eiffel Tower"));
+  assert.match(item.url, /^https:\/\/archive\.org\/details\/tour\/page\/leaf57\?q=/);
+  assert.match(item.note, /p\. 41: check it against the scan/);
+  assert.match(item.ref, /\|page=41 \|url=https:\/\/archive\.org\/details\/tour\/page\/41 \|/);
+  const unpaged = script.archiveItem({ ...c, check: { ...c.check, quote: "Eiffel completed it in 1889" } }, "supports", true, "k", script.iaClaimTerms(CLAIM, "Eiffel Tower"));
+  assert.match(unpaged.note, /Find the page in the book and add \|page=/);
+});
+
+test("the user script asks the Worker for the same pages as the core, and none with page search off", async () => {
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
+  const scriptSent: Sent[] = [];
+  globalThis.fetch = worldFetch(scriptSent, { insideStatus: { undatedpamphlet: 502 } });
+  const fromScript = await page.findArchiveCandidates(0);
+  const coreSent: Sent[] = [];
+  globalThis.fetch = worldFetch(coreSent, { insideStatus: { undatedpamphlet: 502 } });
+  const fromCore = await findArchiveCandidates(
+    { claim: CLAIM, context: PARAGRAPH, section: null, offset: 0, tag: "{{cn}}" },
+    "Eiffel Tower",
+    { librarian: { client: lib.workerChatClient() } },
+  );
+  const pages = (sent: Sent[]) => sent.map((s) => s.url).filter((u) => u.includes("/archive/inside?")).sort();
+  assert.deepEqual(pages(scriptSent), pages(coreSent));
+  assert.equal(pages(scriptSent).length, 5);
+  assert.deepEqual(fromScript.funnel, fromCore.funnel);
+  assert.deepEqual(fromScript.candidates, fromCore.candidates);
+  assert.equal(page.archiveLibrarianLine(fromScript.funnel.librarian), librarianLine(fromCore.funnel));
+  assert.match(librarianLine(fromCore.funnel), /5 open book\(s\) page by page, 3 with a passage/);
+
+  const off = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, { window: { cnfirmedArchivePageSearch: false } });
+  off.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
+  const offSent: Sent[] = [];
+  globalThis.fetch = worldFetch(offSent);
+  const r = await off.findArchiveCandidates(0);
+  assert.equal(pages(offSent).length, 0);
+  assert.deepEqual(r.funnel.librarian.pages, { books: 0, found: 0 });
 });

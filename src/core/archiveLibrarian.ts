@@ -432,6 +432,16 @@ export function shelfQueries(term: string, identifiers: string[]): { query: stri
   return out;
 }
 
+/**
+ * A telling term as the book reader's search inside takes it. Unquoted, the
+ * words of "Prince Charles" must all be in the book but each paragraph need
+ * hold only one of them, so a term of several words is quoted, as a phrase.
+ */
+export function insideTerm(term: string): string {
+  const t = safeTerm(term);
+  return t.includes(" ") ? `"${t}"` : t;
+}
+
 // ---------------------------------------------------------------------------
 // 4. Check
 // ---------------------------------------------------------------------------

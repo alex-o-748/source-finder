@@ -38,6 +38,7 @@ import { httpArchiveClient } from "./internetArchive.js";
 import type {
   ArchiveClient,
   CatalogueResponse,
+  InsideResponse,
   MetadataResponse,
   SearchResponse,
 } from "./internetArchive.js";
@@ -50,12 +51,15 @@ import {
   PLAN_SYSTEM,
   booksPrompt,
   catalogueQuery,
+  insideTerm,
   parseBooks,
   parsePlan,
   nameConcepts,
   planCoverage,
   planMatched,
   planPrompt,
+  quoteInPassages,
+  quoteKey,
   shelfQueries,
   safeTerm,
   shelfSearchable,
@@ -73,7 +77,8 @@ import {
   words,
 } from "./relevance.js";
 import type { Anchors, TokenBag } from "./relevance.js";
-import type { ArchiveCandidate, Article, Citation, Claim } from "./types.js";
+import { parseTemplate } from "./wikitext.js";
+import type { ArchiveCandidate, ArchiveEvidence, Article, Citation, Claim, PassagePage } from "./types.js";
 
 export interface ArchiveSourceOptions {
   /** Hits requested per full-text query (default 50). */
@@ -118,6 +123,20 @@ export const NAMED_ROWS = 5;
 export const NAMED_SCANS = 2;
 /** Leads the librarian may add in all, after the metadata checks. */
 export const LIBRARIAN_LEADS = 8;
+/** Open books searched inside page by page, per claim: the search's leads first. */
+export const PAGE_BOOKS = 12;
+/** Books searched inside page by page at a time. */
+export const PAGE_CONCURRENCY = 4;
+/** Paragraphs kept from each book's search inside. */
+export const PAGE_PASSAGES = 3;
+/** Characters kept of a paragraph: the stretch holding most of the claim. */
+export const PAGE_PASSAGE_CHARS = 600;
+const STRETCH_STEP = 50;
+/**
+ * Below this confidence (0-100) in a book's page numbering, its printed page
+ * numbers are not used: the leaf still opens the reader on the passage.
+ */
+export const PAGE_NUMBER_CONFIDENCE = 50;
 
 /** Collections of books anyone with a free account can borrow. */
 const LENDING_COLLECTIONS = new Set(["inlibrary", "lendinglibrary"]);
@@ -688,8 +707,11 @@ export interface PassageStats {
 export interface ScoredHit {
   hit: ArchiveHit;
   access: ArchiveAccess;
-  /** Passages that passed the gates and threshold, best first. */
-  passages: { text: string; score: number; matched: string[] }[];
+  /**
+   * Passages that passed the gates and threshold, best first. A paragraph
+   * found by searching inside the book page by page says where it is.
+   */
+  passages: { text: string; score: number; matched: string[]; page?: PassagePage }[];
   /** The best passage's score. */
   score: number;
   /** The best passage came from the book's whole text. */
@@ -1024,11 +1046,65 @@ export function searchPhrase(text: string, terms: ClaimTerms): string | null {
 
 /**
  * Opens the book searched for the passage's words, so the editor lands on its
- * page; failing those, for the claim's strongest anchor.
+ * page; failing those, for the claim's strongest anchor. A passage found by
+ * searching inside the book opens on its own leaf, the words highlighted: the
+ * reader does not jump to the first hit when it is given a page.
  */
-export function viewerUrl(url: string, passage: string, terms: ClaimTerms): string {
+export function viewerUrl(url: string, passage: string, terms: ClaimTerms, at: PassagePage | null = null): string {
   const q = searchPhrase(passage, terms) ?? terms.numbers[0] ?? terms.names[0] ?? terms.subject;
-  return `${url}?q=${encodeURIComponent(q)}`;
+  return `${at ? `${url}/page/leaf${at.leaf}` : url}?q=${encodeURIComponent(q)}`;
+}
+
+/** Where the passage holding a checked quote is in the book; null when no passage found inside the book holds it. */
+export function quotePage(evidence: Pick<ArchiveEvidence, "passages" | "pages">, quote: string): PassagePage | null {
+  if (!evidence.pages || !quote) return null;
+  for (let i = 0; i < evidence.passages.length; i++) {
+    const at = evidence.pages[i];
+    if (at && quoteInPassages(quote, [evidence.passages[i]])) return at;
+  }
+  return null;
+}
+
+/**
+ * The citation with the page its passage is on, as InternetArchiveBot writes
+ * one: `|page=` (`|pages=` for a paragraph running onto the next page), and
+ * the link opened at that page. The citation as it was when the page has no
+ * printed number, or it already gives one.
+ */
+export function citationWithPage(citation: Citation, at: PassagePage): Citation {
+  if (!at.page) return citation;
+  const { name, named } = parseTemplate(citation.template.replace(/^\{\{/, "").replace(/\}\}$/, ""));
+  if (!/^(?:cite .+|citation)$/.test(name) || named.page || named.pages) return citation;
+  const range = at.pageEnd && at.pageEnd !== at.page ? `${at.page}–${at.pageEnd}` : null;
+  const page: [string, string] = range ? ["pages", range] : ["page", at.page];
+  // The page goes in before the link, where InternetArchiveBot puts it.
+  const params: [string, string][] = [];
+  for (const [k, v] of Object.entries(named)) {
+    if (k === "url") {
+      params.push(page);
+      params.push(["url", /^https:\/\/archive\.org\/details\/[^?#]+$/.test(v) && !v.includes("/page/") ? `${v}/page/${encodeURIComponent(at.page)}` : v]);
+    } else {
+      params.push([k, v]);
+    }
+  }
+  if (!("url" in named)) params.push(page);
+  const template = `{{${name} |${params.map(([k, v]) => `${k}=${v}`).join(" |")}}}`;
+  return { ...citation, template, ref: `<ref>${template}</ref>` };
+}
+
+/**
+ * Once a check has quoted the words that state the claim, from a passage
+ * found inside the book: the citation gives the page they are on, and the
+ * viewer opens there, searched for them. The candidate as it was otherwise.
+ */
+export function withQuotePage(c: ArchiveCandidate, quote: string, terms: ClaimTerms): ArchiveCandidate {
+  const at = quotePage(c.evidence, quote);
+  if (!at) return c;
+  return {
+    ...c,
+    citation: citationWithPage(c.citation, at),
+    evidence: { ...c.evidence, viewerUrl: viewerUrl(c.url, quote, terms, at) },
+  };
 }
 
 /**
@@ -1077,6 +1153,7 @@ export function toArchiveCandidate(
   const book = bundledBook(hit, details);
   const url = detailsUrl(hit.identifier, book);
   const matched = compactAnchors(best.matched);
+  const pages = s.passages.map((p) => p.page ?? null);
   const byline = [
     s.access === "borrow" ? "Internet Archive (borrow)" : "Internet Archive",
     hit.year,
@@ -1093,10 +1170,11 @@ export function toArchiveCandidate(
       year: hit.year,
       access: s.access,
       passages: s.passages.map((p) => p.text),
+      ...(pages.some((p) => p !== null) && { pages }),
       score: s.score,
       matchedAnchors: matched,
       query: hit.query,
-      viewerUrl: viewerUrl(url, best.text, terms),
+      viewerUrl: viewerUrl(url, best.text, terms, best.page ?? null),
       ...(book !== null && { bundle: { title: hit.title, books: details!.books!.length } }),
       ...(s.fullText && { fullText: true as const }),
       ...(via && { via }),
@@ -1164,6 +1242,8 @@ export interface LibrarianFunnel {
   /** The terms every lead was searched inside for, and the queries that took. */
   shelfTerms: string[];
   shelfQueries: number;
+  /** Open books searched inside page by page, and how many gave a paragraph. */
+  pages: { books: number; found: number };
   /** Leads the librarian added to the search's, after the metadata checks. */
   added: number;
 }
@@ -1308,7 +1388,7 @@ export async function findArchiveCandidates(
   const added: { s: ScoredHit; via: "planner" | "named" }[] = [];
   if (models) {
     funnel.librarian = await librarianLeads({
-      planning, naming, client, terms, shortlist: shown.map((x) => x.s), added, funnel,
+      planning, naming, client, claim: claim.claim, terms, shortlist: shown.map((x) => x.s), added, funnel,
     });
     const before = shown.length;
     // Planner and named leads in their order, one call each so `via` is kept.
@@ -1363,6 +1443,85 @@ export function collapseCopies<T extends { s: ScoredHit; details: ItemDetails | 
   return out;
 }
 
+/** `fn` over `list`, `limit` at a time; the results in order. */
+async function mapLimit<T, R>(list: T[], limit: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(list.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < list.length) {
+      const i = next++;
+      out[i] = await fn(list[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, list.length) }, worker));
+  return out;
+}
+
+/**
+ * At most `chars` characters of a paragraph: the stretch holding most of what
+ * `matched` finds in it, cut at spaces, "…" where it was cut.
+ */
+export function bestStretch(text: string, matched: (t: string) => string[], chars: number): string {
+  if (text.length <= chars) return text;
+  let best = { start: 0, n: -1 };
+  for (let start = 0; ; start += STRETCH_STEP) {
+    const s = Math.min(start, text.length - chars);
+    const n = matched(text.slice(s, s + chars)).length;
+    if (n > best.n) best = { start: s, n };
+    if (s === text.length - chars) break;
+  }
+  let w = text.slice(best.start, best.start + chars);
+  if (best.start > 0) w = `…${w.replace(/^\S*\s+/, "")}`;
+  if (best.start + chars < text.length) w = `${w.replace(/\s+\S*$/, "")}…`;
+  return w;
+}
+
+/**
+ * A book's paragraphs from its search inside, as passages: the ones holding
+ * most of the claim's concepts first (one at least), each cut to the stretch
+ * around them, `PAGE_PASSAGES` at most. Each says where in the book it is;
+ * the printed page number only when the Archive is sure of the numbering.
+ */
+export function pagePassages(r: InsideResponse, matched: (t: string) => string[]): ScoredHit["passages"] {
+  const numbered = r.pageConfidence !== null && r.pageConfidence >= PAGE_NUMBER_CONFIDENCE;
+  const found: { p: ScoredHit["passages"][number]; n: number }[] = [];
+  for (const m of Array.isArray(r.matches) ? r.matches : []) {
+    if (!m || typeof m.text !== "string" || !matched(m.text).length) continue;
+    const text = bestStretch(m.text, matched, PAGE_PASSAGE_CHARS);
+    if (found.some((f) => f.p.text === text)) continue;
+    const p: ScoredHit["passages"][number] = { text, score: 0, matched: matched(text) };
+    if (typeof m.leaf === "number") {
+      p.page = { leaf: m.leaf, page: numbered ? m.page : null };
+      if (typeof m.leafEnd === "number" && m.leafEnd !== m.leaf) {
+        p.page.leafEnd = m.leafEnd;
+        p.page.pageEnd = numbered ? m.pageEnd ?? null : null;
+      }
+    }
+    found.push({ p, n: p.matched.length });
+  }
+  return found
+    .map((f, i) => ({ ...f, i }))
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .slice(0, PAGE_PASSAGES)
+    .map((f) => f.p);
+}
+
+/**
+ * A lead's passages with the paragraphs found inside it: a highlight one of
+ * them holds says nothing more and goes; then the most concepts first, a
+ * paragraph before a highlight on a tie.
+ */
+function addPageParagraphs(s: ScoredHit, found: ScoredHit["passages"], matched: (t: string) => string[]): void {
+  if (!found.length) return;
+  const flat = (t: string): string => quoteKey(t).replace(/ /g, "");
+  const kept = found.map((p) => flat(p.text));
+  const rest = s.passages.filter((p) => !kept.some((k) => k.includes(flat(p.text))));
+  s.passages = [...found, ...rest]
+    .map((p, i) => ({ p, i, n: matched(p.text).length }))
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .map((x) => x.p);
+}
+
 /**
  * The librarian's leads, added to `added`, and every lead's passages extended
  * by a search inside it for the claim's telling terms. Request failures are
@@ -1372,6 +1531,7 @@ async function librarianLeads(a: {
   planning: Promise<{ plan: ArchivePlan | null; error: string | null }>;
   naming: Promise<{ books: NamedBook[]; error: string | null }>;
   client: ArchiveClient;
+  claim: string;
   terms: ClaimTerms;
   shortlist: ScoredHit[];
   added: { s: ScoredHit; via: "planner" | "named" }[];
@@ -1381,8 +1541,21 @@ async function librarianLeads(a: {
   const [{ plan, error: planError }, { books: named, error: booksError }] = await Promise.all([a.planning, a.naming]);
   if (planError) funnel.errors.push(planError);
   if (booksError) funnel.errors.push(booksError);
-  const lib: LibrarianFunnel = { plan, planned: 0, named, namedFound: 0, shelfTerms: [], shelfQueries: 0, added: 0 };
+  const lib: LibrarianFunnel = {
+    plan, planned: 0, named, namedFound: 0, shelfTerms: [], shelfQueries: 0, pages: { books: 0, found: 0 }, added: 0,
+  };
   const concepts = plan?.terms ?? [];
+  // What a paragraph found inside a book shares with the claim: the plan's
+  // concepts, or without a plan the claim's own units.
+  const units = claimUnits(a.claim, terms.subject, { minWordLength: 5, subjectUnit: false });
+  const matched = concepts.length
+    ? (t: string): string[] => planMatched(t, concepts)
+    : (t: string): string[] => unitsIn(t, units).map((u) => u.key);
+  // An open book can be searched inside page by page whatever its identifier.
+  const pageable = (h: ArchiveHit): boolean => {
+    const gate = accessGate(h);
+    return !!client.searchInside && gate.ok && gate.access === "open";
+  };
 
   // Books the planner's queries find, and the books the model named, found
   // by title and author (a couple of readable scans of each that can be
@@ -1402,7 +1575,8 @@ async function librarianLeads(a: {
       if (!q || !client.catalogue) return { scans: [] as ArchiveHit[], error: null };
       try {
         const hits = parseCatalogueHits(await client.catalogue(q, NAMED_ROWS), q);
-        return { scans: hits.filter((h) => accessGate(h).ok && shelfSearchable(h.identifier)).slice(0, NAMED_SCANS), error: null };
+        const searchable = (h: ArchiveHit): boolean => accessGate(h).ok && (shelfSearchable(h.identifier) || pageable(h));
+        return { scans: hits.filter(searchable).slice(0, NAMED_SCANS), error: null };
       } catch (err) {
         return { scans: [] as ArchiveHit[], error: `catalogue: ${(err as Error).message}` };
       }
@@ -1455,12 +1629,15 @@ async function librarianLeads(a: {
     taken.push(...scans);
   });
 
-  // Search inside every lead, one query per telling term.
+  // Search inside every lead, one query per telling term: the full-text
+  // search over all of them at once, borrowable books too, for a few short
+  // highlights each; and side by side, each open book page by page through
+  // the Worker, for whole paragraphs and the page each is on.
   const everyone = [...a.shortlist, ...added.map((x) => x.s)];
   lib.shelfTerms = tellingTerms(plan, terms);
   const shelf = lib.shelfTerms.flatMap((t) => shelfQueries(t, everyone.map((s) => s.hit.identifier)));
   lib.shelfQueries = shelf.length;
-  const replies = await Promise.all(
+  const shelfSearching = Promise.all(
     shelf.map(async ({ query, size }) => {
       try {
         return { hits: parseSearchHits(await client.fullTextSearch({ query, size }), query), error: null };
@@ -1469,6 +1646,21 @@ async function librarianLeads(a: {
       }
     }),
   );
+  const pageTerms = lib.shelfTerms.map(insideTerm);
+  const paged = pageTerms.length ? everyone.filter((s) => pageable(s.hit)).slice(0, PAGE_BOOKS) : [];
+  lib.pages.books = paged.length;
+  const paging = mapLimit(paged, PAGE_CONCURRENCY, async (s) => {
+    try {
+      return { r: await client.searchInside!({ identifier: s.hit.identifier, doc: s.hit.file, terms: pageTerms }), error: null };
+    } catch (err) {
+      // Lent, restricted, no searchable text, or an item of several books
+      // asked for none: nothing to read there, and nothing failed.
+      const status = (err as { status?: number }).status;
+      const quiet = status === 400 || status === 403 || status === 404;
+      return { r: null, error: quiet ? null : `search inside ${s.hit.identifier}: ${(err as Error).message}` };
+    }
+  });
+  const [replies, pageReplies] = await Promise.all([shelfSearching, paging]);
   const inside = new Map<string, ArchiveHit[]>();
   for (const r of replies) {
     if (r.error) funnel.errors.push(r.error);
@@ -1481,6 +1673,14 @@ async function librarianLeads(a: {
     if (s.hit.file === null) s.hit.file = hits.find((h) => h.file !== null)?.file ?? null;
     addPassages(s, hits.filter((h) => h.file === null || h.file === s.hit.file).flatMap((h) => h.highlights));
   }
+  paged.forEach((s, i) => {
+    const { r, error } = pageReplies[i];
+    if (error) funnel.errors.push(error);
+    if (!r) return;
+    const found = pagePassages(r, matched);
+    if (found.length) lib.pages.found++;
+    addPageParagraphs(s, found, matched);
+  });
   // The librarian's leads show their best-covered passage first; one with no
   // passage at all has nothing to show or check, and a named book needs only
   // one scan.

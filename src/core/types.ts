@@ -104,6 +104,19 @@ export interface WikiCandidate {
  * OCR text carries the claim's anchors. Like `WikiEvidence`, a lead to be read
  * or verified, not a verdict.
  */
+/**
+ * Where in the book a passage is, when it came from searching inside the book
+ * page by page: the scanned leaf (what the Archive's reader opens), and the
+ * printed page number when the Archive has worked it out from the scans.
+ */
+export interface PassagePage {
+  leaf: number;
+  page: string | null;
+  /** The paragraph runs onto the next leaf. */
+  leafEnd?: number;
+  pageEnd?: string | null;
+}
+
 export interface ArchiveEvidence {
   origin: "internet-archive";
   /** Archive item identifier. */
@@ -118,13 +131,18 @@ export interface ArchiveEvidence {
    * passages from one book may be pages apart.
    */
   passages: string[];
+  /**
+   * Set when a passage came from searching inside the book page by page:
+   * where each passage is, in order (null for the search's own highlights).
+   */
+  pages?: (PassagePage | null)[];
   /** Matching signal of the best passage, 0-1. Not a verdict — only a lead. */
   score: number;
   /** The claim's numbers and names that the best passage contains. */
   matchedAnchors: string[];
   /** The full-text query that surfaced the book. */
   query: string;
-  /** The book in the Archive's viewer, searched for the passage's words. */
+  /** The book in the Archive's viewer, searched for the passage's words, at its page when known. */
   viewerUrl: string;
   /**
    * Set when the item bundles several books and the passage is in one of

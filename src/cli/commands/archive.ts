@@ -1,4 +1,4 @@
-import { findArticleArchiveSources } from "../../core/archiveSources.js";
+import { claimTerms, findArticleArchiveSources, withQuotePage } from "../../core/archiveSources.js";
 import { passageSummary } from "../../core/archiveSources.js";
 import type { ArchiveFunnel } from "../../core/archiveSources.js";
 import { httpArchiveClient, recordingClient } from "../../core/internetArchive.js";
@@ -39,13 +39,14 @@ function funnelLine(f: ArchiveFunnel): string {
   );
 }
 
-/** The librarian's part of the funnel: "planner 3 queries, 12 books; named 4 of 6 readable; 3 terms searched inside; +5 lead(s)". */
+/** The librarian's part of the funnel: "planner 3 queries, 12 books; named 4 of 6 readable; 3 terms searched inside; 6 open book(s) page by page, 4 with a passage; +5 lead(s)". */
 export function librarianLine(f: ArchiveFunnel): string {
   const l = f.librarian!;
   return (
     `planner ${l.plan ? `${l.plan.queries.length} quer${l.plan.queries.length === 1 ? "y" : "ies"}, ${l.planned} books` : "gave no plan"}; ` +
     `named ${l.namedFound} of ${l.named.length} readable; ` +
-    `${l.shelfTerms.length} term(s) searched inside; +${l.added} lead(s)`
+    `${l.shelfTerms.length} term(s) searched inside; ` +
+    `${l.pages.books} open book(s) page by page, ${l.pages.found} with a passage; +${l.added} lead(s)`
   );
 }
 
@@ -95,6 +96,17 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
       }
     }
   }
+
+  // A checked quote found inside the book page by page gives the citation its page.
+  run.results.forEach((r, i) => {
+    const check = checks[i];
+    if (!Array.isArray(check)) return;
+    const terms = claimTerms(r.claim.claim, run.article.title);
+    r.candidates = r.candidates.map((c, j) => {
+      const v = check[j];
+      return v && v.verdict !== "unsupported" ? withQuotePage(c, v.quote, terms) : c;
+    });
+  });
 
   // Every field the catalogue has for a lead's ISBN, as ProveIt fills a template.
   for (const r of run.results) {
@@ -147,7 +159,11 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
       if (v) console.log(`       check: ${v.verdict}${v.quote ? ` — "${v.quote}"` : ""}${v.reason ? ` (${v.reason})` : ""}`);
       console.log(`       ${c.evidence.viewerUrl}`);
       console.log(`       ${c.relevance}`);
-      for (const p of c.evidence.passages.slice(0, 2)) console.log(`       "${p}"`);
+      c.evidence.passages.slice(0, 2).forEach((p, k) => {
+        const at = c.evidence.pages?.[k];
+        const where = at ? ` (${at.page ? `p. ${at.page}` : `leaf ${at.leaf}`})` : "";
+        console.log(`       "${p}"${where}`);
+      });
       console.log(`       ref:  ${c.citation.ref}`);
     });
     console.log();
@@ -155,7 +171,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
 
   console.log("Leads, not verdicts: the passage carries the claim's numbers and names, which");
   console.log("is not the same as stating it, and a model's check can be wrong too. Read it —");
-  console.log("and add |page= — before pasting.");
+  console.log("and add or check |page= — before pasting.");
   console.log("Borrowable books need a free archive.org account to read. Old sources may be");
   console.log("outdated: see WP:AGEMATTERS.");
 }
