@@ -124,8 +124,13 @@ export interface ArchiveEvidence {
   matchedAnchors: string[];
   /** The full-text query that surfaced the book. */
   query: string;
-  /** The book in the Archive's viewer with the claim's strongest anchor searched. */
+  /** The book in the Archive's viewer, searched for the passage's words. */
   viewerUrl: string;
+  /**
+   * Set when the item bundles several books and the passage is in one of
+   * them (the candidate's title): the item's own title, and its book count.
+   */
+  bundle?: { title: string; books: number };
   /** The best passage was read from the book's whole text, not the search's highlights. */
   fullText?: true;
   /** Found by the librarian: the planner's queries, or a book a model named. */

@@ -46,6 +46,7 @@ export type CatalogueResponse = {
 export type MetadataResponse = {
   metadata?: Record<string, unknown>;
   is_dark?: boolean;
+  files?: unknown[];
 };
 
 export interface SearchRequest {

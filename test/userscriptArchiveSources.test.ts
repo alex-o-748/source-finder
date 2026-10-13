@@ -11,6 +11,9 @@ import { dirname, join } from "node:path";
 import {
   bestWindow,
   buildArchiveQueries,
+  collapseCopies,
+  parseItemDetails,
+  searchPhrase,
   buildPhraseQueries,
   claimTerms,
   keyPhrases,
@@ -151,6 +154,57 @@ test("both implementations keep, score and cite the same books", () => {
     });
   }
 });
+
+test("both search a book for the same words, and tell a bundled book apart the same way", () => {
+  const ike = "He was promoted to lieutenant general on July 7.";
+  const passages = [
+    "CCS. Eisenhower, who had been promoted to lieutenant-general on July 7, 1942, prior to being dispatched",
+    "effective June 24, 1942. He was promoted to lieutenant general on July 7. Unlike most commanders",
+    "…the tower was com- pleted in 1889, rising 300 metres under Gustave Eiffel…",
+    "Agreement on an initial Allied course of action came in July 1942.",
+    "",
+  ];
+  for (const [claim, title] of [[ike, "Dwight_D._Eisenhower"], [CLAIMS[1], TITLE]]) {
+    for (const text of passages) {
+      assert.equal(script.iaSearchPhrase(text, script.iaClaimTerms(claim, title)), searchPhrase(text, claimTerms(claim, title)), text);
+    }
+  }
+
+  const metadata = {
+    metadata: { publisher: "Osprey" },
+    files: ["009 - Bernard Montgomery", "018 - Eisenhower"].flatMap((b) => [{ name: `${b}.pdf` }, { name: `${b}_djvu.txt` }]),
+  };
+  assert.deepEqual(script.archiveDetailsOf(metadata), parseItemDetails(metadata));
+  const response = (identifier: string, file: string) => ({
+    response: { body: { hits: { hits: [{
+      fields: { identifier, title: identifier, mediatype: "texts", collection: ["opensource"], file_basename: file },
+      highlight: { text: [passages[0]] },
+    }] } } },
+  });
+  const shown = (parse: (r: unknown, q: string) => ArchiveHitLike[], details: (m: unknown) => unknown) =>
+    [response("009-bernard-montgomery", "018 - Eisenhower"), response("zaloga", "zaloga")].map((r, i) => {
+      const hit = parse(r, "q")[0];
+      return {
+        s: { hit, access: "open", passages: [{ text: hit.highlights[0], score: 1, matched: [] }], score: 1 },
+        details: details(i === 0 ? metadata : { metadata: {} }),
+      };
+    });
+  const fromScript = shown(script.parseArchiveHits, script.archiveDetailsOf);
+  const fromCore = shown(parseSearchHits as never, parseItemDetails as never);
+  const funnels = [{ rejected: {} }, { rejected: {} }];
+  assert.deepEqual(script.iaCollapseCopies(fromScript, funnels[0]), collapseCopies(fromCore as never, funnels[1]));
+  assert.deepEqual(funnels[0], funnels[1]);
+  const terms = claimTerms(ike, "Dwight_D._Eisenhower");
+  for (let i = 0; i < 2; i++) {
+    assert.deepEqual(
+      script.toArchiveCandidate(fromScript[i].s, fromScript[i].details, script.iaClaimTerms(ike, "Dwight_D._Eisenhower")),
+      toArchiveCandidate(fromCore[i].s as never, fromCore[i].details as never, terms),
+    );
+  }
+  assert.equal(script.toArchiveCandidate(fromScript[0].s, fromScript[0].details, terms).title, "018 - Eisenhower");
+});
+
+type ArchiveHitLike = { highlights: string[] };
 
 test("the user script's live flow matches the core's", async () => {
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
