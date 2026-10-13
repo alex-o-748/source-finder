@@ -370,6 +370,7 @@
     '#cnfirmed-panel .cnf-claim-text{margin:4px 0 6px;max-height:6.5em;overflow:auto;font-size:14.5px;line-height:1.5}',
     '#cnfirmed-panel .cnf-linkbtn{padding:0;border:0;background:none;color:var(--cnf-link);font-size:12.5px;' +
       'cursor:pointer;text-decoration:underline;text-underline-offset:2px}',
+    '#cnfirmed-panel .cnf-claim-acts{display:flex;flex-wrap:wrap;gap:4px 16px}',
     '#cnfirmed-panel .cnf-body{flex:1 1 auto;min-height:0;overflow-y:auto}',
     '#cnfirmed-panel .cnf-pad{display:flex;flex-direction:column;gap:18px;padding:16px 16px 72px}',
     '#cnfirmed-panel .cnf-headline{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}',
@@ -5300,10 +5301,18 @@
     var ctx = claimContexts[i] || {};
     if (ctx.section) box.appendChild(el('div', 'cnf-section', ctx.section));
     box.appendChild(el('p', 'cnf-claim-text', ctx.claim || '(no claim text found)'));
-    box.appendChild(button('cnf-linkbtn', 'Show in article', function () {
+    var acts = el('div', 'cnf-claim-acts');
+    acts.appendChild(button('cnf-linkbtn', 'Show in article', function () {
       cnSups[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
       flash(cnSups[i]);
     }));
+    acts.appendChild(button('cnf-linkbtn', 'Edit sentence', function () {
+      editClaimInEditor(i, 'select');
+    }, 'Open the section editor in a new tab with this sentence selected, to reword or correct it'));
+    acts.appendChild(button('cnf-linkbtn', 'Remove sentence', function () {
+      editClaimInEditor(i, 'remove');
+    }, 'Open the section editor in a new tab with this sentence already taken out, for you to review and save'));
+    box.appendChild(acts);
   }
 
   function drawClaimView(pad, i) {
@@ -5808,38 +5817,57 @@
     return url + sep + encodeURIComponent(key) + '=' + encodeURIComponent(value);
   }
 
-  function insertInEditor(i, item) {
-    if (!item.ref) {
-      toast('No <ref> to insert.');
-      return;
-    }
+  // Opens claim i's section in the source editor in a new tab and stages
+  // what to do there once `staged` resolves: put a <ref> in place of the tag
+  // (mode 'insert'), select the tagged sentence ('select'), or take it out
+  // ('remove').
+  function openClaimInEditor(i, mode, summary, staged, fallback) {
     var links = getSectionEditLinks();
     var link = links[i];
     var k = 0;
     for (var j = 0; j < i; j++) if (links[j] === link) k++;
     var token = insertToken();
-    var summary = 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])';
-    var url = appendQueryParam(appendQueryParam(sourceEditorUrl(link), 'summary', summary), EDIT_INSERT_PARAM, token);
+    var url = sourceEditorUrl(link);
+    if (summary) url = appendQueryParam(url, 'summary', summary);
+    url = appendQueryParam(url, EDIT_INSERT_PARAM, token);
 
     var tab = window.open(url, '_blank');
     if (tab) { try { tab.opener = null; } catch (e) { /* not needed */ } }
 
-    refFor(item).then(function (ref) {
-      var staged = writeStagedInsert(token, {
+    Promise.resolve(staged).then(function (extra) {
+      var payload = {
+        mode: mode,
         pageTitle: pageTitle,
         revid: revid,
         cnIndexInSection: k,
-        ref: ref,
         sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
         stagedAt: Date.now()
-      });
-      if (!staged) {
-        toast('Could not stage the edit (localStorage unavailable). Use Copy <ref> instead.');
+      };
+      for (var key in extra) payload[key] = extra[key];
+      if (!writeStagedInsert(token, payload)) {
+        toast('Could not stage the edit (localStorage unavailable). ' + fallback);
         return;
       }
       // Pop-ups blocked: this tab, then.
       if (!tab) window.location.href = url;
     });
+  }
+
+  function insertInEditor(i, item) {
+    if (!item.ref) {
+      toast('No <ref> to insert.');
+      return;
+    }
+    openClaimInEditor(i, 'insert', 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])',
+      refFor(item).then(function (ref) { return { ref: ref }; }), 'Use Copy <ref> instead.');
+  }
+
+  // For a claim that is wrong or cannot be sourced: reword it, or take it out.
+  function editClaimInEditor(i, mode) {
+    var summary = mode === 'remove'
+      ? 'Removed unsourced statement (via [[User:Alaexis/CNfirmed|CNfirmed]])'
+      : null;
+    openClaimInEditor(i, mode, summary, {}, 'Use the section\'s [edit] link instead.');
   }
 
   // Edit-mode: wait for the staged payload and apply it to the textarea.
@@ -5854,7 +5882,7 @@
     var deadline = Date.now() + EDIT_INSERT_WAIT_MS;
     (function poll() {
       var payload = takeStagedInsert(token);
-      if (payload && payload.ref && payload.pageTitle === pageTitle) {
+      if (payload && (payload.ref || payload.mode) && payload.pageTitle === pageTitle) {
         try { sessionStorage.setItem(EDIT_INSERT_DONE + token, '1'); } catch (e) { /* best effort */ }
         mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
           applyPendingInsertion(payload);
@@ -5867,8 +5895,8 @@
         setTimeout(poll, EDIT_INSERT_POLL_MS);
         return;
       }
-      showEditBanner('CNfirmed: the <ref> did not arrive from the article tab. ' +
-        'Use Copy <ref> in the panel there and paste it in place of the tag.', 'warn');
+      showEditBanner('CNfirmed: nothing arrived from the article tab. ' +
+        'Make the edit by hand, or use Copy <ref> in the panel there and paste it in place of the tag.', 'warn');
     })();
   }
 
@@ -5879,8 +5907,14 @@
   }
 
   function applyPendingInsertion(payload) {
+    var mode = payload.mode || 'insert';
     var ta = document.getElementById('wpTextbox1');
     if (!ta || ta.readOnly) {
+      if (mode !== 'insert') {
+        showEditBanner(ta ? 'CNfirmed: this page cannot be edited from your account here.'
+          : 'CNfirmed: source editor not found. Switch to the wikitext editor and try again.', 'warn');
+        return;
+      }
       showEditBanner(
         (ta ? 'CNfirmed: this page cannot be edited from your account here. '
           : 'CNfirmed: source editor not found. Switch to the wikitext editor and try again. ') +
@@ -5897,40 +5931,73 @@
     var $ta = $(ta);
     var api = typeof $ta.textSelection === 'function';
     var text = api ? $ta.textSelection('getContents') : ta.value;
-    var result = replaceNthCitationNeeded(text, payload.cnIndexInSection || 0, payload.ref);
-    if (!result.replaced) {
-      showEditBanner(
-        'CNfirmed: could not locate the {{citation needed}} tag in this section — '
-        + 'the page may have changed. Your <ref> snippet has been copied to the clipboard.',
-        'warn'
-      );
-      copyQuietly(payload.ref);
-      return;
+    var n = payload.cnIndexInSection || 0;
+    var newText = null;
+    var start;
+    var end;
+    var message;
+    var kind = 'ok';
+
+    if (mode === 'select') {
+      var span = taggedSentenceSpan(text, n);
+      if (!span) {
+        showEditBanner('CNfirmed: could not locate the {{citation needed}} tag in this section — ' +
+          'the page may have changed. Find the sentence and edit it by hand.', 'warn');
+        return;
+      }
+      start = span.start;
+      end = span.end;
+      message = 'CNfirmed: the tagged sentence is selected. Correct or reword it, then save; ' +
+        'leave the {{citation needed}} tag on it unless you add a source.';
+    } else if (mode === 'remove') {
+      var cut = removeTaggedSentence(text, n);
+      if (!cut.removed) {
+        showEditBanner('CNfirmed: could not locate the {{citation needed}} tag in this section — ' +
+          'the page may have changed. Remove the sentence by hand.', 'warn');
+        return;
+      }
+      newText = cut.text;
+      start = end = cut.caret;
+      message = 'CNfirmed: the tagged sentence was taken out. Check it with "Show changes" before saving.';
+      if (cut.namedRefs.length) {
+        kind = 'warn';
+        message += ' It defined the reference named "' + cut.namedRefs.join('", "') +
+          '": if another sentence reuses it, move the definition there.';
+      }
+    } else {
+      var result = replaceNthCitationNeeded(text, n, payload.ref);
+      if (!result.replaced) {
+        showEditBanner(
+          'CNfirmed: could not locate the {{citation needed}} tag in this section — '
+          + 'the page may have changed. Your <ref> snippet has been copied to the clipboard.',
+          'warn'
+        );
+        copyQuietly(payload.ref);
+        return;
+      }
+      newText = result.text;
+      start = result.replacementStart;
+      end = start + payload.ref.length;
+      message = 'CNfirmed: <ref> inserted in place of the {{citation needed}} tag — review and save.';
     }
 
-    var start = result.replacementStart;
-    var end = start + payload.ref.length;
     if (api) {
-      $ta.textSelection('setContents', result.text);
+      if (newText !== null) $ta.textSelection('setContents', newText);
       try {
         $ta.textSelection('setSelection', { start: start, end: end });
         $ta.textSelection('scrollToCaretPosition');
       } catch (e) { /* the text is in; the selection is a nicety */ }
     } else {
-      ta.value = result.text;
+      if (newText !== null) ta.value = newText;
       try {
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        if (newText !== null) ta.dispatchEvent(new Event('input', { bubbles: true }));
         ta.focus();
         ta.setSelectionRange(start, end);
       } catch (e) {}
     }
 
-    showEditBanner(
-      'CNfirmed: <ref> inserted in place of the {{citation needed}} tag — review and save.',
-      'ok'
-    );
+    showEditBanner(message, kind);
   }
-
 
   // Aliases that all redirect to {{Citation needed}} on en.wikipedia and render
   // as <sup class="Template-Fact">. Compared after stripping subst:/safesubst:
@@ -5997,6 +6064,62 @@
       i++;
     }
     return { replaced: false, text: text, replacementStart: -1 };
+  }
+
+  // The span the editor selects or removes for the Nth tag: its sentence
+  // (taggedSentenceRange), kept to the tag's own line so a heading or a
+  // {{Main}} line above the paragraph is never part of it, and without the
+  // whitespace after it.
+  function taggedSentenceSpan(text, n) {
+    var tag = citationNeededOffsets(text)[n];
+    if (!tag) return null;
+    var r = taggedSentenceRange(text, tag.start, tag.end);
+    var lineStart = text.lastIndexOf('\n', tag.start - 1) + 1;
+    var lineEnd = text.indexOf('\n', tag.end);
+    if (lineEnd === -1) lineEnd = text.length;
+    var start = Math.max(r.start, lineStart);
+    var end = Math.min(Math.max(r.end, tag.end), lineEnd);
+    while (start < tag.start && /\s/.test(text.charAt(start))) start++;
+    while (end > tag.end && /\s/.test(text.charAt(end - 1))) end--;
+    return { start: start, end: end };
+  }
+
+  // The text with the Nth tag's sentence taken out, and the spacing around it
+  // put right: one space between the sentences either side, no trailing
+  // space, and no empty paragraph left behind.
+  function removeTaggedSentence(text, n) {
+    var span = taggedSentenceSpan(text, n);
+    if (!span) return { removed: false, text: text };
+    var before = text.slice(0, span.start);
+    var after = text.slice(span.end);
+    var removed = text.slice(span.start, span.end);
+    var lineHead = before.slice(before.lastIndexOf('\n') + 1);
+    if (!/\S/.test(lineHead)) {
+      // It began its line: the rest of the line moves up, or the line goes.
+      before = before.slice(0, before.length - lineHead.length);
+      after = after.replace(/^[ \t]+/, '');
+      if (after.charAt(0) === '\n') {
+        after = after.slice(1);
+        if (/\n\n$/.test(before) && after.charAt(0) === '\n') after = after.replace(/^\n+/, '');
+      } else if (after) {
+        after = lineHead + after;
+      }
+    } else if (!after || after.charAt(0) === '\n') {
+      before = before.replace(/[ \t]+$/, '');
+    } else {
+      after = after.replace(/^[ \t]+/, '');
+      if (!/\s$/.test(before)) before += ' ';
+    }
+    // A named reference defined in the sentence may be reused elsewhere,
+    // and those uses lose their definition with it.
+    var namedRefs = [];
+    var m;
+    var def = /<ref\b([^>]*[^\/>])?>/gi;
+    while ((m = def.exec(removed))) {
+      var name = refAttributes(m[1] || '').name;
+      if (name) namedRefs.push(name);
+    }
+    return { removed: true, text: before + after, caret: before.length, removedText: removed, namedRefs: namedRefs };
   }
 
   function skipNonRendered(text, i) {

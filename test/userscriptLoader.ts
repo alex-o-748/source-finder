@@ -95,6 +95,8 @@ const EXPOSED = [
   "webItem",
   "writeStagedInsert",
   "takeStagedInsert",
+  "taggedSentenceSpan",
+  "removeTaggedSentence",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
