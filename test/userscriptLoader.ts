@@ -81,19 +81,24 @@ const EXPOSED = [
   "libQuoteInPassages",
   "libParseJudgement",
   "normaliseIsbn",
+  "doiIn",
+  "citoidQuery",
   "citoidParams",
-  "mergeCiteBook",
+  "citoidTemplate",
+  "mergeParams",
   "completeCitation",
-  "citationIsbn",
-  "completeFromIsbn",
-  "completeBookCitation",
+  "completeFromCitoid",
+  "citoidHolder",
+  "completeHeldCitation",
+  "webItem",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UserScriptModule = Record<string, (...args: any[]) => any> & {
   prompts: { plan: string; books: string; judge: string };
   models: { planner: string | null; books: string | null; judge: string | null };
-  citeBookMap: Record<string, unknown>;
+  citoidMaps: Record<string, Record<string, unknown>>;
+  citoidTypeMap: Record<string, string>;
   limits: { plan: number; books: number; judge: number; booksEffort: string };
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
@@ -122,7 +127,8 @@ export function loadUserScript(
       ${EXPOSED.map((name) => `${name}: ${name},`).join("\n      ")}
       prompts: { plan: LIB_PLAN_SYSTEM, books: LIB_BOOKS_SYSTEM, judge: LIB_JUDGE_SYSTEM },
       models: LIB_MODELS,
-      citeBookMap: CITE_BOOK_CITOID_MAP,
+      citoidMaps: BUILTIN_CITOID_MAPS,
+      citoidTypeMap: CITOID_TYPE_MAP,
       limits: { plan: LIB_PLAN_MAX_TOKENS, books: LIB_BOOKS_MAX_TOKENS, judge: LIB_JUDGE_MAX_TOKENS, booksEffort: LIB_BOOKS_EFFORT },
       setClaimContexts: function (v) { claimContexts = v; },
       setCnSups: function (v) { cnSups = v; },

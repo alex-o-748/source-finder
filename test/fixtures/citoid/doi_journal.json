@@ -1,0 +1,18 @@
+[
+  {
+    "itemType": "journalArticle",
+    "title": "Wind loads on the Eiffel Tower",
+    "url": "https://www.tandfonline.com/doi/full/10.1080/00207543.2019.1234567",
+    "publicationTitle": "Journal of Wind Engineering",
+    "volume": "58",
+    "issue": "4",
+    "pages": "1001–1019",
+    "date": "2020-02-16",
+    "DOI": "10.1080/00207543.2019.1234567",
+    "ISSN": ["0020-7543", "1366-588X"],
+    "author": [["Ada", "Lovelace"], ["Charles", "Babbage"]],
+    "language": "en",
+    "accessDate": "2026-10-13",
+    "source": ["Crossref"]
+  }
+]

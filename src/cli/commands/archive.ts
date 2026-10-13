@@ -2,7 +2,7 @@ import { findArticleArchiveSources } from "../../core/archiveSources.js";
 import { passageSummary } from "../../core/archiveSources.js";
 import type { ArchiveFunnel } from "../../core/archiveSources.js";
 import { httpArchiveClient, recordingClient } from "../../core/internetArchive.js";
-import { completeFromIsbn } from "../../core/citoid.js";
+import { completeFromCitoid } from "../../core/citoid.js";
 import {
   DEFAULT_LIBRARIAN_MODELS,
   judgeArchiveBooks,
@@ -98,7 +98,7 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
 
   // Every field the catalogue has for a lead's ISBN, as ProveIt fills a template.
   for (const r of run.results) {
-    for (const c of r.candidates) c.citation = await completeFromIsbn(c.citation, run.article.lang);
+    for (const c of r.candidates) c.citation = await completeFromCitoid(c.citation, run.article.lang);
   }
 
   if (args.json) {
