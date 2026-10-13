@@ -1,0 +1,20 @@
+[
+  {
+    "itemType": "book",
+    "title": "Crime and punishment",
+    "oclc": "39283358",
+    "url": "https://www.worldcat.org/oclc/39283358",
+    "ISBN": ["978-0-14-044913-6", "0-14-044913-2"],
+    "edition": "Rev. ed.",
+    "place": "London",
+    "numPages": "656",
+    "publisher": "Penguin Books",
+    "author": [["Fyodor", "Dostoyevsky"]],
+    "translator": [["David", "McDuff"]],
+    "date": "2003",
+    "language": "en",
+    "series": "Penguin classics",
+    "accessDate": "2026-10-13",
+    "source": ["WorldCat"]
+  }
+]

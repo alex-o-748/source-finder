@@ -119,3 +119,45 @@ test("errors name the service that failed", async () => {
     /Hugging Face \(via proxy\) 402: You have exceeded your monthly included credits/,
   );
 });
+
+test("without a key of the user's own, the search goes to the Worker's free credits", async () => {
+  script.storage.setItem("cnfirmed-free-searches-spent", "1"); // long ago: stale
+  const sent = stubFetch([{ status: 200, body: { results: [] } }]);
+  await script.callTavilyGptOss(CTX, "");
+  assert.equal(sent[0].url, `${PROXY}/tavily`);
+  assert.equal(sent[0].auth, null);
+  // A search that went through clears what was remembered.
+  assert.equal(script.storage.getItem("cnfirmed-free-searches-spent"), null);
+});
+
+test("free credits running out is told apart, and remembered", async () => {
+  stubFetch([
+    { status: 402, body: { error: { code: "free_credits_exhausted", message: "No free web searches left" } } },
+  ]);
+  await assert.rejects(script.callTavilyGptOss(CTX, ""), (err: Error & { noFreeSearches?: boolean }) => {
+    assert.equal(err.noFreeSearches, true);
+    assert.match(err.message, /^No free web searches left\. Add your own Tavily key/);
+    assert.match(err.message, /Claude, Gemini or OpenAI/);
+    return true;
+  });
+  assert.equal(script.canSearchWeb("tavilyhf"), false);
+
+  // The user's own key still searches, and its errors are Tavily's own.
+  script.storage.setItem("cnfirmed-key-tavily", KEY);
+  assert.equal(script.canSearchWeb("tavilyhf"), true);
+  stubFetch([{ status: 432, body: { detail: { error: "This request exceeds your plan's set usage limit." } } }]);
+  await assert.rejects(script.callTavilyGptOss(CTX, KEY), /^Error: Tavily API 432/);
+  script.storage.removeItem("cnfirmed-key-tavily");
+  script.storage.removeItem("cnfirmed-free-searches-spent");
+});
+
+test("the default provider is the free one, unless a Claude key was saved", () => {
+  const fresh = loadUserScript({ wgPageName: "Elizabeth_Báthory" });
+  assert.equal(fresh.getProvider(), "tavilyhf");
+  assert.equal(fresh.canSearchWeb("tavilyhf"), true);
+  assert.equal(fresh.canSearchWeb("claude"), false);
+  fresh.storage.setItem("cnfirmed-key-claude", "sk-ant-test");
+  assert.equal(fresh.getProvider(), "claude");
+  fresh.storage.setItem("cnfirmed-provider", "gemini");
+  assert.equal(fresh.getProvider(), "gemini");
+});

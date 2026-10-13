@@ -4,18 +4,20 @@
  * CNfirmed user script — finds and verifies sources for {{citation needed}}
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
  * the user's own API key (stored in localStorage) — or by searching with
- * Tavily (the user's Tavily key) and judging the results with GPT-OSS on
- * Hugging Face, both through the publicai-proxy Worker, since Wikipedia's CSP
- * blocks those services. Internet Archive books are found and checked with
- * open-weight models through the same Worker, which needs no key (the Verify
- * API, https://citation-verifier.toolforge.org, when the Worker cannot).
+ * Tavily and judging the results with GPT-OSS on Hugging Face, both through
+ * the publicai-proxy Worker, since Wikipedia's CSP blocks those services.
+ * Tavily searches are free, on the Worker's own key, while its credits last;
+ * after that they need the user's Tavily key. Internet Archive books are
+ * found and checked with open-weight models through the same Worker, which
+ * needs no key (the Verify API, https://citation-verifier.toolforge.org,
+ * when the Worker cannot).
  *
  * Add to User:Yourname/common.js:
  *
  *   importScript('User:Alaexis/cnfirmed.js');
  *
- * The first time you click a 🔍 badge or "Verify all", you'll be prompted for
- * an API key for the selected provider. Keys are kept in localStorage on the
+ * A web search with Claude, Gemini or OpenAI asks for an API key for that
+ * provider the first time. Keys are kept in localStorage on the
  * Wikipedia origin and never leave your browser except in the request to the
  * provider you chose.
  *
@@ -29,6 +31,7 @@
  *     under it what was searched, with a button for each search not yet run.
  *   - A "CNfirmed (N)" link opens the list of all claims, with "Find sources
  *     for all (free)" and, for the claims left with nothing, a web search.
+ *     "All claims" above a claim goes back to it.
  *   - Provider and key are behind the panel's gear.
  *
  */
@@ -77,12 +80,14 @@
     // Tavily does the searching and an open-weight model on Hugging Face reads
     // what it found; the model never searches on its own. Both go through
     // the Worker (Wikipedia's CSP blocks the services themselves), which
-    // pays for the model, so the only key is the user's Tavily key.
+    // pays for the model, and for the searches too while its Tavily credits
+    // last. After that the user's own Tavily key pays for them.
     tavilyhf: {
       name: 'Tavily + GPT-OSS',
       keyStorage: 'cnfirmed-key-tavily',
       keyLabel: 'Tavily API key',
       keyService: 'Tavily',
+      freeSearches: true,
       // Must be in the Worker's HF_ALLOWED_MODELS.
       defaultModel: 'openai/gpt-oss-20b',
       modelOverride: 'cnfirmedModelHf',
@@ -95,8 +100,10 @@
     return p.keyLabel || p.name + ' API key';
   }
 
+  // Someone who never picked a provider gets the one that needs no key,
+  // unless they already saved a Claude key under the old default.
   function getProvider() {
-    var p = localStorage.getItem('cnfirmed-provider') || 'claude';
+    var p = localStorage.getItem('cnfirmed-provider') || (getKey('claude') ? 'claude' : 'tavilyhf');
     return PROVIDERS[p] ? p : 'claude';
   }
 
@@ -113,6 +120,58 @@
     var key = (value || '').trim();
     if (key) localStorage.setItem(PROVIDERS[providerId].keyStorage, key);
     else localStorage.removeItem(PROVIDERS[providerId].keyStorage);
+  }
+
+  // ---- Free web searches ------------------------------------------------
+  // The Worker answers 402 free_credits_exhausted once its Tavily credits are
+  // spent. That is remembered for a while, so every claim does not have to
+  // fail first to find out, and checked again with the Worker when a panel
+  // opens on a later page.
+
+  var FREE_SPENT_STORAGE = 'cnfirmed-free-searches-spent';
+  var FREE_SPENT_FOR_MS = 6 * 60 * 60 * 1000;
+  var NO_FREE_SEARCHES = 'No free web searches left. Add your own Tavily key to keep searching ' +
+    'the web, or switch to Claude, Gemini or OpenAI, which search the web themselves (with your key).';
+
+  function freeSearchesSpent() {
+    var at = Number(localStorage.getItem(FREE_SPENT_STORAGE)) || 0;
+    return at > 0 && Date.now() - at < FREE_SPENT_FOR_MS;
+  }
+
+  function setFreeSearchesSpent(spent) {
+    if (spent) localStorage.setItem(FREE_SPENT_STORAGE, String(Date.now()));
+    else localStorage.removeItem(FREE_SPENT_STORAGE);
+  }
+
+  // Searching on the Worker's credits: no key of the user's own.
+  function onFreeSearches(providerId) {
+    return !!PROVIDERS[providerId].freeSearches && !getKey(providerId);
+  }
+
+  function canSearchWeb(providerId) {
+    return !!getKey(providerId) || (onFreeSearches(providerId) && !freeSearchesSpent());
+  }
+
+  // Once a page: does the Worker still have credits? Redraws if it changed.
+  var freeSearchesChecked = false;
+  function checkFreeSearches() {
+    if (freeSearchesChecked) return;
+    freeSearchesChecked = true;
+    fetch(PROXY_BASE + '/tavily').then(function (res) {
+      return res.ok ? res.json() : null;
+    }).then(function (data) {
+      if (!data || typeof data.shared !== 'boolean') return;
+      var was = freeSearchesSpent();
+      setFreeSearchesSpent(!data.shared);
+      // Not under someone typing a key.
+      if (was !== !data.shared && panelView !== 'settings') renderPanel();
+    }).catch(function () { /* the next search finds out */ });
+  }
+
+  function noFreeSearchesError() {
+    var err = new Error(NO_FREE_SEARCHES);
+    err.noFreeSearches = true;
+    return err;
   }
 
   function modelFor(providerId) {
@@ -312,6 +371,11 @@
     '#cnfirmed-panel .cnf-claim-text{margin:4px 0 6px;max-height:6.5em;overflow:auto;font-size:14.5px;line-height:1.5}',
     '#cnfirmed-panel .cnf-linkbtn{padding:0;border:0;background:none;color:var(--cnf-link);font-size:12.5px;' +
       'cursor:pointer;text-decoration:underline;text-underline-offset:2px}',
+    '#cnfirmed-panel .cnf-claim-acts{display:flex;flex-wrap:wrap;gap:4px 16px}',
+    '#cnfirmed-panel .cnf-back{display:inline-flex;align-items:center;gap:2px;margin:-4px 0 8px -4px;padding:2px 6px 2px 2px;' +
+      'border:0;border-radius:4px;background:none;color:var(--cnf-link);font:inherit;font-size:13px;font-weight:600;cursor:pointer}',
+    '#cnfirmed-panel .cnf-back:hover{background:var(--cnf-line)}',
+    '#cnfirmed-panel .cnf-back svg{width:14px;height:14px}',
     '#cnfirmed-panel .cnf-body{flex:1 1 auto;min-height:0;overflow-y:auto}',
     '#cnfirmed-panel .cnf-pad{display:flex;flex-direction:column;gap:18px;padding:16px 16px 72px}',
     '#cnfirmed-panel .cnf-headline{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}',
@@ -763,9 +827,11 @@
   // a click.
   var autoWebConsidered = {};
 
-  function startClaim(i) {
-    var wiki = runWikiStage(i);
-    var books = runBooks(i);
+  // Opening a claim runs what has not run yet; a search that failed waits
+  // for its Retry (`retry`), so going back to a claim does not start it again.
+  function startClaim(i, retry) {
+    var wiki = runWikiStage(i, retry);
+    var books = runBooks(i, retry);
     renderPanel(i);
     return Promise.all([wiki, books]).then(function () {
       renderPanel(i);
@@ -779,9 +845,9 @@
     return archiveQueriesFor(i).length === 0 && !(IA_LIBRARIAN && (LIB_MODELS.planner || LIB_MODELS.books));
   }
 
-  function runBooks(i) {
+  function runBooks(i, retry) {
     if (archiveNothingToSearch(i)) return Promise.resolve(null);
-    return runArchiveStage(i).then(function (a) {
+    return runArchiveStage(i, retry).then(function (a) {
       // Leads cached before their check finished are checked now.
       if (a && a.status === 'done' && (a.candidates || []).length && !a.check) {
         return checkArchiveStage(i);
@@ -796,6 +862,7 @@
     var s = state[i];
     if (s && s.status !== 'idle') return;
     if (collectItems(i).items.length > 0) return;
+    // Free searches are shared, so they wait for a click.
     if (!getKey(getProvider())) return;
     runOne(i);
   }
@@ -803,8 +870,8 @@
   function runOne(i) {
     var providerId = getProvider();
     var key = getKey(providerId);
-    if (!key) {
-      toast('Add your ' + keyLabel(providerId) + ' first');
+    if (!canSearchWeb(providerId)) {
+      toast(onFreeSearches(providerId) ? NO_FREE_SEARCHES : 'Add your ' + keyLabel(providerId) + ' first');
       openSettings();
       return;
     }
@@ -828,6 +895,14 @@
         persist(); renderPanel(i);
       })
       .catch(function (err) {
+        if (err && err.noFreeSearches) {
+          // Not this claim's failure: it is left unsearched, and the panel
+          // says why and asks for a key.
+          delete state[i];
+          toast(NO_FREE_SEARCHES);
+          persist(); renderPanel(i);
+          return;
+        }
         var msg = (err && err.message) ? err.message : String(err);
         state[i] = { status: 'error', error: msg, provider: providerId };
         persist(); renderPanel(i);
@@ -848,8 +923,8 @@
     renderPanel();
     batch.promise = indexes.reduce(function (chain, index) {
       return chain.then(function () {
-        return runWikiStage(index)
-          .then(function () { return runBooks(index); })
+        return runWikiStage(index, true)
+          .then(function () { return runBooks(index, true); })
           .catch(function (err) { console.error('[CNfirmed] search failed for claim', index, ':', err); })
           .then(function () { batch.done++; renderPanel(index); });
       });
@@ -875,7 +950,7 @@
 
   function searchWebForNothing() {
     var providerId = getProvider();
-    if (!getKey(providerId)) {
+    if (!canSearchWeb(providerId)) {
       openSettings();
       return;
     }
@@ -905,6 +980,10 @@
                 };
               })
               .catch(function (err) {
+                if (err && err.noFreeSearches) {
+                  delete state[k];
+                  return;
+                }
                 state[k] = {
                   status: 'error',
                   error: (err && err.message) ? err.message : String(err),
@@ -914,8 +993,11 @@
               .then(function () {
                 inFlight--;
                 persist(); renderPanel(k);
+                // Free searches running out leaves the rest unsearched.
+                if (!canSearchWeb(providerId)) idx = queue.length;
                 if (idx >= queue.length && inFlight === 0) {
-                  toast('CNfirmed: web search finished');
+                  toast(canSearchWeb(providerId) ? 'CNfirmed: web search finished' : NO_FREE_SEARCHES);
+                  renderPanel();
                   resolve();
                 } else {
                   next();
@@ -2105,9 +2187,11 @@
 
   // -- Orchestration --
 
-  function runWikiStage(index) {
+  function runWikiStage(index, retry) {
     var current = wikiState[index];
-    if (current && current.status === 'done') return Promise.resolve(current);
+    if (current && (current.status === 'done' || (current.status === 'error' && !retry))) {
+      return Promise.resolve(current);
+    }
     if (current && current.promise) return current.promise;
 
     var entry = { status: 'running' };
@@ -3143,9 +3227,11 @@
     return p.seen + ' passage(s)' + (dropped.length ? ' → dropped: ' + dropped.join(', ') : '') + best;
   }
 
-  function runArchiveStage(index) {
+  function runArchiveStage(index, retry) {
     var current = archiveState[index];
-    if (current && current.status === 'done') return Promise.resolve(current);
+    if (current && (current.status === 'done' || (current.status === 'error' && !retry))) {
+      return Promise.resolve(current);
+    }
     if (current && current.promise) return current.promise;
     var ctx = claimContexts[index];
     if (!ctx || !ctx.claim) {
@@ -4193,10 +4279,13 @@
     return q.length > TAVILY_MAX_QUERY ? q.slice(0, TAVILY_MAX_QUERY) : q;
   }
 
+  // Without a key of the user's own, the Worker searches on its own key.
   function tavilySearch(ctx, apiKey) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers.Authorization = 'Bearer ' + apiKey;
     return fetch(PROXY_BASE + '/tavily', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      headers: headers,
       body: JSON.stringify({
         query: tavilyQuery(ctx),
         search_depth: 'advanced',
@@ -4208,7 +4297,12 @@
       })
     }).then(function (res) {
       return res.text().then(function (t) {
+        if (res.status === 402 && !apiKey && /"free_credits_exhausted"/.test(t)) {
+          setFreeSearchesSpent(true);
+          throw noFreeSearchesError();
+        }
         if (!res.ok) throw new Error('Tavily API ' + res.status + ': ' + truncate(t, 200));
+        if (!apiKey) setFreeSearchesSpent(false);
         var data = JSON.parse(t);
         return (data.results || []).filter(function (r) {
           return r && typeof r.url === 'string' && !isUnreliableDomain(r.url);
@@ -4431,6 +4525,332 @@
     return { template: template, ref: '<ref>' + template + '</ref>', kind: kind };
   }
 
+  // ---- A full citation from the ISBN, DOI or URL ---------------------------
+  // Mirrors src/core/citoid.ts. What ProveIt and VisualEditor's "Automatic"
+  // tab do: ask Citoid for the record (a book's ISBN, else the DOI in the
+  // link, else the page), let MediaWiki:Citoid-template-type-map.json pick the
+  // template for its item type, and write each field into the parameter that
+  // template's TemplateData `maps.citoid` names. Our link and access date stay
+  // (and an Archive scan's |url-access= and |via=); the catalogue wins on the rest.
+
+  function citoidNamePairs(first, last) {
+    var pairs = [[first, last]];
+    for (var n = 2; n <= 9; n++) pairs.push([first + n, last + n]);
+    return pairs;
+  }
+
+  function citoidExtend(base, extra) {
+    var out = {};
+    Object.keys(base).forEach(function (k) { out[k] = base[k]; });
+    Object.keys(extra).forEach(function (k) { out[k] = extra[k]; });
+    return out;
+  }
+
+  var CITOID_TYPE_MAP = {
+    book: 'Cite book',
+    bookSection: 'Cite book',
+    journalArticle: 'Cite journal',
+    magazineArticle: 'Cite magazine',
+    newspaperArticle: 'Cite news',
+    webpage: 'Cite web',
+    blogPost: 'Cite web',
+    forumPost: 'Cite web',
+    thesis: 'Cite thesis',
+    report: 'Cite report',
+    conferencePaper: 'Cite conference',
+    encyclopediaArticle: 'Cite encyclopedia',
+    dictionaryEntry: 'Cite encyclopedia',
+    videoRecording: 'Cite AV media',
+    film: 'Cite AV media',
+    podcast: 'Cite podcast',
+    interview: 'Cite interview',
+    map: 'Cite map'
+  };
+
+  var CITOID_COMMON_MAP = {
+    title: 'title',
+    url: 'url',
+    date: 'date',
+    accessDate: 'access-date',
+    language: 'language',
+    publisher: 'publisher',
+    archiveUrl: 'archive-url',
+    archiveDate: 'archive-date',
+    author: citoidNamePairs('first', 'last')
+  };
+
+  var CITE_BOOK_CITOID_MAP = {
+    title: 'title',
+    bookTitle: 'title',
+    edition: 'edition',
+    series: 'series',
+    volume: 'volume',
+    publisher: 'publisher',
+    place: 'location',
+    date: 'date',
+    language: 'language',
+    ISBN: ['isbn'],
+    ISSN: ['issn'],
+    oclc: 'oclc',
+    DOI: 'doi',
+    url: 'url',
+    author: citoidNamePairs('first', 'last'),
+    editor: citoidNamePairs('editor-first', 'editor-last'),
+    translator: citoidNamePairs('translator-first', 'translator-last'),
+    contributor: 'others'
+  };
+
+  var BUILTIN_CITOID_MAPS = {
+    'cite book': CITE_BOOK_CITOID_MAP,
+    'cite web': citoidExtend(CITOID_COMMON_MAP, {
+      websiteTitle: 'website', publicationTitle: 'website', blogTitle: 'website', forumTitle: 'website'
+    }),
+    'cite news': citoidExtend(CITOID_COMMON_MAP, {
+      publicationTitle: 'work', websiteTitle: 'work', place: 'location', ISSN: ['issn'], DOI: 'doi'
+    }),
+    'cite journal': citoidExtend(CITOID_COMMON_MAP, {
+      publicationTitle: 'journal', volume: 'volume', issue: 'issue', pages: 'pages', series: 'series',
+      DOI: 'doi', ISSN: ['issn'], PMID: 'pmid', PMCID: 'pmc', editor: citoidNamePairs('editor-first', 'editor-last')
+    }),
+    'cite magazine': citoidExtend(CITOID_COMMON_MAP, {
+      publicationTitle: 'magazine', volume: 'volume', issue: 'issue', pages: 'pages', ISSN: ['issn']
+    })
+  };
+
+  var CITOID_KEEP = ['url', 'url-access', 'via', 'access-date'];
+  var CITOID_WORK = ['website', 'work', 'newspaper', 'magazine', 'journal', 'periodical'];
+  var CITOID_FIELD_ORDER = [
+    'title', 'work', 'website', 'newspaper', 'magazine', 'journal', 'periodical',
+    'edition', 'series', 'volume', 'issue', 'pages', 'others', 'publisher', 'location',
+    'date', 'year', 'language', 'isbn', 'issn', 'oclc', 'doi', 'pmid', 'pmc',
+    'url', 'url-access', 'via', 'access-date', 'archive-url', 'archive-date'
+  ];
+  var CITOID_TIMEOUT_MS = 8000;
+
+  function normaliseIsbn(raw) {
+    var digits = String(raw).replace(/[^0-9Xx]/g, '').toUpperCase();
+    return /^(?:\d{9}[\dX]|\d{13})$/.test(digits) ? digits : null;
+  }
+
+  function doiIn(url) {
+    var text = url;
+    try { text = decodeURIComponent(url); } catch (e) { /* as it is */ }
+    var m = /\b(10\.\d{4,9}\/[^\s?#&"<>]+)/.exec(text);
+    if (!m) return null;
+    return m[1].replace(/\/(?:full|abstract|pdf|epdf|fulltext)$/i, '').replace(/\.pdf$/i, '').replace(/[.,;)]+$/, '');
+  }
+
+  function citationTemplateBody(citation) {
+    return citation.template.replace(/^\{\{/, '').replace(/\}\}$/, '');
+  }
+
+  function isCiteTemplate(name) {
+    return /^(?:cite .+|citation)$/i.test(String(name).trim());
+  }
+
+  function citoidQuery(citation) {
+    if (!citation || !citation.template) return null;
+    var parsed = parseTemplateBody(citationTemplateBody(citation));
+    if (!isCiteTemplate(parsed.name)) return null;
+    var isbn = parsed.named.isbn ? normaliseIsbn(parsed.named.isbn) : null;
+    if (isbn) return isbn;
+    var url = parsed.named.url;
+    if (!url || !/^https?:\/\//i.test(url) || /\barchive\.org\/details\//i.test(url)) return null;
+    return doiIn(url) || url;
+  }
+
+  function citoidClean(value) {
+    return typeof value === 'string' || typeof value === 'number'
+      ? String(value).replace(/\s+/g, ' ').trim().replace(/\|/g, '{{!}}')
+      : '';
+  }
+
+  function citoidParams(item, map) {
+    var params = {};
+    function set(param, value) {
+      var v = citoidClean(value);
+      if (typeof param === 'string' && param && v && !params[param]) params[param] = v;
+    }
+    Object.keys(map).forEach(function (field) {
+      var target = map[field];
+      var value = item[field];
+      if (value === undefined || value === null) return;
+      var values = Array.isArray(value) ? value : [value];
+      if (typeof target === 'string') { set(target, values[0]); return; }
+      target.forEach(function (param, i) {
+        var v = values[i];
+        if (Array.isArray(param)) {
+          var name = Array.isArray(v) ? v : [];
+          var first = citoidClean(name[0]);
+          var last = citoidClean(name[1]);
+          set(param[1], last || first);
+          if (last) set(param[0], first);
+        } else {
+          set(param, v);
+        }
+      });
+    });
+    return params;
+  }
+
+  function citoidTemplate(item, typeMap, current) {
+    var mapped = typeof item.itemType === 'string' ? typeMap[item.itemType] : undefined;
+    if (typeof mapped !== 'string' || !isCiteTemplate(mapped)) return current;
+    var name = mapped.trim().replace(/_/g, ' ');
+    return name.charAt(0).toLowerCase() + name.slice(1);
+  }
+
+  function citoidOrderKey(param) {
+    var m = /^(?:(editor|translator)-)?(last|first|author)(\d*)$/.exec(param);
+    if (m) {
+      var group = m[1] === 'editor' ? 1 : m[1] === 'translator' ? 2 : 0;
+      return [group, Number(m[3] || 1), m[2] === 'first' ? 1 : 0];
+    }
+    var i = CITOID_FIELD_ORDER.indexOf(param);
+    return [3, i < 0 ? CITOID_FIELD_ORDER.length : i, 0];
+  }
+
+  function mergeParams(existing, catalogue, sameTemplate) {
+    var out = {};
+    Object.keys(catalogue).forEach(function (k) { if (k !== 'url') out[k] = catalogue[k]; });
+    var hasAuthor = Object.keys(out).some(function (k) { return /^(?:last|author)1?$/.test(k); });
+    var hasWork = CITOID_WORK.some(function (w) { return out[w]; });
+    Object.keys(existing).forEach(function (k) {
+      if (CITOID_KEEP.indexOf(k) !== -1) out[k] = existing[k];
+      else if (!sameTemplate) return;
+      else if (out[k] || (k === 'author' && hasAuthor) || (k === 'year' && out.date) ||
+        (CITOID_WORK.indexOf(k) !== -1 && hasWork)) return;
+      else out[k] = existing[k];
+    });
+    var ordered = {};
+    Object.keys(out)
+      .map(function (k, i) { return { k: k, i: i, key: citoidOrderKey(k) }; })
+      .sort(function (a, b) {
+        return a.key[0] - b.key[0] || a.key[1] - b.key[1] || a.key[2] - b.key[2] || a.i - b.i;
+      })
+      .forEach(function (e) { ordered[e.k] = out[e.k]; });
+    return ordered;
+  }
+
+  function citoidUsableTitle(title, url) {
+    return Boolean(title) && !/^https?:\/\//i.test(title) && title !== url;
+  }
+
+  function completeCitation(citation, items, template, map) {
+    var item = Array.isArray(items) ? items[0] : null;
+    if (!item || typeof item !== 'object') return citation;
+    var parsed = parseTemplateBody(citationTemplateBody(citation));
+    if (!isCiteTemplate(parsed.name) || !isCiteTemplate(template)) return citation;
+    var catalogue = citoidParams(item, map);
+    if (!citoidUsableTitle(catalogue.title, parsed.named.url)) return citation;
+    var merged = mergeParams(parsed.named, catalogue, template.toLowerCase() === parsed.name);
+    var out = '{{' + template + ' |' + Object.keys(merged).map(function (k) {
+      return k + '=' + merged[k];
+    }).join(' |') + '}}';
+    return { template: out, ref: '<ref>' + out + '</ref>', kind: template.toLowerCase() };
+  }
+
+  // The wiki's own REST and action APIs, as ProveIt calls them.
+  var citoidTypeMapPromise = null;
+  function citoidTypeMap() {
+    if (!citoidTypeMapPromise) {
+      citoidTypeMapPromise = mwApiGet(WIKI_CODE, {
+        action: 'query', prop: 'revisions', rvprop: 'content', rvslots: 'main',
+        titles: 'MediaWiki:Citoid-template-type-map.json'
+      }).then(function (data) {
+        var page = data && data.query && data.query.pages && data.query.pages[0];
+        var rev = page && page.revisions && page.revisions[0];
+        var content = rev && rev.slots && rev.slots.main && rev.slots.main.content;
+        var parsed = content ? JSON.parse(content) : null;
+        return parsed && typeof parsed === 'object' ? parsed : CITOID_TYPE_MAP;
+      }).catch(function () { return CITOID_TYPE_MAP; });
+    }
+    return citoidTypeMapPromise;
+  }
+
+  var citoidTemplateMaps = Object.create(null);
+  function templateCitoidMap(template) {
+    var key = template.toLowerCase();
+    if (!citoidTemplateMaps[key]) {
+      var builtin = BUILTIN_CITOID_MAPS[key] || null;
+      citoidTemplateMaps[key] = mwApiGet(WIKI_CODE, {
+        action: 'templatedata', titles: 'Template:' + template, redirects: '1'
+      }).then(function (data) {
+        var pages = data && data.pages ? Object.keys(data.pages).map(function (k) { return data.pages[k]; }) : [];
+        var maps = pages[0] && pages[0].maps;
+        return (maps && maps.citoid) || builtin;
+      }).catch(function () { return builtin; });
+    }
+    return citoidTemplateMaps[key];
+  }
+
+  function citoidLookup(query) {
+    return fetch('https://' + WIKI_CODE + '.wikipedia.org/api/rest_v1/data/citation/mediawiki/' +
+      encodeURIComponent(query), { headers: { accept: 'application/json' } }).then(function (res) {
+      if (!res.ok) throw new Error('Citoid: HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function citoidComplete(citation, query) {
+    return Promise.all([citoidTypeMap(), citoidLookup(query)]).then(function (r) {
+      var items = r[1];
+      var item = Array.isArray(items) && items[0] && typeof items[0] === 'object' ? items[0] : null;
+      if (!item) return citation;
+      var current = parseTemplateBody(citationTemplateBody(citation)).name;
+      var template = citoidTemplate(item, r[0], current);
+      return templateCitoidMap(template).then(function (map) {
+        if (map || template === current) return { template: template, map: map };
+        return templateCitoidMap(current).then(function (m) { return { template: current, map: m }; });
+      }).then(function (t) {
+        return t.map ? completeCitation(citation, items, t.template, t.map) : citation;
+      });
+    });
+  }
+
+  // One lookup per citation, shared by the warm-up on opening a source and
+  // the Insert / Copy buttons; a failed or slow one leaves the citation as it was.
+  var citoidPending = Object.create(null);
+  function completeFromCitoid(citation) {
+    var query = citoidQuery(citation);
+    if (!query || citation.citoid) return Promise.resolve(citation);
+    var key = citation.template;
+    if (!citoidPending[key]) {
+      citoidPending[key] = citoidComplete(citation, query).then(function (done) {
+        done.citoid = true;
+        return done;
+      }).catch(function () {
+        delete citoidPending[key];
+        return citation;
+      });
+    }
+    var timer;
+    var timeout = new Promise(function (resolve) {
+      timer = setTimeout(function () { resolve(citation); }, CITOID_TIMEOUT_MS);
+    });
+    return Promise.race([citoidPending[key], timeout]).then(function (result) {
+      clearTimeout(timer);
+      return result;
+    });
+  }
+
+  // What a listed source's citation lives on (a web suggestion, an Archive
+  // book) and how to save it, so the cache and the next click have the full one.
+  function citoidHolder(holder, save) {
+    return holder && citoidQuery(holder.citation) ? { holder: holder, save: save } : null;
+  }
+
+  function completeHeldCitation(held) {
+    var h = held.holder;
+    return completeFromCitoid(h.citation).then(function (citation) {
+      if (citation !== h.citation && citation.citoid) {
+        h.citation = citation;
+        held.save();
+      }
+      return citation;
+    });
+  }
+
   // ---- What was found, in one list ---------------------------------------
   // Every search's results become the same kind of item, ranked by how sure
   // we are that the source states the claim — not by which search found it:
@@ -4501,7 +4921,8 @@
       warnings: warnings,
       note: v.reliability === 'medium' && v.reliabilityReason
         ? 'Reliability for this claim: medium. ' + v.reliabilityReason : '',
-      ref: s.citation && s.citation.ref
+      ref: s.citation && s.citation.ref,
+      cite: citoidHolder(s, persist)
     };
   }
 
@@ -4538,7 +4959,8 @@
       quote: words || (ev.fullText ? c.snippet : '…' + c.snippet + '…'),
       warnings: warnings,
       note: notes.join(' '),
-      ref: c.citation && c.citation.ref
+      ref: c.citation && c.citation.ref,
+      cite: citoidHolder(c, persistArchive)
     };
   }
 
@@ -4847,6 +5269,7 @@
     if (!panel) return;
     var where = panelView + ':' + currentIndex;
     var scroll = panel.body.scrollTop;
+    if (onFreeSearches(getProvider())) checkFreeSearches();
     drawHeader();
     drawClaimBox();
     panel.body.textContent = '';
@@ -4900,12 +5323,24 @@
     if (box.hidden) return;
     var i = currentIndex;
     var ctx = claimContexts[i] || {};
+    var back = button('cnf-back', null, openOverview, 'Back to the list of all claims on this page');
+    back.appendChild(icon('prev'));
+    back.appendChild(document.createTextNode('All claims'));
+    box.appendChild(back);
     if (ctx.section) box.appendChild(el('div', 'cnf-section', ctx.section));
     box.appendChild(el('p', 'cnf-claim-text', ctx.claim || '(no claim text found)'));
-    box.appendChild(button('cnf-linkbtn', 'Show in article', function () {
+    var acts = el('div', 'cnf-claim-acts');
+    acts.appendChild(button('cnf-linkbtn', 'Show in article', function () {
       cnSups[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
       flash(cnSups[i]);
     }));
+    acts.appendChild(button('cnf-linkbtn', 'Edit sentence', function () {
+      editClaimInEditor(i, 'select');
+    }, 'Open the section editor in a new tab with this sentence selected, to reword or correct it'));
+    acts.appendChild(button('cnf-linkbtn', 'Remove sentence', function () {
+      editClaimInEditor(i, 'remove');
+    }, 'Open the section editor in a new tab with this sentence already taken out, for you to review and save'));
+    box.appendChild(acts);
   }
 
   function drawClaimView(pad, i) {
@@ -4999,10 +5434,13 @@
 
     var actions = el('div', 'cnf-actions');
     if (item.ref) {
+      // Look the record up now, so the buttons usually have the full
+      // citation by the time they are clicked.
+      if (item.cite) completeHeldCitation(item.cite);
       actions.appendChild(button('cnf-btn cnf-btn-pri', 'Insert in editor', function () {
-        openEditorWithRef(i, { citation: { ref: item.ref } });
-      }, 'Open the section editor with this <ref> in place of the {{citation needed}} tag'));
-      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { copyRef(item.ref); }));
+        insertInEditor(i, item);
+      }, 'Open the section editor in a new tab with this <ref> in place of the {{citation needed}} tag'));
+      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { refFor(item).then(copyRef); }));
     }
     if (item.url) {
       var open = el('a', 'cnf-open', 'Open source');
@@ -5015,6 +5453,11 @@
     detail.appendChild(actions);
     wrap.appendChild(detail);
     return wrap;
+  }
+
+  function refFor(item) {
+    if (!item.cite) return Promise.resolve(item.ref);
+    return completeHeldCitation(item.cite).then(function (citation) { return citation.ref; });
   }
 
   function copyRef(ref) {
@@ -5042,6 +5485,7 @@
   }
 
   function webCostNote(providerId) {
+    if (onFreeSearches(providerId)) return 'One free search';
     return providerId === 'tavilyhf' ? 'One search, billed to your Tavily key' : 'One API call, billed to your key';
   }
 
@@ -5050,7 +5494,7 @@
     var section = el('section');
     section.setAttribute('aria-label', 'Where CNfirmed looked');
     section.appendChild(el('h2', 'cnf-label', 'Searched'));
-    var retry = function () { startClaim(i); };
+    var retry = function () { startClaim(i, true); };
 
     var w = wikiState[i] || {};
     var wikiWhere = 'this article and other languages';
@@ -5076,7 +5520,7 @@
         : 'Searching digitised books…', null, null, funnel));
     } else if (st.books === 'error') {
       section.appendChild(sourceRow('Books', 'Internet Archive', 'error', 'Failed: ' + a.error, 'Retry', function () {
-        runBooks(i).then(function () { renderPanel(i); });
+        runBooks(i, true).then(function () { renderPanel(i); });
       }));
     } else if (st.books === 'done' && a.check && a.check.status === 'error') {
       section.appendChild(sourceRow('Books', 'Internet Archive', 'error',
@@ -5115,8 +5559,10 @@
       section.appendChild(sourceRow('Web', webWhere, 'done', c && c.total
         ? plural(c.total, 'result') + ': ' + bits.join(', ')
         : 'No usable source found'));
-    } else if (getKey(providerId)) {
+    } else if (canSearchWeb(providerId)) {
       section.appendChild(sourceRow('Web', webWhere, 'idle', webCostNote(providerId), 'Search', function () { runOne(i); }));
+    } else if (onFreeSearches(providerId)) {
+      section.appendChild(sourceRow('Web', webWhere, 'idle', NO_FREE_SEARCHES, 'Add key', openSettings));
     } else {
       section.appendChild(sourceRow('Web', webWhere, 'idle', 'Needs a ' + keyLabel(providerId), 'Add key', openSettings));
     }
@@ -5181,16 +5627,18 @@
     var forWeb = batch ? [] : claimsForWeb();
     if (forWeb.length) {
       var providerId = getProvider();
-      var hasKey = !!getKey(providerId);
+      var canSearch = canSearchWeb(providerId);
       var n = forWeb.length;
+      var searches = n + (n === 1 ? ' search' : ' searches') + ' with ' + PROVIDERS[providerId].name;
       var box = el('div', 'cnf-box');
       box.appendChild(el('div', 'cnf-box-title', 'Search the web for the ' + plural(n, 'claim') + ' with nothing'));
-      box.appendChild(el('p', null, hasKey
-        ? n + (n === 1 ? ' search' : ' searches') + ' with ' + PROVIDERS[providerId].name + ', billed to your ' +
-          (providerId === 'tavilyhf' ? 'Tavily key.' : 'API key.')
-        : 'Needs a ' + keyLabel(providerId) + '.'));
-      box.appendChild(button('cnf-btn cnf-btn-pri', hasKey ? 'Search the web (' + n + ')' : 'Add key',
-        hasKey ? searchWebForNothing : openSettings));
+      box.appendChild(el('p', null, !canSearch
+        ? (onFreeSearches(providerId) ? NO_FREE_SEARCHES : 'Needs a ' + keyLabel(providerId) + '.')
+        : onFreeSearches(providerId)
+          ? searches + ', free while CNfirmed’s shared searches last.'
+          : searches + ', billed to your ' + (providerId === 'tavilyhf' ? 'Tavily key.' : 'API key.')));
+      box.appendChild(button('cnf-btn cnf-btn-pri', canSearch ? 'Search the web (' + n + ')' : 'Add key',
+        canSearch ? searchWebForNothing : openSettings));
       pad.appendChild(box);
     }
   }
@@ -5199,7 +5647,8 @@
     claude: 'Anthropic. Uses your API key.',
     gemini: 'Google. Uses your API key.',
     openai: 'Uses your API key.',
-    tavilyhf: 'Tavily searches, GPT-OSS reads the results. Uses your Tavily key.'
+    tavilyhf: 'Tavily searches, GPT-OSS reads the results. Free while CNfirmed’s shared searches last; ' +
+      'then uses your Tavily key.'
   };
 
   function drawSettings(pad) {
@@ -5231,7 +5680,7 @@
     var p = PROVIDERS[current];
     var hasKey = !!getKey(current);
     var keyBlock = el('div');
-    var keyName = el('label', 'cnf-field-label', keyLabel(current));
+    var keyName = el('label', 'cnf-field-label', keyLabel(current) + (p.freeSearches ? ' (optional)' : ''));
     keyName.htmlFor = 'cnfirmed-key';
     var row = el('div', 'cnf-keyrow');
     var input = el('input', 'cnf-input');
@@ -5253,6 +5702,10 @@
     row.appendChild(save);
     keyBlock.appendChild(keyName);
     keyBlock.appendChild(row);
+    if (p.freeSearches && !hasKey) {
+      keyBlock.appendChild(el('p', 'cnf-note', freeSearchesSpent() ? NO_FREE_SEARCHES
+        : 'Not needed while CNfirmed’s free searches last. Add one to search on your own Tavily credits.'));
+    }
     keyBlock.appendChild(el('p', 'cnf-note', 'Kept in this browser’s localStorage. Sent only to ' +
       (p.keyService || p.name) + (p.keyService ? ', through the CNfirmed proxy.' : '.')));
     if (hasKey) {
@@ -5288,16 +5741,54 @@
   }
 
   // ---- Editor integration ------------------------------------------------
-  // The "Insert <ref> in editor" CTA stages the chosen <ref> in sessionStorage,
-  // then navigates to the section's edit URL with a pre-filled summary. The
-  // same script runs again on the edit page, picks up the staged payload, and
-  // replaces the corresponding {{citation needed}} template in the textarea.
+  // "Insert in editor" opens the section's source editor in a new tab, with a
+  // pre-filled summary and a one-time token in the URL, and stages the <ref>
+  // in localStorage under that token (sessionStorage is per tab). The tab is
+  // opened on the click itself, since a browser blocks a tab opened after a
+  // wait, and the <ref> follows once its Citoid lookup is done; the same
+  // script runs on the edit page, waits for it, and puts it in place of the
+  // corresponding {{citation needed}} template in the textarea.
 
   var EDIT_INSERT_PREFIX = 'cnfirmed:pending-insert:';
+  var EDIT_INSERT_PARAM = 'cnfirmedInsert';
+  var EDIT_INSERT_DONE = 'cnfirmed:insert-done:';
+  // Longer than a Citoid lookup may take, so the <ref> has time to arrive.
+  var EDIT_INSERT_WAIT_MS = CITOID_TIMEOUT_MS + 4000;
+  var EDIT_INSERT_POLL_MS = 200;
+  var EDIT_INSERT_MAX_AGE_MS = 10 * 60 * 1000;
   var sectionEditLinksCache = null;
 
-  function pendingInsertKey() {
-    return EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
+  function insertToken() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // A staged <ref> nobody picked up (a tab closed before it loaded) is
+  // dropped once it is old, so localStorage does not collect them.
+  function writeStagedInsert(token, payload) {
+    try {
+      var now = Date.now();
+      for (var n = localStorage.length - 1; n >= 0; n--) {
+        var k = localStorage.key(n);
+        if (!k || k.indexOf(EDIT_INSERT_PREFIX) !== 0) continue;
+        var old = null;
+        try { old = JSON.parse(localStorage.getItem(k)); } catch (e) { /* drop it */ }
+        if (!old || !(now - old.stagedAt < EDIT_INSERT_MAX_AGE_MS)) localStorage.removeItem(k);
+      }
+      localStorage.setItem(EDIT_INSERT_PREFIX + token, JSON.stringify(payload));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // The staged <ref> for this token, once: it is removed as it is read.
+  function takeStagedInsert(token) {
+    var key = EDIT_INSERT_PREFIX + token;
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) { return null; }
+    if (!raw) return null;
+    try { localStorage.removeItem(key); } catch (e) { /* read once anyway */ }
+    try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
   function sectionEditLinkFor(supEl) {
@@ -5354,57 +5845,87 @@
     return url + sep + encodeURIComponent(key) + '=' + encodeURIComponent(value);
   }
 
-  function openEditorWithRef(i, suggestion) {
-    if (!suggestion || !suggestion.citation || !suggestion.citation.ref) {
-      toast('No <ref> to insert.');
-      return;
-    }
+  // Opens claim i's section in the source editor in a new tab and stages
+  // what to do there once `staged` resolves: put a <ref> in place of the tag
+  // (mode 'insert'), select the tagged sentence ('select'), or take it out
+  // ('remove').
+  function openClaimInEditor(i, mode, summary, staged, fallback) {
     var links = getSectionEditLinks();
     var link = links[i];
     var k = 0;
     for (var j = 0; j < i; j++) if (links[j] === link) k++;
-    var editUrl = sourceEditorUrl(link);
+    var token = insertToken();
+    var url = sourceEditorUrl(link);
+    if (summary) url = appendQueryParam(url, 'summary', summary);
+    url = appendQueryParam(url, EDIT_INSERT_PARAM, token);
 
-    var payload = {
-      pageTitle: pageTitle,
-      revid: revid,
-      cnIndexInSection: k,
-      ref: suggestion.citation.ref,
-      sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
-      stagedAt: Date.now()
-    };
-    try {
-      sessionStorage.setItem(pendingInsertKey(), JSON.stringify(payload));
-    } catch (e) {
-      toast('Could not stage edit (sessionStorage unavailable).');
-      return;
-    }
+    var tab = window.open(url, '_blank');
+    if (tab) { try { tab.opener = null; } catch (e) { /* not needed */ } }
 
-    var summary = 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])';
-    window.location.href = appendQueryParam(editUrl, 'summary', summary);
+    Promise.resolve(staged).then(function (extra) {
+      var payload = {
+        mode: mode,
+        pageTitle: pageTitle,
+        revid: revid,
+        cnIndexInSection: k,
+        sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
+        stagedAt: Date.now()
+      };
+      for (var key in extra) payload[key] = extra[key];
+      if (!writeStagedInsert(token, payload)) {
+        toast('Could not stage the edit (localStorage unavailable). ' + fallback);
+        return;
+      }
+      // Pop-ups blocked: this tab, then.
+      if (!tab) window.location.href = url;
+    });
   }
 
-  // Edit-mode: locate the staged payload and apply it to the textarea.
-
-  function handlePendingEditorInsertion() {
-    var key = EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
-    var raw = null;
-    try { raw = sessionStorage.getItem(key); } catch (e) { return; }
-    if (!raw) return;
-    var payload;
-    try { payload = JSON.parse(raw); } catch (e) {
-      try { sessionStorage.removeItem(key); } catch (e2) {}
+  function insertInEditor(i, item) {
+    if (!item.ref) {
+      toast('No <ref> to insert.');
       return;
     }
-    try { sessionStorage.removeItem(key); } catch (e) {}
+    openClaimInEditor(i, 'insert', 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])',
+      refFor(item).then(function (ref) { return { ref: ref }; }), 'Use Copy <ref> instead.');
+  }
 
-    if (!payload || !payload.ref) return;
+  // For a claim that is wrong or cannot be sourced: reword it, or take it out.
+  function editClaimInEditor(i, mode) {
+    var summary = mode === 'remove'
+      ? 'Removed unsourced statement (via [[User:Alaexis/CNfirmed|CNfirmed]])'
+      : null;
+    openClaimInEditor(i, mode, summary, {}, 'Use the section\'s [edit] link instead.');
+  }
 
-    mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
-      applyPendingInsertion(payload);
-    }, function () {
-      applyPendingInsertion(payload);
-    });
+  // Edit-mode: wait for the staged payload and apply it to the textarea.
+
+  function handlePendingEditorInsertion() {
+    var token = null;
+    try { token = new URL(location.href).searchParams.get(EDIT_INSERT_PARAM); } catch (e) { return; }
+    if (!token) return;
+    // A preview or a reload of the same tab: the <ref> is already in.
+    try { if (sessionStorage.getItem(EDIT_INSERT_DONE + token)) return; } catch (e) { /* go on */ }
+
+    var deadline = Date.now() + EDIT_INSERT_WAIT_MS;
+    (function poll() {
+      var payload = takeStagedInsert(token);
+      if (payload && (payload.ref || payload.mode) && payload.pageTitle === pageTitle) {
+        try { sessionStorage.setItem(EDIT_INSERT_DONE + token, '1'); } catch (e) { /* best effort */ }
+        mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
+          applyPendingInsertion(payload);
+        }, function () {
+          applyPendingInsertion(payload);
+        });
+        return;
+      }
+      if (Date.now() < deadline) {
+        setTimeout(poll, EDIT_INSERT_POLL_MS);
+        return;
+      }
+      showEditBanner('CNfirmed: nothing arrived from the article tab. ' +
+        'Make the edit by hand, or use Copy <ref> in the panel there and paste it in place of the tag.', 'warn');
+    })();
   }
 
   // Best effort: a browser may refuse the clipboard to a page that was not
@@ -5414,8 +5935,14 @@
   }
 
   function applyPendingInsertion(payload) {
+    var mode = payload.mode || 'insert';
     var ta = document.getElementById('wpTextbox1');
     if (!ta || ta.readOnly) {
+      if (mode !== 'insert') {
+        showEditBanner(ta ? 'CNfirmed: this page cannot be edited from your account here.'
+          : 'CNfirmed: source editor not found. Switch to the wikitext editor and try again.', 'warn');
+        return;
+      }
       showEditBanner(
         (ta ? 'CNfirmed: this page cannot be edited from your account here. '
           : 'CNfirmed: source editor not found. Switch to the wikitext editor and try again. ') +
@@ -5432,40 +5959,73 @@
     var $ta = $(ta);
     var api = typeof $ta.textSelection === 'function';
     var text = api ? $ta.textSelection('getContents') : ta.value;
-    var result = replaceNthCitationNeeded(text, payload.cnIndexInSection || 0, payload.ref);
-    if (!result.replaced) {
-      showEditBanner(
-        'CNfirmed: could not locate the {{citation needed}} tag in this section — '
-        + 'the page may have changed. Your <ref> snippet has been copied to the clipboard.',
-        'warn'
-      );
-      copyQuietly(payload.ref);
-      return;
+    var n = payload.cnIndexInSection || 0;
+    var newText = null;
+    var start;
+    var end;
+    var message;
+    var kind = 'ok';
+
+    if (mode === 'select') {
+      var span = taggedSentenceSpan(text, n);
+      if (!span) {
+        showEditBanner('CNfirmed: could not locate the {{citation needed}} tag in this section — ' +
+          'the page may have changed. Find the sentence and edit it by hand.', 'warn');
+        return;
+      }
+      start = span.start;
+      end = span.end;
+      message = 'CNfirmed: the tagged sentence is selected. Correct or reword it, then save; ' +
+        'leave the {{citation needed}} tag on it unless you add a source.';
+    } else if (mode === 'remove') {
+      var cut = removeTaggedSentence(text, n);
+      if (!cut.removed) {
+        showEditBanner('CNfirmed: could not locate the {{citation needed}} tag in this section — ' +
+          'the page may have changed. Remove the sentence by hand.', 'warn');
+        return;
+      }
+      newText = cut.text;
+      start = end = cut.caret;
+      message = 'CNfirmed: the tagged sentence was taken out. Check it with "Show changes" before saving.';
+      if (cut.namedRefs.length) {
+        kind = 'warn';
+        message += ' It defined the reference named "' + cut.namedRefs.join('", "') +
+          '": if another sentence reuses it, move the definition there.';
+      }
+    } else {
+      var result = replaceNthCitationNeeded(text, n, payload.ref);
+      if (!result.replaced) {
+        showEditBanner(
+          'CNfirmed: could not locate the {{citation needed}} tag in this section — '
+          + 'the page may have changed. Your <ref> snippet has been copied to the clipboard.',
+          'warn'
+        );
+        copyQuietly(payload.ref);
+        return;
+      }
+      newText = result.text;
+      start = result.replacementStart;
+      end = start + payload.ref.length;
+      message = 'CNfirmed: <ref> inserted in place of the {{citation needed}} tag — review and save.';
     }
 
-    var start = result.replacementStart;
-    var end = start + payload.ref.length;
     if (api) {
-      $ta.textSelection('setContents', result.text);
+      if (newText !== null) $ta.textSelection('setContents', newText);
       try {
         $ta.textSelection('setSelection', { start: start, end: end });
         $ta.textSelection('scrollToCaretPosition');
       } catch (e) { /* the text is in; the selection is a nicety */ }
     } else {
-      ta.value = result.text;
+      if (newText !== null) ta.value = newText;
       try {
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        if (newText !== null) ta.dispatchEvent(new Event('input', { bubbles: true }));
         ta.focus();
         ta.setSelectionRange(start, end);
       } catch (e) {}
     }
 
-    showEditBanner(
-      'CNfirmed: <ref> inserted in place of the {{citation needed}} tag — review and save.',
-      'ok'
-    );
+    showEditBanner(message, kind);
   }
-
 
   // Aliases that all redirect to {{Citation needed}} on en.wikipedia and render
   // as <sup class="Template-Fact">. Compared after stripping subst:/safesubst:
@@ -5532,6 +6092,62 @@
       i++;
     }
     return { replaced: false, text: text, replacementStart: -1 };
+  }
+
+  // The span the editor selects or removes for the Nth tag: its sentence
+  // (taggedSentenceRange), kept to the tag's own line so a heading or a
+  // {{Main}} line above the paragraph is never part of it, and without the
+  // whitespace after it.
+  function taggedSentenceSpan(text, n) {
+    var tag = citationNeededOffsets(text)[n];
+    if (!tag) return null;
+    var r = taggedSentenceRange(text, tag.start, tag.end);
+    var lineStart = text.lastIndexOf('\n', tag.start - 1) + 1;
+    var lineEnd = text.indexOf('\n', tag.end);
+    if (lineEnd === -1) lineEnd = text.length;
+    var start = Math.max(r.start, lineStart);
+    var end = Math.min(Math.max(r.end, tag.end), lineEnd);
+    while (start < tag.start && /\s/.test(text.charAt(start))) start++;
+    while (end > tag.end && /\s/.test(text.charAt(end - 1))) end--;
+    return { start: start, end: end };
+  }
+
+  // The text with the Nth tag's sentence taken out, and the spacing around it
+  // put right: one space between the sentences either side, no trailing
+  // space, and no empty paragraph left behind.
+  function removeTaggedSentence(text, n) {
+    var span = taggedSentenceSpan(text, n);
+    if (!span) return { removed: false, text: text };
+    var before = text.slice(0, span.start);
+    var after = text.slice(span.end);
+    var removed = text.slice(span.start, span.end);
+    var lineHead = before.slice(before.lastIndexOf('\n') + 1);
+    if (!/\S/.test(lineHead)) {
+      // It began its line: the rest of the line moves up, or the line goes.
+      before = before.slice(0, before.length - lineHead.length);
+      after = after.replace(/^[ \t]+/, '');
+      if (after.charAt(0) === '\n') {
+        after = after.slice(1);
+        if (/\n\n$/.test(before) && after.charAt(0) === '\n') after = after.replace(/^\n+/, '');
+      } else if (after) {
+        after = lineHead + after;
+      }
+    } else if (!after || after.charAt(0) === '\n') {
+      before = before.replace(/[ \t]+$/, '');
+    } else {
+      after = after.replace(/^[ \t]+/, '');
+      if (!/\s$/.test(before)) before += ' ';
+    }
+    // A named reference defined in the sentence may be reused elsewhere,
+    // and those uses lose their definition with it.
+    var namedRefs = [];
+    var m;
+    var def = /<ref\b([^>]*[^\/>])?>/gi;
+    while ((m = def.exec(removed))) {
+      var name = refAttributes(m[1] || '').name;
+      if (name) namedRefs.push(name);
+    }
+    return { removed: true, text: before + after, caret: before.length, removedText: removed, namedRefs: namedRefs };
   }
 
   function skipNonRendered(text, i) {
