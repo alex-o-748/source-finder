@@ -417,7 +417,8 @@
   var revid = mw.config.get('wgCurRevisionId');
   var cacheKey = 'cnfirmed:' + lang + ':' + pageTitle + ':' + revid;
   var wikiCacheKey = 'cnfirmed:wiki:' + lang + ':' + pageTitle + ':' + revid;
-  var archiveCacheKey = 'cnfirmed:ia:' + lang + ':' + pageTitle + ':' + revid;
+  // ia2: books cached before a bundled item's book was told apart from the item.
+  var archiveCacheKey = 'cnfirmed:ia2:' + lang + ':' + pageTitle + ':' + revid;
 
   var cnSups = [];        // rendered <sup> nodes, in document order
   var badges = [];        // matching <button class="cnfirmed-badge"> nodes
@@ -2393,14 +2394,31 @@
     return { ok: true, access: 'open' };
   }
 
+  // books: the item's OCR text files, without _djvu.txt — more than one when
+  // the item bundles several books under one title.
   function archiveDetailsOf(response) {
     var md = (response && response.metadata) || {};
+    var files = response && Array.isArray(response.files) ? response.files : [];
+    var books = files
+      .map(function (f) { return f && typeof f === 'object' ? iaFirst(f.name) : null; })
+      .filter(function (n) { return n !== null && /_djvu\.txt$/.test(n); })
+      .map(function (n) { return n.slice(0, -'_djvu.txt'.length); });
     return {
       publisher: iaFirst(md.publisher),
       isbn: iaFirst(md.isbn),
       dark: response.is_dark === true,
-      restricted: String(iaFirst(md['access-restricted-item']) || '').toLowerCase() === 'true'
+      restricted: String(iaFirst(md['access-restricted-item']) || '').toLowerCase() === 'true',
+      books: books
     };
+  }
+
+  // The book a hit matched in, when its item bundles several: the item's title
+  // is then another book's, and its page opens on the first book. Mirrors
+  // bundledBook.
+  function iaBundledBook(hit, details) {
+    var books = (details && details.books) || [];
+    return books.length > 1 && hit.file !== null && hit.file !== undefined &&
+      books.indexOf(hit.file) !== -1 ? hit.file : null;
   }
 
   // Every lending-library book is flagged restricted; any other one cannot be
@@ -2678,24 +2696,61 @@
     return String(creator).replace(/,?\s*\(?\d{4}\s*-\s*(\d{4})?\)?\.?\s*$/, '').trim();
   }
 
-  function iaDetailsUrl(identifier) {
-    return 'https://archive.org/details/' + encodeURIComponent(identifier);
+  // With `book`, that book of a bundle: archive.org opens the first otherwise.
+  function iaDetailsUrl(identifier, book) {
+    return 'https://archive.org/details/' + encodeURIComponent(identifier) +
+      (book ? '/' + encodeURIComponent(book) : '');
   }
 
-  function iaViewerUrl(identifier, terms) {
-    var q = terms.numbers[0] || terms.names[0] || terms.subject;
-    return iaDetailsUrl(identifier) + '?q=' + encodeURIComponent(q);
+  var IA_SEARCH_PHRASE_WORDS = 6;
+
+  // Words of a passage to search the book for, quoted: a single common word
+  // ("July") is found on every other page. Mirrors searchPhrase.
+  function iaSearchPhrase(text, terms) {
+    var wanted = tokenSetOf([terms.subject].concat(terms.numbers, terms.names, terms.phrases)
+      .join(' ').replace(/-/g, ' '));
+    var weight = function (w) {
+      return Object.keys(tokenSetOf(w.replace(/-/g, ' '))).reduce(function (n, t) {
+        return n + (wanted[t] ? (/\d/.test(t) ? 2 : 1) : 0);
+      }, 0);
+    };
+    var ws = String(text).replace(/…/g, ' ').split(/\s+/).filter(function (w) { return w.length > 0; });
+    var size = Math.min(IA_SEARCH_PHRASE_WORDS, ws.length);
+    var best = null;
+    for (var i = 0; i + size <= ws.length; i++) {
+      var win = ws.slice(i, i + size);
+      // "com-" ends an OCR line: the book's text has the word whole.
+      if (win.some(function (w) { return /-$/.test(w); })) continue;
+      var score = win.reduce(function (n, w) { return n + weight(w); }, 0);
+      if (!best || score > best.score) best = { from: i, score: score };
+    }
+    if (!best || best.score < 2) return null;
+    var run = ws.slice(best.from, best.from + size);
+    while (run.length && weight(run[0]) === 0) run.shift();
+    while (run.length && weight(run[run.length - 1]) === 0) run.pop();
+    var phrase = libSafeTerm(run.map(function (w) {
+      return w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+    }).join(' '));
+    return phrase.indexOf(' ') !== -1 ? '"' + phrase + '"' : null;
+  }
+
+  function iaViewerUrl(url, passage, terms) {
+    var q = iaSearchPhrase(passage, terms) || terms.numbers[0] || terms.names[0] || terms.subject;
+    return url + '?q=' + encodeURIComponent(q);
   }
 
   // url-access=registration for a lending-library book, as InternetArchiveBot
   // writes it: the link works, after signing in with a free account.
-  function formatArchiveCitation(hit, access, details) {
-    var parts = ['title=' + escapePipes(hit.title)];
-    if (hit.creator) parts.push('author=' + escapePipes(iaCleanCreator(hit.creator)));
-    if (details && details.publisher) parts.push('publisher=' + escapePipes(details.publisher));
-    if (hit.year !== null) parts.push('year=' + hit.year);
-    if (details && details.isbn) parts.push('isbn=' + escapePipes(details.isbn));
-    parts.push('url=' + iaDetailsUrl(hit.identifier));
+  // A bundle's author, publisher, year and ISBN are the item's, not the
+  // book's: left for the editor to fill in.
+  function formatArchiveCitation(hit, access, details, book) {
+    var item = !book;
+    var parts = ['title=' + escapePipes(book || hit.title)];
+    if (item && hit.creator) parts.push('author=' + escapePipes(iaCleanCreator(hit.creator)));
+    if (item && details && details.publisher) parts.push('publisher=' + escapePipes(details.publisher));
+    if (item && hit.year !== null) parts.push('year=' + hit.year);
+    if (item && details && details.isbn) parts.push('isbn=' + escapePipes(details.isbn));
+    parts.push('url=' + iaDetailsUrl(hit.identifier, book));
     if (access === 'borrow') parts.push('url-access=registration');
     parts.push('via=Internet Archive');
     var template = '{{cite book |' + parts.join(' |') + '}}';
@@ -2714,6 +2769,8 @@
   function toArchiveCandidate(s, details, terms, via) {
     var hit = s.hit;
     var best = s.passages[0];
+    var book = iaBundledBook(hit, details);
+    var url = iaDetailsUrl(hit.identifier, book);
     var matched = iaCompactAnchors(best.matched);
     var byline = [
       s.access === 'borrow' ? 'Internet Archive (borrow)' : 'Internet Archive',
@@ -2729,18 +2786,53 @@
       score: s.score,
       matchedAnchors: matched,
       query: hit.query,
-      viewerUrl: iaViewerUrl(hit.identifier, terms)
+      viewerUrl: iaViewerUrl(url, best.text, terms)
     };
+    if (book !== null) evidence.bundle = { title: hit.title, books: details.books.length };
     if (s.fullText) evidence.fullText = true;
     if (via) evidence.via = via;
     return {
-      url: iaDetailsUrl(hit.identifier),
-      title: hit.title,
+      url: url,
+      title: book || hit.title,
       relevance: byline + ' — matched ' + (matched.join(', ') || 'claim wording'),
       snippet: best.text,
       evidence: evidence,
-      citation: formatArchiveCitation(hit, s.access, details)
+      citation: formatArchiveCitation(hit, s.access, details, book)
     };
+  }
+
+  // One lead per text: a book uploaded twice under different titles, or once
+  // on its own and once bundled with others, is shown once — on its own when
+  // it is. Mirrors collapseCopies.
+  var IA_COPY_MIN_CHARS = 80;
+  var IA_COPY_REASON = 'a copy of another lead';
+
+  function iaCopyKey(text) {
+    return foldText(text).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  }
+
+  function iaSameText(a, b) {
+    var theirs = Object.create(null);
+    b.passages.forEach(function (p) {
+      var k = iaCopyKey(p.text);
+      if (k.length >= IA_COPY_MIN_CHARS) theirs[k] = true;
+    });
+    return a.passages.some(function (p) { return theirs[iaCopyKey(p.text)] === true; });
+  }
+
+  function iaCollapseCopies(shown, funnel) {
+    var out = [];
+    shown.forEach(function (x) {
+      var k = -1;
+      for (var i = 0; i < out.length && k === -1; i++) if (iaSameText(out[i].s, x.s)) k = i;
+      if (k === -1) {
+        out.push(x);
+        return;
+      }
+      funnel.rejected[IA_COPY_REASON] = (funnel.rejected[IA_COPY_REASON] || 0) + 1;
+      if (iaBundledBook(out[k].s.hit, out[k].details) !== null && iaBundledBook(x.s.hit, x.details) === null) out[k] = x;
+    });
+    return out;
   }
 
   function iaSearchUrl(query, size) {
@@ -2958,7 +3050,9 @@
           })
           .then(function () {
             funnel.lookedUp = shortlist.length + extras.length + added.length;
-            var candidates = shown.map(function (x) { return toArchiveCandidate(x.s, x.details, terms, x.via); });
+            var candidates = iaCollapseCopies(shown, funnel).map(function (x) {
+              return toArchiveCandidate(x.s, x.details, terms, x.via);
+            });
             funnel.candidates = candidates.length;
             return { candidates: candidates, funnel: funnel };
           });
@@ -3655,10 +3749,20 @@
           replies.forEach(function (rep) {
             if (rep.error) funnel.errors.push(rep.error);
             rep.hits.forEach(function (h) {
-              inside[h.identifier] = (inside[h.identifier] || []).concat(h.highlights);
+              inside[h.identifier] = (inside[h.identifier] || []).concat([h]);
             });
           });
-          everyone.forEach(function (s) { addPassages(s, inside[s.hit.identifier] || []); });
+          everyone.forEach(function (s) {
+            var hits = inside[s.hit.identifier] || [];
+            // An item can bundle several books: only the lead's own book
+            // counts. A lead from the catalogue does not know its book until now.
+            if (s.hit.file === null) {
+              var withFile = hits.filter(function (h) { return h.file !== null; })[0];
+              s.hit.file = withFile ? withFile.file : null;
+            }
+            addPassages(s, hits.filter(function (h) { return h.file === null || h.file === s.hit.file; })
+              .reduce(function (acc, h) { return acc.concat(h.highlights); }, []));
+          });
           // The librarian's leads show their best-covered passage first; one
           // with no passage has nothing to show or check, and a named book
           // needs only one scan.
@@ -4388,13 +4492,20 @@
     };
   }
 
-  function archiveItem(c, verdict, checkDone, key) {
+  function archiveItem(c, verdict, checkDone, key, terms) {
     var ev = c.evidence || {};
     var tier = verdict === 'supports' ? 'supports' : verdict === 'partial' ? 'partial' : 'lead';
     var verdictText = verdict === 'supports' ? 'Supports the claim'
       : verdict === 'partial' ? 'Supports part of the claim'
       : checkDone ? 'Lead, the check gave no verdict' : 'Lead, not checked';
     var words = c.check && c.check.quote;
+    // The checked words find the page better than the passage they came from.
+    var url = words && terms ? iaViewerUrl(c.url, words, terms) : ev.viewerUrl || c.url;
+    var warnings = [];
+    if (ev.bundle) {
+      warnings.push('This is one of ' + ev.bundle.books + ' books uploaded together as “' + ev.bundle.title +
+        '”. Check the book’s title, author and publisher before citing it.');
+    }
     var notes = [];
     if (c.check && c.check.reason) notes.push(c.check.reason);
     notes.push('Find the page in the book and add |page= to the citation.');
@@ -4406,13 +4517,13 @@
       tier: tier,
       verdictText: verdictText,
       title: c.title,
-      url: ev.viewerUrl || c.url,
+      url: url,
       meta: ['Internet Archive', ev.year,
         ev.access === 'borrow' ? 'borrow with a free account' : 'free to read'].filter(Boolean).join(' · '),
       quoteLabel: words ? 'The words that state it:' : 'Passage:',
       // A passage from the whole text is already cut with "…".
       quote: words || (ev.fullText ? c.snippet : '…' + c.snippet + '…'),
-      warnings: [],
+      warnings: warnings,
       note: notes.join(' '),
       ref: c.citation && c.citation.ref
     };
@@ -4478,6 +4589,7 @@
     var a = archiveState[i];
     if (a && a.status === 'done' && a.check && a.check.status !== 'running') {
       var checkDone = a.check.status === 'done';
+      var terms = archiveTermsFor(i);
       var bc = { total: 0, supports: 0, partial: 0, rejected: 0, unclear: 0 };
       (a.candidates || []).forEach(function (c, k) {
         bc.total++;
@@ -4486,7 +4598,7 @@
         if (verdict === 'supports') bc.supports++;
         else if (verdict === 'partial') bc.partial++;
         else bc.unclear++;
-        all.push(archiveItem(c, verdict, checkDone, 'ia' + k));
+        all.push(archiveItem(c, verdict, checkDone, 'ia' + k, terms));
       });
       counts.books = bc;
     }
