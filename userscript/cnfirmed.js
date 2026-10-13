@@ -31,6 +31,7 @@
  *     under it what was searched, with a button for each search not yet run.
  *   - A "CNfirmed (N)" link opens the list of all claims, with "Find sources
  *     for all (free)" and, for the claims left with nothing, a web search.
+ *     "All claims" above a claim goes back to it.
  *   - Provider and key are behind the panel's gear.
  *
  */
@@ -371,6 +372,10 @@
     '#cnfirmed-panel .cnf-linkbtn{padding:0;border:0;background:none;color:var(--cnf-link);font-size:12.5px;' +
       'cursor:pointer;text-decoration:underline;text-underline-offset:2px}',
     '#cnfirmed-panel .cnf-claim-acts{display:flex;flex-wrap:wrap;gap:4px 16px}',
+    '#cnfirmed-panel .cnf-back{display:inline-flex;align-items:center;gap:2px;margin:-4px 0 8px -4px;padding:2px 6px 2px 2px;' +
+      'border:0;border-radius:4px;background:none;color:var(--cnf-link);font:inherit;font-size:13px;font-weight:600;cursor:pointer}',
+    '#cnfirmed-panel .cnf-back:hover{background:var(--cnf-line)}',
+    '#cnfirmed-panel .cnf-back svg{width:14px;height:14px}',
     '#cnfirmed-panel .cnf-body{flex:1 1 auto;min-height:0;overflow-y:auto}',
     '#cnfirmed-panel .cnf-pad{display:flex;flex-direction:column;gap:18px;padding:16px 16px 72px}',
     '#cnfirmed-panel .cnf-headline{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}',
@@ -822,9 +827,11 @@
   // a click.
   var autoWebConsidered = {};
 
-  function startClaim(i) {
-    var wiki = runWikiStage(i);
-    var books = runBooks(i);
+  // Opening a claim runs what has not run yet; a search that failed waits
+  // for its Retry (`retry`), so going back to a claim does not start it again.
+  function startClaim(i, retry) {
+    var wiki = runWikiStage(i, retry);
+    var books = runBooks(i, retry);
     renderPanel(i);
     return Promise.all([wiki, books]).then(function () {
       renderPanel(i);
@@ -838,9 +845,9 @@
     return archiveQueriesFor(i).length === 0 && !(IA_LIBRARIAN && (LIB_MODELS.planner || LIB_MODELS.books));
   }
 
-  function runBooks(i) {
+  function runBooks(i, retry) {
     if (archiveNothingToSearch(i)) return Promise.resolve(null);
-    return runArchiveStage(i).then(function (a) {
+    return runArchiveStage(i, retry).then(function (a) {
       // Leads cached before their check finished are checked now.
       if (a && a.status === 'done' && (a.candidates || []).length && !a.check) {
         return checkArchiveStage(i);
@@ -916,8 +923,8 @@
     renderPanel();
     batch.promise = indexes.reduce(function (chain, index) {
       return chain.then(function () {
-        return runWikiStage(index)
-          .then(function () { return runBooks(index); })
+        return runWikiStage(index, true)
+          .then(function () { return runBooks(index, true); })
           .catch(function (err) { console.error('[CNfirmed] search failed for claim', index, ':', err); })
           .then(function () { batch.done++; renderPanel(index); });
       });
@@ -2180,9 +2187,11 @@
 
   // -- Orchestration --
 
-  function runWikiStage(index) {
+  function runWikiStage(index, retry) {
     var current = wikiState[index];
-    if (current && current.status === 'done') return Promise.resolve(current);
+    if (current && (current.status === 'done' || (current.status === 'error' && !retry))) {
+      return Promise.resolve(current);
+    }
     if (current && current.promise) return current.promise;
 
     var entry = { status: 'running' };
@@ -3205,9 +3214,11 @@
     return p.seen + ' passage(s)' + (dropped.length ? ' → dropped: ' + dropped.join(', ') : '') + best;
   }
 
-  function runArchiveStage(index) {
+  function runArchiveStage(index, retry) {
     var current = archiveState[index];
-    if (current && current.status === 'done') return Promise.resolve(current);
+    if (current && (current.status === 'done' || (current.status === 'error' && !retry))) {
+      return Promise.resolve(current);
+    }
     if (current && current.promise) return current.promise;
     var ctx = claimContexts[index];
     if (!ctx || !ctx.claim) {
@@ -5299,6 +5310,10 @@
     if (box.hidden) return;
     var i = currentIndex;
     var ctx = claimContexts[i] || {};
+    var back = button('cnf-back', null, openOverview, 'Back to the list of all claims on this page');
+    back.appendChild(icon('prev'));
+    back.appendChild(document.createTextNode('All claims'));
+    box.appendChild(back);
     if (ctx.section) box.appendChild(el('div', 'cnf-section', ctx.section));
     box.appendChild(el('p', 'cnf-claim-text', ctx.claim || '(no claim text found)'));
     var acts = el('div', 'cnf-claim-acts');
@@ -5466,7 +5481,7 @@
     var section = el('section');
     section.setAttribute('aria-label', 'Where CNfirmed looked');
     section.appendChild(el('h2', 'cnf-label', 'Searched'));
-    var retry = function () { startClaim(i); };
+    var retry = function () { startClaim(i, true); };
 
     var w = wikiState[i] || {};
     var wikiWhere = 'this article and other languages';
@@ -5492,7 +5507,7 @@
         : 'Searching digitised books…', null, null, funnel));
     } else if (st.books === 'error') {
       section.appendChild(sourceRow('Books', 'Internet Archive', 'error', 'Failed: ' + a.error, 'Retry', function () {
-        runBooks(i).then(function () { renderPanel(i); });
+        runBooks(i, true).then(function () { renderPanel(i); });
       }));
     } else if (st.books === 'done' && a.check && a.check.status === 'error') {
       section.appendChild(sourceRow('Books', 'Internet Archive', 'error',
