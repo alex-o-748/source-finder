@@ -11,7 +11,7 @@ Results are returned ranked, each with a ready-to-paste Wikipedia cite template.
 
 This repo ships two things:
 
-- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all; the web search talks directly to Anthropic, Google (Gemini), or OpenAI using a key you store in your own browser's `localStorage`. The Internet Archive stage needs no key either: open-weight models served through the CNfirmed Worker plan its searches and check its passages, with the Verify API as the fallback.
+- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all. The web search is free with Tavily + GPT-OSS while the CNfirmed Worker's shared Tavily credits last; after that, or for a model that searches the web itself, it talks directly to Anthropic, Google (Gemini), or OpenAI, or to Tavily through the Worker, using a key you store in your own browser's `localStorage`. The Internet Archive stage needs no key either: open-weight models served through the CNfirmed Worker plan its searches and check its passages, with the Verify API as the fallback.
 - A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal. Web search uses the Anthropic API; checking a candidate against the claim uses the [Verify API](#the-verifier-is-separable-cli).
 
 ## Why
@@ -24,7 +24,7 @@ And a lot of the time nobody needs to search at all. A tagged sentence often sit
 
 The user script is the primary way to use CNfirmed. It runs on the Wikipedia page, with no server of its own. Besides your model provider, it calls archive.org, the CNfirmed Cloudflare Worker (open-weight models for the Internet Archive stage, and the relay for the Tavily provider) and the Verify API; none of them needs a key from you.
 
-The wiki-local stage works with no API key at all. For the web search you provide a key for Claude, Gemini, or OpenAI; it's kept in your browser's `localStorage` and only sent to the provider you chose.
+The wiki-local stage works with no API key at all. The web search starts out free, too: the Tavily + GPT-OSS provider (the default) searches on the Worker's own Tavily key while its credits last. When they run out, the panel says so and asks for your own Tavily key, or for a switch to Claude, Gemini, or OpenAI, which search the web themselves. A key you add is kept in your browser's `localStorage` and only sent to the provider you chose.
 
 ### Install
 
@@ -40,9 +40,9 @@ Need an article to test on? [Category:All articles with unsourced statements](ht
 ### Usage
 
 - A small badge appears next to every `[citation needed]` superscript. Its colour is the claim's status: green when a source supports it, blue when there are leads to check.
-- Click a badge to open that claim in a panel docked to the right edge of the page (the article moves over to make room; drag the panel's edge to resize it). Both free searches start at once: citations already on Wikipedia, and Internet Archive books, whose passages a model then checks against the claim. The web search starts by itself only when both find nothing and you have a key set; otherwise it waits for a click.
+- Click a badge to open that claim in a panel docked to the right edge of the page (the article moves over to make room; drag the panel's edge to resize it). Both free searches start at once: citations already on Wikipedia, and Internet Archive books, whose passages a model then checks against the claim. The web search starts by itself only when both find nothing and you have a key set; otherwise it waits for a click (free searches are shared, so they always wait for one).
 - The **CNfirmed (N)** link beside the page tabs (in the tools menu on other skins) opens the list of all the page's claims with their status. **Find sources for all (free)** runs both free searches for every claim; when they are done, a button offers a web search for the claims still left with nothing, and says how many searches that is. **‹ 1 of N ›** in the panel's header steps through the claims, and clicking the count opens the list.
-- The provider and API key are behind the panel's gear. A key is only needed for the web search, and is kept in `localStorage`.
+- The provider and API key are behind the panel's gear. A key is only needed for the web search once the free searches are used up, and is kept in `localStorage`.
 
 ### Providers
 
@@ -51,8 +51,11 @@ Need an article to test on? [Category:All articles with unsourced statements](ht
 | Claude   | `claude-sonnet-5`     | `cnfirmedModelClaude`                                |
 | Gemini   | `gemini-flash-latest`   | `cnfirmedModelGemini`                                |
 | OpenAI   | `gpt-5-mini`            | `cnfirmedModelOpenAI`                                |
+| Tavily + GPT-OSS | `openai/gpt-oss-20b` | `cnfirmedModelHf`                                 |
 
-Each provider is invoked with its built-in web-search tool (Anthropic `web_search`, Google `googleSearch`+`urlContext`, OpenAI `web_search`) so source discovery and verification happen in a single round-trip per claim.
+Claude, Gemini and OpenAI are invoked with their built-in web-search tool (Anthropic `web_search`, Google `googleSearch`+`urlContext`, OpenAI `web_search`) so source discovery and verification happen in a single round-trip per claim. Tavily + GPT-OSS searches with Tavily first, then has GPT-OSS (on Hugging Face, paid for by the Worker) judge only what came back.
+
+Tavily + GPT-OSS is the default for anyone who has not picked a provider or saved a Claude key. Without a Tavily key of your own, its searches go on the Worker's key (the Worker's `TAVILY_API_KEY` secret; it is never in the script, which is a public wiki page). When those credits are spent the Worker answers `402 free_credits_exhausted`; the script remembers that for six hours and, on a later page, asks the Worker (`GET /tavily`) whether credits are back.
 
 ### Output
 

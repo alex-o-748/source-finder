@@ -46,6 +46,8 @@ const EXPOSED = [
   "taggedSentenceRange",
   "callClaude",
   "callTavilyGptOss",
+  "getProvider",
+  "canSearchWeb",
   "checkArchiveCandidates",
   "archiveSourceContent",
   "toArchiveVerdict",
