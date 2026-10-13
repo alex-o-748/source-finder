@@ -484,16 +484,41 @@ export interface ItemDetails {
   dark: boolean;
   /** Set on every lending-library book, so only telling for the others. */
   restricted: boolean;
+  /**
+   * The item's OCR text files, without `_djvu.txt`: more than one when the
+   * item bundles several books under one title.
+   */
+  books: string[];
 }
+
+const TEXT_SUFFIX = "_djvu.txt";
 
 export function parseItemDetails(response: MetadataResponse): ItemDetails {
   const md = response.metadata ?? {};
+  const books = (Array.isArray(response.files) ? response.files : [])
+    .map((f) => (f && typeof f === "object" ? first((f as Record<string, unknown>).name) : null))
+    .filter((n): n is string => n !== null && n.endsWith(TEXT_SUFFIX))
+    .map((n) => n.slice(0, -TEXT_SUFFIX.length));
   return {
     publisher: first(md.publisher),
     isbn: first(md.isbn),
     dark: response.is_dark === true,
     restricted: String(first(md["access-restricted-item"]) ?? "").toLowerCase() === "true",
+    books,
   };
+}
+
+/**
+ * The book a hit matched in, when its item bundles several: the item's title
+ * is then another book's, or the bundle's, and its page opens on the first
+ * book. Null for an item holding one book, or when the hit does not say which.
+ */
+export function bundledBook(
+  hit: Pick<ArchiveHit, "file">,
+  details: Partial<Pick<ItemDetails, "books">> | null,
+): string | null {
+  const books = details?.books ?? [];
+  return books.length > 1 && hit.file !== null && books.includes(hit.file) ? hit.file : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -943,14 +968,51 @@ export function cleanCreator(creator: string): string {
   return creator.replace(/,?\s*\(?\d{4}\s*-\s*(\d{4})?\)?\.?\s*$/, "").trim();
 }
 
-export function detailsUrl(identifier: string): string {
-  return `https://archive.org/details/${encodeURIComponent(identifier)}`;
+/** The item's page; with `book`, that book of a bundle (archive.org opens the first one otherwise). */
+export function detailsUrl(identifier: string, book?: string | null): string {
+  return `https://archive.org/details/${encodeURIComponent(identifier)}` +
+    (book ? `/${encodeURIComponent(book)}` : "");
 }
 
-/** Opens the book with the claim's strongest anchor searched, so the editor lands on the passage. */
-export function viewerUrl(identifier: string, terms: ClaimTerms): string {
-  const q = terms.numbers[0] ?? terms.names[0] ?? terms.subject;
-  return `${detailsUrl(identifier)}?q=${encodeURIComponent(q)}`;
+const SEARCH_PHRASE_WORDS = 6;
+
+/**
+ * Words of a passage to search the book for, so the viewer lands on its page:
+ * the run of up to six words that carries most of the claim's terms, quoted,
+ * trimmed to start and end on one. A single common word ("July") is found on
+ * every other page. Null when no run carries two of the claim's terms.
+ */
+export function searchPhrase(text: string, terms: ClaimTerms): string | null {
+  const wanted = tokenSet(
+    [terms.subject, ...terms.numbers, ...terms.names, ...terms.phrases].join(" ").replace(/-/g, " "),
+  );
+  const weight = (w: string): number =>
+    [...tokenSet(w.replace(/-/g, " "))].reduce((n, t) => n + (wanted.has(t) ? (/\d/.test(t) ? 2 : 1) : 0), 0);
+  const ws = text.replace(/…/g, " ").split(/\s+/).filter((w) => w.length > 0);
+  const size = Math.min(SEARCH_PHRASE_WORDS, ws.length);
+  let best: { from: number; score: number } | null = null;
+  for (let i = 0; i + size <= ws.length; i++) {
+    const run = ws.slice(i, i + size);
+    // "com-" ends an OCR line: the book's text has the word whole.
+    if (run.some((w) => w.endsWith("-"))) continue;
+    const score = run.reduce((n, w) => n + weight(w), 0);
+    if (!best || score > best.score) best = { from: i, score };
+  }
+  if (!best || best.score < 2) return null;
+  const run = ws.slice(best.from, best.from + size);
+  while (run.length && weight(run[0]) === 0) run.shift();
+  while (run.length && weight(run[run.length - 1]) === 0) run.pop();
+  const phrase = safeTerm(run.map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")).join(" "));
+  return phrase.includes(" ") ? `"${phrase}"` : null;
+}
+
+/**
+ * Opens the book searched for the passage's words, so the editor lands on its
+ * page; failing those, for the claim's strongest anchor.
+ */
+export function viewerUrl(url: string, passage: string, terms: ClaimTerms): string {
+  const q = searchPhrase(passage, terms) ?? terms.numbers[0] ?? terms.names[0] ?? terms.subject;
+  return `${url}?q=${encodeURIComponent(q)}`;
 }
 
 /**
@@ -961,14 +1023,18 @@ export function formatArchiveCitation(
   hit: Pick<ArchiveHit, "identifier" | "title" | "creator" | "year">,
   access: ArchiveAccess,
   details: Pick<ItemDetails, "publisher" | "isbn"> | null,
+  book: string | null = null,
 ): Citation {
+  // A bundle's author, publisher, year and ISBN are the item's, not the
+  // book's: left for the editor to fill in.
+  const item = book === null;
   const parts = [
-    `title=${escapePipes(hit.title)}`,
-    hit.creator ? `author=${escapePipes(cleanCreator(hit.creator))}` : null,
-    details?.publisher ? `publisher=${escapePipes(details.publisher)}` : null,
-    hit.year !== null ? `year=${hit.year}` : null,
-    details?.isbn ? `isbn=${escapePipes(details.isbn)}` : null,
-    `url=${detailsUrl(hit.identifier)}`,
+    `title=${escapePipes(book ?? hit.title)}`,
+    item && hit.creator ? `author=${escapePipes(cleanCreator(hit.creator))}` : null,
+    item && details?.publisher ? `publisher=${escapePipes(details.publisher)}` : null,
+    item && hit.year !== null ? `year=${hit.year}` : null,
+    item && details?.isbn ? `isbn=${escapePipes(details.isbn)}` : null,
+    `url=${detailsUrl(hit.identifier, book)}`,
     access === "borrow" ? "url-access=registration" : null,
     "via=Internet Archive",
   ].filter((p): p is string => p !== null);
@@ -986,12 +1052,14 @@ export function compactAnchors(matched: string[]): string[] {
 
 export function toArchiveCandidate(
   s: ScoredHit,
-  details: Pick<ItemDetails, "publisher" | "isbn"> | null,
+  details: (Pick<ItemDetails, "publisher" | "isbn"> & Partial<Pick<ItemDetails, "books">>) | null,
   terms: ClaimTerms,
   via?: "planner" | "named",
 ): ArchiveCandidate {
   const { hit } = s;
   const best = s.passages[0];
+  const book = bundledBook(hit, details);
+  const url = detailsUrl(hit.identifier, book);
   const matched = compactAnchors(best.matched);
   const byline = [
     s.access === "borrow" ? "Internet Archive (borrow)" : "Internet Archive",
@@ -999,8 +1067,8 @@ export function toArchiveCandidate(
     hit.creator && cleanCreator(hit.creator),
   ].filter(Boolean).join(", ");
   return {
-    url: detailsUrl(hit.identifier),
-    title: hit.title,
+    url,
+    title: book ?? hit.title,
     relevance: `${byline} — matched ${matched.join(", ") || "claim wording"}`,
     snippet: best.text,
     evidence: {
@@ -1012,11 +1080,12 @@ export function toArchiveCandidate(
       score: s.score,
       matchedAnchors: matched,
       query: hit.query,
-      viewerUrl: viewerUrl(hit.identifier, terms),
+      viewerUrl: viewerUrl(url, best.text, terms),
+      ...(book !== null && { bundle: { title: hit.title, books: details!.books!.length } }),
       ...(s.fullText && { fullText: true as const }),
       ...(via && { via }),
     },
-    citation: formatArchiveCitation(hit, s.access, details),
+    citation: formatArchiveCitation(hit, s.access, details, book),
   };
 }
 
@@ -1237,10 +1306,45 @@ export async function findArchiveCandidates(
     funnel.librarian.added = shown.length - before;
   }
   funnel.lookedUp = shortlist.length + extras.length + added.length;
-  const candidates = shown.map((x) => toArchiveCandidate(x.s, x.details, terms, x.via));
+  const candidates = collapseCopies(shown, funnel).map((x) => toArchiveCandidate(x.s, x.details, terms, x.via));
   funnel.candidates = candidates.length;
 
   return { claim, candidates, funnel };
+}
+
+const COPY_MIN_CHARS = 80;
+const COPY_REASON = "a copy of another lead";
+
+function copyKey(text: string): string {
+  return fold(text).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+/** Two items sharing a passage word for word hold the same text. */
+function sameText(a: ScoredHit, b: ScoredHit): boolean {
+  const theirs = new Set(b.passages.map((p) => copyKey(p.text)).filter((k) => k.length >= COPY_MIN_CHARS));
+  return a.passages.some((p) => theirs.has(copyKey(p.text)));
+}
+
+/**
+ * One lead per text: a book uploaded twice under different titles, or once
+ * on its own and once bundled with others, is shown once — on its own when it
+ * is. Under its own title it is the same work, already collapsed earlier.
+ */
+export function collapseCopies<T extends { s: ScoredHit; details: ItemDetails | null }>(
+  shown: T[],
+  funnel: Pick<ArchiveFunnel, "rejected">,
+): T[] {
+  const out: T[] = [];
+  for (const x of shown) {
+    const k = out.findIndex((o) => sameText(o.s, x.s));
+    if (k === -1) {
+      out.push(x);
+      continue;
+    }
+    funnel.rejected[COPY_REASON] = (funnel.rejected[COPY_REASON] ?? 0) + 1;
+    if (bundledBook(out[k].s.hit, out[k].details) !== null && bundledBook(x.s.hit, x.details) === null) out[k] = x;
+  }
+  return out;
 }
 
 /**
@@ -1349,12 +1453,18 @@ async function librarianLeads(a: {
       }
     }),
   );
-  const inside = new Map<string, string[]>();
+  const inside = new Map<string, ArchiveHit[]>();
   for (const r of replies) {
     if (r.error) funnel.errors.push(r.error);
-    for (const h of r.hits) inside.set(h.identifier, [...(inside.get(h.identifier) ?? []), ...h.highlights]);
+    for (const h of r.hits) inside.set(h.identifier, [...(inside.get(h.identifier) ?? []), h]);
   }
-  for (const s of everyone) addPassages(s, inside.get(s.hit.identifier) ?? []);
+  for (const s of everyone) {
+    const hits = inside.get(s.hit.identifier) ?? [];
+    // An item can bundle several books: only the lead's own book counts. A
+    // lead from the catalogue does not know its book until now.
+    if (s.hit.file === null) s.hit.file = hits.find((h) => h.file !== null)?.file ?? null;
+    addPassages(s, hits.filter((h) => h.file === null || h.file === s.hit.file).flatMap((h) => h.highlights));
+  }
   // The librarian's leads show their best-covered passage first; one with no
   // passage at all has nothing to show or check, and a named book needs only
   // one scan.

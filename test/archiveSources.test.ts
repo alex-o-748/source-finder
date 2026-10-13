@@ -8,7 +8,12 @@ import {
   bestWindow,
   buildArchiveQueries,
   buildPhraseQueries,
+  bundledBook,
+  collapseCopies,
   keyPhrases,
+  parseItemDetails,
+  searchPhrase,
+  toArchiveCandidate,
   mergeRankings,
   rankByUnits,
   streamText,
@@ -255,11 +260,98 @@ test("formatArchiveCitation: a borrowable book gets its ISBN and url-access=regi
   );
 });
 
-test("viewerUrl opens the book on the claim's strongest anchor", () => {
+// A real case: the item "009 Bernard Montgomery" bundles four books, and the
+// passage is in "018 - Eisenhower".
+const IKE_CLAIM = "He was promoted to lieutenant general on July 7.";
+const IKE_TITLE = "Dwight_D._Eisenhower";
+const IKE_PASSAGE =
+  "CCS. Eisenhower, who had been promoted to lieutenant-general on July 7, 1942, prior to being dispatched";
+const IKE_BUNDLE = {
+  metadata: { title: "009 Bernard Montgomery" },
+  files: ["009 - Bernard Montgomery", "013 - Heinz Guderian", "015 - Walther Model", "018 - Eisenhower"]
+    .flatMap((b) => [{ name: `${b}.pdf` }, { name: `${b}_djvu.txt` }, { name: `${b}_jp2.zip` }]),
+};
+function ikeHit(identifier: string, title: string, file: string, collection: string) {
+  return parseSearchHits(
+    {
+      response: {
+        body: {
+          hits: {
+            hits: [{
+              fields: { identifier, title, mediatype: "texts", collection: [collection], file_basename: file },
+              highlight: { text: [IKE_PASSAGE.replace("promoted to lieutenant-general on July 7", "{{{$&}}}")] },
+            }],
+          },
+        },
+      },
+    },
+    "q",
+  )[0];
+}
+
+test("viewerUrl searches the book for the passage's words, quoted, not one common word", () => {
+  const terms = claimTerms(IKE_CLAIM, IKE_TITLE);
+  assert.equal(searchPhrase(IKE_PASSAGE, terms), '"promoted to lieutenant-general on July 7"');
   assert.equal(
-    viewerUrl("towerbook", claimTerms(CLAIM_TEXT, TITLE)),
+    viewerUrl("https://archive.org/details/ike", IKE_PASSAGE, terms),
+    "https://archive.org/details/ike?q=%22promoted%20to%20lieutenant-general%20on%20July%207%22",
+  );
+  // A passage sharing one word with the claim: its strongest anchor, as before.
+  const july = "Agreement on an initial Allied course of action came in July 1942.";
+  assert.equal(searchPhrase(july, terms), null);
+  assert.equal(viewerUrl("https://archive.org/details/ike", july, terms), "https://archive.org/details/ike?q=july");
+  assert.equal(
+    viewerUrl("https://archive.org/details/towerbook", "nothing here", claimTerms(CLAIM_TEXT, TITLE)),
     "https://archive.org/details/towerbook?q=1889",
   );
+  // A word broken across OCR lines is not searched for.
+  assert.equal(
+    searchPhrase("the tower was com- pleted in 1889 by Gustave Eiffel", claimTerms(CLAIM_TEXT, TITLE)),
+    '"1889 by Gustave Eiffel"',
+  );
+});
+
+test("a book bundled in an item with others is shown, linked and cited as itself", () => {
+  const details = parseItemDetails(IKE_BUNDLE);
+  assert.equal(details.books.length, 4);
+  const hit = ikeHit("009-bernard-montgomery", "009 Bernard Montgomery", "018 - Eisenhower", "opensource");
+  assert.equal(bundledBook(hit, details), "018 - Eisenhower");
+  assert.equal(bundledBook({ file: null }, details), null, "a hit that does not say which book");
+  assert.equal(bundledBook(hit, parseItemDetails({ files: [{ name: "018 - Eisenhower_djvu.txt" }] })), null);
+
+  const terms = claimTerms(IKE_CLAIM, IKE_TITLE);
+  const c = toArchiveCandidate(
+    { hit, access: "open", passages: [{ text: hit.highlights[0], score: 1, matched: [] }], score: 1 },
+    details,
+    terms,
+  );
+  assert.equal(c.title, "018 - Eisenhower");
+  assert.equal(c.url, "https://archive.org/details/009-bernard-montgomery/018%20-%20Eisenhower");
+  assert.ok(c.evidence.viewerUrl.startsWith(`${c.url}?q=%22promoted`));
+  assert.deepEqual(c.evidence.bundle, { title: "009 Bernard Montgomery", books: 4 });
+  assert.equal(
+    c.citation.template,
+    "{{cite book |title=018 - Eisenhower " +
+      "|url=https://archive.org/details/009-bernard-montgomery/018%20-%20Eisenhower |via=Internet Archive}}",
+  );
+});
+
+test("collapseCopies shows a text once, on its own rather than bundled", () => {
+  const bundled = ikeHit("009-bernard-montgomery", "009 Bernard Montgomery", "018 - Eisenhower", "opensource");
+  const alone = ikeHit("steven-zaloga-eisenhower", "Steven Zaloga Eisenhower", "Steven_Zaloga_Eisenhower", "fringe");
+  const other = ikeHit("oldglory", "Old glory stories", "oldglory", "inlibrary");
+  other.highlights = ["effective June 24, 1942. He was promoted to lieutenant general on July 7. Unlike most commanders"];
+  const lead = (hit: typeof bundled, details: ReturnType<typeof parseItemDetails> | null) => ({
+    s: { hit, access: "open" as const, passages: hit.highlights.map((text) => ({ text, score: 1, matched: [] })), score: 1 },
+    details,
+  });
+  const funnel = { rejected: {} as Record<string, number> };
+  const kept = collapseCopies(
+    [lead(bundled, parseItemDetails(IKE_BUNDLE)), lead(other, null), lead(alone, parseItemDetails({}))],
+    funnel,
+  );
+  assert.deepEqual(kept.map((x) => x.s.hit.identifier), ["steven-zaloga-eisenhower", "oldglory"]);
+  assert.deepEqual(funnel.rejected, { "a copy of another lead": 1 });
 });
 
 // --- the funnel, end to end ---------------------------------------------------
@@ -335,7 +427,10 @@ test("findArchiveCandidates: the whole funnel, with counts", async () => {
   const [c] = r.candidates;
   assert.equal(c.evidence.identifier, "eiffeltowerdescr00tiss");
   assert.equal(c.url, "https://archive.org/details/eiffeltowerdescr00tiss");
-  assert.equal(c.evidence.viewerUrl, "https://archive.org/details/eiffeltowerdescr00tiss?q=1889");
+  assert.equal(
+    c.evidence.viewerUrl,
+    "https://archive.org/details/eiffeltowerdescr00tiss?q=%22Eiffel%20Tower%20finished%20in%201889%22",
+  );
   assert.ok(c.evidence.passages[0].includes("rises 300 metres"));
   assert.equal(
     c.relevance,
