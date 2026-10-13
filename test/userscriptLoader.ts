@@ -91,6 +91,8 @@ const EXPOSED = [
   "citoidHolder",
   "completeHeldCitation",
   "webItem",
+  "writeStagedInsert",
+  "takeStagedInsert",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,6 +105,7 @@ export type UserScriptModule = Record<string, (...args: any[]) => any> & {
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
   getClaimContexts(): { claim: string; context: string; section: string | null; links: string[] }[];
+  storage: { getItem(k: string): string | null; setItem(k: string, v: string): void; length: number; key(n: number): string | null };
 };
 
 /**
@@ -132,7 +135,8 @@ export function loadUserScript(
       limits: { plan: LIB_PLAN_MAX_TOKENS, books: LIB_BOOKS_MAX_TOKENS, judge: LIB_JUDGE_MAX_TOKENS, booksEffort: LIB_BOOKS_EFFORT },
       setClaimContexts: function (v) { claimContexts = v; },
       setCnSups: function (v) { cnSups = v; },
-      getClaimContexts: function () { return claimContexts; }
+      getClaimContexts: function () { return claimContexts; },
+      storage: localStorage
     };`;
 
   const config: Record<string, unknown> = {
@@ -155,6 +159,8 @@ export function loadUserScript(
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
     removeItem: (k: string) => void store.delete(k),
+    get length() { return store.size; },
+    key: (n: number) => [...store.keys()][n] ?? null,
   };
   // The boot sequence is a jQuery ready callback; swallowing it leaves the
   // module's pure functions defined and nothing else running.

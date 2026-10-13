@@ -5318,8 +5318,8 @@
       // citation by the time they are clicked.
       if (item.cite) completeHeldCitation(item.cite);
       actions.appendChild(button('cnf-btn cnf-btn-pri', 'Insert in editor', function () {
-        refFor(item).then(function (ref) { openEditorWithRef(i, { citation: { ref: ref } }); });
-      }, 'Open the section editor with this <ref> in place of the {{citation needed}} tag'));
+        insertInEditor(i, item);
+      }, 'Open the section editor in a new tab with this <ref> in place of the {{citation needed}} tag'));
       actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { refFor(item).then(copyRef); }));
     }
     if (item.url) {
@@ -5611,16 +5611,54 @@
   }
 
   // ---- Editor integration ------------------------------------------------
-  // The "Insert <ref> in editor" CTA stages the chosen <ref> in sessionStorage,
-  // then navigates to the section's edit URL with a pre-filled summary. The
-  // same script runs again on the edit page, picks up the staged payload, and
-  // replaces the corresponding {{citation needed}} template in the textarea.
+  // "Insert in editor" opens the section's source editor in a new tab, with a
+  // pre-filled summary and a one-time token in the URL, and stages the <ref>
+  // in localStorage under that token (sessionStorage is per tab). The tab is
+  // opened on the click itself, since a browser blocks a tab opened after a
+  // wait, and the <ref> follows once its Citoid lookup is done; the same
+  // script runs on the edit page, waits for it, and puts it in place of the
+  // corresponding {{citation needed}} template in the textarea.
 
   var EDIT_INSERT_PREFIX = 'cnfirmed:pending-insert:';
+  var EDIT_INSERT_PARAM = 'cnfirmedInsert';
+  var EDIT_INSERT_DONE = 'cnfirmed:insert-done:';
+  // Longer than a Citoid lookup may take, so the <ref> has time to arrive.
+  var EDIT_INSERT_WAIT_MS = CITOID_TIMEOUT_MS + 4000;
+  var EDIT_INSERT_POLL_MS = 200;
+  var EDIT_INSERT_MAX_AGE_MS = 10 * 60 * 1000;
   var sectionEditLinksCache = null;
 
-  function pendingInsertKey() {
-    return EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
+  function insertToken() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // A staged <ref> nobody picked up (a tab closed before it loaded) is
+  // dropped once it is old, so localStorage does not collect them.
+  function writeStagedInsert(token, payload) {
+    try {
+      var now = Date.now();
+      for (var n = localStorage.length - 1; n >= 0; n--) {
+        var k = localStorage.key(n);
+        if (!k || k.indexOf(EDIT_INSERT_PREFIX) !== 0) continue;
+        var old = null;
+        try { old = JSON.parse(localStorage.getItem(k)); } catch (e) { /* drop it */ }
+        if (!old || !(now - old.stagedAt < EDIT_INSERT_MAX_AGE_MS)) localStorage.removeItem(k);
+      }
+      localStorage.setItem(EDIT_INSERT_PREFIX + token, JSON.stringify(payload));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // The staged <ref> for this token, once: it is removed as it is read.
+  function takeStagedInsert(token) {
+    var key = EDIT_INSERT_PREFIX + token;
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) { return null; }
+    if (!raw) return null;
+    try { localStorage.removeItem(key); } catch (e) { /* read once anyway */ }
+    try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
   function sectionEditLinkFor(supEl) {
@@ -5677,8 +5715,8 @@
     return url + sep + encodeURIComponent(key) + '=' + encodeURIComponent(value);
   }
 
-  function openEditorWithRef(i, suggestion) {
-    if (!suggestion || !suggestion.citation || !suggestion.citation.ref) {
+  function insertInEditor(i, item) {
+    if (!item.ref) {
       toast('No <ref> to insert.');
       return;
     }
@@ -5686,48 +5724,59 @@
     var link = links[i];
     var k = 0;
     for (var j = 0; j < i; j++) if (links[j] === link) k++;
-    var editUrl = sourceEditorUrl(link);
-
-    var payload = {
-      pageTitle: pageTitle,
-      revid: revid,
-      cnIndexInSection: k,
-      ref: suggestion.citation.ref,
-      sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
-      stagedAt: Date.now()
-    };
-    try {
-      sessionStorage.setItem(pendingInsertKey(), JSON.stringify(payload));
-    } catch (e) {
-      toast('Could not stage edit (sessionStorage unavailable).');
-      return;
-    }
-
+    var token = insertToken();
     var summary = 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])';
-    window.location.href = appendQueryParam(editUrl, 'summary', summary);
+    var url = appendQueryParam(appendQueryParam(sourceEditorUrl(link), 'summary', summary), EDIT_INSERT_PARAM, token);
+
+    var tab = window.open(url, '_blank');
+    if (tab) { try { tab.opener = null; } catch (e) { /* not needed */ } }
+
+    refFor(item).then(function (ref) {
+      var staged = writeStagedInsert(token, {
+        pageTitle: pageTitle,
+        revid: revid,
+        cnIndexInSection: k,
+        ref: ref,
+        sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
+        stagedAt: Date.now()
+      });
+      if (!staged) {
+        toast('Could not stage the edit (localStorage unavailable). Use Copy <ref> instead.');
+        return;
+      }
+      // Pop-ups blocked: this tab, then.
+      if (!tab) window.location.href = url;
+    });
   }
 
-  // Edit-mode: locate the staged payload and apply it to the textarea.
+  // Edit-mode: wait for the staged payload and apply it to the textarea.
 
   function handlePendingEditorInsertion() {
-    var key = EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
-    var raw = null;
-    try { raw = sessionStorage.getItem(key); } catch (e) { return; }
-    if (!raw) return;
-    var payload;
-    try { payload = JSON.parse(raw); } catch (e) {
-      try { sessionStorage.removeItem(key); } catch (e2) {}
-      return;
-    }
-    try { sessionStorage.removeItem(key); } catch (e) {}
+    var token = null;
+    try { token = new URL(location.href).searchParams.get(EDIT_INSERT_PARAM); } catch (e) { return; }
+    if (!token) return;
+    // A preview or a reload of the same tab: the <ref> is already in.
+    try { if (sessionStorage.getItem(EDIT_INSERT_DONE + token)) return; } catch (e) { /* go on */ }
 
-    if (!payload || !payload.ref) return;
-
-    mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
-      applyPendingInsertion(payload);
-    }, function () {
-      applyPendingInsertion(payload);
-    });
+    var deadline = Date.now() + EDIT_INSERT_WAIT_MS;
+    (function poll() {
+      var payload = takeStagedInsert(token);
+      if (payload && payload.ref && payload.pageTitle === pageTitle) {
+        try { sessionStorage.setItem(EDIT_INSERT_DONE + token, '1'); } catch (e) { /* best effort */ }
+        mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
+          applyPendingInsertion(payload);
+        }, function () {
+          applyPendingInsertion(payload);
+        });
+        return;
+      }
+      if (Date.now() < deadline) {
+        setTimeout(poll, EDIT_INSERT_POLL_MS);
+        return;
+      }
+      showEditBanner('CNfirmed: the <ref> did not arrive from the article tab. ' +
+        'Use Copy <ref> in the panel there and paste it in place of the tag.', 'warn');
+    })();
   }
 
   // Best effort: a browser may refuse the clipboard to a page that was not
