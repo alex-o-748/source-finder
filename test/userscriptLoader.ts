@@ -80,16 +80,32 @@ const EXPOSED = [
   "libQuoteKey",
   "libQuoteInPassages",
   "libParseJudgement",
+  "normaliseIsbn",
+  "doiIn",
+  "citoidQuery",
+  "citoidParams",
+  "citoidTemplate",
+  "mergeParams",
+  "completeCitation",
+  "completeFromCitoid",
+  "citoidHolder",
+  "completeHeldCitation",
+  "webItem",
+  "writeStagedInsert",
+  "takeStagedInsert",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UserScriptModule = Record<string, (...args: any[]) => any> & {
   prompts: { plan: string; books: string; judge: string };
   models: { planner: string | null; books: string | null; judge: string | null };
+  citoidMaps: Record<string, Record<string, unknown>>;
+  citoidTypeMap: Record<string, string>;
   limits: { plan: number; books: number; judge: number; booksEffort: string };
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
   getClaimContexts(): { claim: string; context: string; section: string | null; links: string[] }[];
+  storage: { getItem(k: string): string | null; setItem(k: string, v: string): void; length: number; key(n: number): string | null };
 };
 
 /**
@@ -114,10 +130,13 @@ export function loadUserScript(
       ${EXPOSED.map((name) => `${name}: ${name},`).join("\n      ")}
       prompts: { plan: LIB_PLAN_SYSTEM, books: LIB_BOOKS_SYSTEM, judge: LIB_JUDGE_SYSTEM },
       models: LIB_MODELS,
+      citoidMaps: BUILTIN_CITOID_MAPS,
+      citoidTypeMap: CITOID_TYPE_MAP,
       limits: { plan: LIB_PLAN_MAX_TOKENS, books: LIB_BOOKS_MAX_TOKENS, judge: LIB_JUDGE_MAX_TOKENS, booksEffort: LIB_BOOKS_EFFORT },
       setClaimContexts: function (v) { claimContexts = v; },
       setCnSups: function (v) { cnSups = v; },
-      getClaimContexts: function () { return claimContexts; }
+      getClaimContexts: function () { return claimContexts; },
+      storage: localStorage
     };`;
 
   const config: Record<string, unknown> = {
@@ -140,6 +159,8 @@ export function loadUserScript(
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
     removeItem: (k: string) => void store.delete(k),
+    get length() { return store.size; },
+    key: (n: number) => [...store.keys()][n] ?? null,
   };
   // The boot sequence is a jQuery ready callback; swallowing it leaves the
   // module's pure functions defined and nothing else running.

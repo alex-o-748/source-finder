@@ -199,8 +199,8 @@ export interface Citation {
   template: string;
   /** Editor-ready `<ref>{{cite ...}}</ref>` snippet that replaces the {{cn}} tag. */
   ref: string;
-  /** Which template was used: "cite web" | "cite news" | "cite journal" | "cite book". */
-  kind: "cite web" | "cite news" | "cite journal" | "cite book";
+  /** Which template was used: "cite web" | "cite news" | "cite journal" | "cite book", or another the wiki's Citoid configuration picked. */
+  kind: "cite web" | "cite news" | "cite journal" | "cite book" | (string & {});
 }
 
 /** A candidate source paired with its verification verdict and formatted citation. */

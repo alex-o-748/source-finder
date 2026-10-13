@@ -1,4 +1,5 @@
 import { runArticle } from "../../core/runArticle.js";
+import { completeFromCitoid } from "../../core/citoid.js";
 
 interface FindArgs {
   urlOrTitle: string;
@@ -25,6 +26,16 @@ export async function findCommand(args: FindArgs): Promise<void> {
       }
     },
   });
+
+  // Every field Citoid has for a source worth citing, from its DOI or its page,
+  // as ProveIt fills a template.
+  for (const r of run.results) {
+    for (const s of r.suggestions) {
+      if (s.verdict.verdict === "SUPPORTED" || s.verdict.verdict === "PARTIALLY SUPPORTED") {
+        s.citation = await completeFromCitoid(s.citation, run.article.lang);
+      }
+    }
+  }
 
   if (args.json) {
     const { wikitext: _omit, ...article } = run.article;

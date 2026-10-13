@@ -3,6 +3,7 @@ export { extractClaims } from "./extractClaims.js";
 export { findSources } from "./findSources.js";
 export { verifySource } from "./verifySource.js";
 export { formatCitation } from "./formatCitation.js";
+export { completeFromCitoid, completeCitation, citoidQuery } from "./citoid.js";
 export { runArticle } from "./runArticle.js";
 export {
   DEFAULT_SISTER_LANGS,

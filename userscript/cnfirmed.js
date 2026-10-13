@@ -4418,6 +4418,332 @@
     return { template: template, ref: '<ref>' + template + '</ref>', kind: kind };
   }
 
+  // ---- A full citation from the ISBN, DOI or URL ---------------------------
+  // Mirrors src/core/citoid.ts. What ProveIt and VisualEditor's "Automatic"
+  // tab do: ask Citoid for the record (a book's ISBN, else the DOI in the
+  // link, else the page), let MediaWiki:Citoid-template-type-map.json pick the
+  // template for its item type, and write each field into the parameter that
+  // template's TemplateData `maps.citoid` names. Our link and access date stay
+  // (and an Archive scan's |url-access= and |via=); the catalogue wins on the rest.
+
+  function citoidNamePairs(first, last) {
+    var pairs = [[first, last]];
+    for (var n = 2; n <= 9; n++) pairs.push([first + n, last + n]);
+    return pairs;
+  }
+
+  function citoidExtend(base, extra) {
+    var out = {};
+    Object.keys(base).forEach(function (k) { out[k] = base[k]; });
+    Object.keys(extra).forEach(function (k) { out[k] = extra[k]; });
+    return out;
+  }
+
+  var CITOID_TYPE_MAP = {
+    book: 'Cite book',
+    bookSection: 'Cite book',
+    journalArticle: 'Cite journal',
+    magazineArticle: 'Cite magazine',
+    newspaperArticle: 'Cite news',
+    webpage: 'Cite web',
+    blogPost: 'Cite web',
+    forumPost: 'Cite web',
+    thesis: 'Cite thesis',
+    report: 'Cite report',
+    conferencePaper: 'Cite conference',
+    encyclopediaArticle: 'Cite encyclopedia',
+    dictionaryEntry: 'Cite encyclopedia',
+    videoRecording: 'Cite AV media',
+    film: 'Cite AV media',
+    podcast: 'Cite podcast',
+    interview: 'Cite interview',
+    map: 'Cite map'
+  };
+
+  var CITOID_COMMON_MAP = {
+    title: 'title',
+    url: 'url',
+    date: 'date',
+    accessDate: 'access-date',
+    language: 'language',
+    publisher: 'publisher',
+    archiveUrl: 'archive-url',
+    archiveDate: 'archive-date',
+    author: citoidNamePairs('first', 'last')
+  };
+
+  var CITE_BOOK_CITOID_MAP = {
+    title: 'title',
+    bookTitle: 'title',
+    edition: 'edition',
+    series: 'series',
+    volume: 'volume',
+    publisher: 'publisher',
+    place: 'location',
+    date: 'date',
+    language: 'language',
+    ISBN: ['isbn'],
+    ISSN: ['issn'],
+    oclc: 'oclc',
+    DOI: 'doi',
+    url: 'url',
+    author: citoidNamePairs('first', 'last'),
+    editor: citoidNamePairs('editor-first', 'editor-last'),
+    translator: citoidNamePairs('translator-first', 'translator-last'),
+    contributor: 'others'
+  };
+
+  var BUILTIN_CITOID_MAPS = {
+    'cite book': CITE_BOOK_CITOID_MAP,
+    'cite web': citoidExtend(CITOID_COMMON_MAP, {
+      websiteTitle: 'website', publicationTitle: 'website', blogTitle: 'website', forumTitle: 'website'
+    }),
+    'cite news': citoidExtend(CITOID_COMMON_MAP, {
+      publicationTitle: 'work', websiteTitle: 'work', place: 'location', ISSN: ['issn'], DOI: 'doi'
+    }),
+    'cite journal': citoidExtend(CITOID_COMMON_MAP, {
+      publicationTitle: 'journal', volume: 'volume', issue: 'issue', pages: 'pages', series: 'series',
+      DOI: 'doi', ISSN: ['issn'], PMID: 'pmid', PMCID: 'pmc', editor: citoidNamePairs('editor-first', 'editor-last')
+    }),
+    'cite magazine': citoidExtend(CITOID_COMMON_MAP, {
+      publicationTitle: 'magazine', volume: 'volume', issue: 'issue', pages: 'pages', ISSN: ['issn']
+    })
+  };
+
+  var CITOID_KEEP = ['url', 'url-access', 'via', 'access-date'];
+  var CITOID_WORK = ['website', 'work', 'newspaper', 'magazine', 'journal', 'periodical'];
+  var CITOID_FIELD_ORDER = [
+    'title', 'work', 'website', 'newspaper', 'magazine', 'journal', 'periodical',
+    'edition', 'series', 'volume', 'issue', 'pages', 'others', 'publisher', 'location',
+    'date', 'year', 'language', 'isbn', 'issn', 'oclc', 'doi', 'pmid', 'pmc',
+    'url', 'url-access', 'via', 'access-date', 'archive-url', 'archive-date'
+  ];
+  var CITOID_TIMEOUT_MS = 8000;
+
+  function normaliseIsbn(raw) {
+    var digits = String(raw).replace(/[^0-9Xx]/g, '').toUpperCase();
+    return /^(?:\d{9}[\dX]|\d{13})$/.test(digits) ? digits : null;
+  }
+
+  function doiIn(url) {
+    var text = url;
+    try { text = decodeURIComponent(url); } catch (e) { /* as it is */ }
+    var m = /\b(10\.\d{4,9}\/[^\s?#&"<>]+)/.exec(text);
+    if (!m) return null;
+    return m[1].replace(/\/(?:full|abstract|pdf|epdf|fulltext)$/i, '').replace(/\.pdf$/i, '').replace(/[.,;)]+$/, '');
+  }
+
+  function citationTemplateBody(citation) {
+    return citation.template.replace(/^\{\{/, '').replace(/\}\}$/, '');
+  }
+
+  function isCiteTemplate(name) {
+    return /^(?:cite .+|citation)$/i.test(String(name).trim());
+  }
+
+  function citoidQuery(citation) {
+    if (!citation || !citation.template) return null;
+    var parsed = parseTemplateBody(citationTemplateBody(citation));
+    if (!isCiteTemplate(parsed.name)) return null;
+    var isbn = parsed.named.isbn ? normaliseIsbn(parsed.named.isbn) : null;
+    if (isbn) return isbn;
+    var url = parsed.named.url;
+    if (!url || !/^https?:\/\//i.test(url) || /\barchive\.org\/details\//i.test(url)) return null;
+    return doiIn(url) || url;
+  }
+
+  function citoidClean(value) {
+    return typeof value === 'string' || typeof value === 'number'
+      ? String(value).replace(/\s+/g, ' ').trim().replace(/\|/g, '{{!}}')
+      : '';
+  }
+
+  function citoidParams(item, map) {
+    var params = {};
+    function set(param, value) {
+      var v = citoidClean(value);
+      if (typeof param === 'string' && param && v && !params[param]) params[param] = v;
+    }
+    Object.keys(map).forEach(function (field) {
+      var target = map[field];
+      var value = item[field];
+      if (value === undefined || value === null) return;
+      var values = Array.isArray(value) ? value : [value];
+      if (typeof target === 'string') { set(target, values[0]); return; }
+      target.forEach(function (param, i) {
+        var v = values[i];
+        if (Array.isArray(param)) {
+          var name = Array.isArray(v) ? v : [];
+          var first = citoidClean(name[0]);
+          var last = citoidClean(name[1]);
+          set(param[1], last || first);
+          if (last) set(param[0], first);
+        } else {
+          set(param, v);
+        }
+      });
+    });
+    return params;
+  }
+
+  function citoidTemplate(item, typeMap, current) {
+    var mapped = typeof item.itemType === 'string' ? typeMap[item.itemType] : undefined;
+    if (typeof mapped !== 'string' || !isCiteTemplate(mapped)) return current;
+    var name = mapped.trim().replace(/_/g, ' ');
+    return name.charAt(0).toLowerCase() + name.slice(1);
+  }
+
+  function citoidOrderKey(param) {
+    var m = /^(?:(editor|translator)-)?(last|first|author)(\d*)$/.exec(param);
+    if (m) {
+      var group = m[1] === 'editor' ? 1 : m[1] === 'translator' ? 2 : 0;
+      return [group, Number(m[3] || 1), m[2] === 'first' ? 1 : 0];
+    }
+    var i = CITOID_FIELD_ORDER.indexOf(param);
+    return [3, i < 0 ? CITOID_FIELD_ORDER.length : i, 0];
+  }
+
+  function mergeParams(existing, catalogue, sameTemplate) {
+    var out = {};
+    Object.keys(catalogue).forEach(function (k) { if (k !== 'url') out[k] = catalogue[k]; });
+    var hasAuthor = Object.keys(out).some(function (k) { return /^(?:last|author)1?$/.test(k); });
+    var hasWork = CITOID_WORK.some(function (w) { return out[w]; });
+    Object.keys(existing).forEach(function (k) {
+      if (CITOID_KEEP.indexOf(k) !== -1) out[k] = existing[k];
+      else if (!sameTemplate) return;
+      else if (out[k] || (k === 'author' && hasAuthor) || (k === 'year' && out.date) ||
+        (CITOID_WORK.indexOf(k) !== -1 && hasWork)) return;
+      else out[k] = existing[k];
+    });
+    var ordered = {};
+    Object.keys(out)
+      .map(function (k, i) { return { k: k, i: i, key: citoidOrderKey(k) }; })
+      .sort(function (a, b) {
+        return a.key[0] - b.key[0] || a.key[1] - b.key[1] || a.key[2] - b.key[2] || a.i - b.i;
+      })
+      .forEach(function (e) { ordered[e.k] = out[e.k]; });
+    return ordered;
+  }
+
+  function citoidUsableTitle(title, url) {
+    return Boolean(title) && !/^https?:\/\//i.test(title) && title !== url;
+  }
+
+  function completeCitation(citation, items, template, map) {
+    var item = Array.isArray(items) ? items[0] : null;
+    if (!item || typeof item !== 'object') return citation;
+    var parsed = parseTemplateBody(citationTemplateBody(citation));
+    if (!isCiteTemplate(parsed.name) || !isCiteTemplate(template)) return citation;
+    var catalogue = citoidParams(item, map);
+    if (!citoidUsableTitle(catalogue.title, parsed.named.url)) return citation;
+    var merged = mergeParams(parsed.named, catalogue, template.toLowerCase() === parsed.name);
+    var out = '{{' + template + ' |' + Object.keys(merged).map(function (k) {
+      return k + '=' + merged[k];
+    }).join(' |') + '}}';
+    return { template: out, ref: '<ref>' + out + '</ref>', kind: template.toLowerCase() };
+  }
+
+  // The wiki's own REST and action APIs, as ProveIt calls them.
+  var citoidTypeMapPromise = null;
+  function citoidTypeMap() {
+    if (!citoidTypeMapPromise) {
+      citoidTypeMapPromise = mwApiGet(WIKI_CODE, {
+        action: 'query', prop: 'revisions', rvprop: 'content', rvslots: 'main',
+        titles: 'MediaWiki:Citoid-template-type-map.json'
+      }).then(function (data) {
+        var page = data && data.query && data.query.pages && data.query.pages[0];
+        var rev = page && page.revisions && page.revisions[0];
+        var content = rev && rev.slots && rev.slots.main && rev.slots.main.content;
+        var parsed = content ? JSON.parse(content) : null;
+        return parsed && typeof parsed === 'object' ? parsed : CITOID_TYPE_MAP;
+      }).catch(function () { return CITOID_TYPE_MAP; });
+    }
+    return citoidTypeMapPromise;
+  }
+
+  var citoidTemplateMaps = Object.create(null);
+  function templateCitoidMap(template) {
+    var key = template.toLowerCase();
+    if (!citoidTemplateMaps[key]) {
+      var builtin = BUILTIN_CITOID_MAPS[key] || null;
+      citoidTemplateMaps[key] = mwApiGet(WIKI_CODE, {
+        action: 'templatedata', titles: 'Template:' + template, redirects: '1'
+      }).then(function (data) {
+        var pages = data && data.pages ? Object.keys(data.pages).map(function (k) { return data.pages[k]; }) : [];
+        var maps = pages[0] && pages[0].maps;
+        return (maps && maps.citoid) || builtin;
+      }).catch(function () { return builtin; });
+    }
+    return citoidTemplateMaps[key];
+  }
+
+  function citoidLookup(query) {
+    return fetch('https://' + WIKI_CODE + '.wikipedia.org/api/rest_v1/data/citation/mediawiki/' +
+      encodeURIComponent(query), { headers: { accept: 'application/json' } }).then(function (res) {
+      if (!res.ok) throw new Error('Citoid: HTTP ' + res.status);
+      return res.json();
+    });
+  }
+
+  function citoidComplete(citation, query) {
+    return Promise.all([citoidTypeMap(), citoidLookup(query)]).then(function (r) {
+      var items = r[1];
+      var item = Array.isArray(items) && items[0] && typeof items[0] === 'object' ? items[0] : null;
+      if (!item) return citation;
+      var current = parseTemplateBody(citationTemplateBody(citation)).name;
+      var template = citoidTemplate(item, r[0], current);
+      return templateCitoidMap(template).then(function (map) {
+        if (map || template === current) return { template: template, map: map };
+        return templateCitoidMap(current).then(function (m) { return { template: current, map: m }; });
+      }).then(function (t) {
+        return t.map ? completeCitation(citation, items, t.template, t.map) : citation;
+      });
+    });
+  }
+
+  // One lookup per citation, shared by the warm-up on opening a source and
+  // the Insert / Copy buttons; a failed or slow one leaves the citation as it was.
+  var citoidPending = Object.create(null);
+  function completeFromCitoid(citation) {
+    var query = citoidQuery(citation);
+    if (!query || citation.citoid) return Promise.resolve(citation);
+    var key = citation.template;
+    if (!citoidPending[key]) {
+      citoidPending[key] = citoidComplete(citation, query).then(function (done) {
+        done.citoid = true;
+        return done;
+      }).catch(function () {
+        delete citoidPending[key];
+        return citation;
+      });
+    }
+    var timer;
+    var timeout = new Promise(function (resolve) {
+      timer = setTimeout(function () { resolve(citation); }, CITOID_TIMEOUT_MS);
+    });
+    return Promise.race([citoidPending[key], timeout]).then(function (result) {
+      clearTimeout(timer);
+      return result;
+    });
+  }
+
+  // What a listed source's citation lives on (a web suggestion, an Archive
+  // book) and how to save it, so the cache and the next click have the full one.
+  function citoidHolder(holder, save) {
+    return holder && citoidQuery(holder.citation) ? { holder: holder, save: save } : null;
+  }
+
+  function completeHeldCitation(held) {
+    var h = held.holder;
+    return completeFromCitoid(h.citation).then(function (citation) {
+      if (citation !== h.citation && citation.citoid) {
+        h.citation = citation;
+        held.save();
+      }
+      return citation;
+    });
+  }
+
   // ---- What was found, in one list ---------------------------------------
   // Every search's results become the same kind of item, ranked by how sure
   // we are that the source states the claim — not by which search found it:
@@ -4488,7 +4814,8 @@
       warnings: warnings,
       note: v.reliability === 'medium' && v.reliabilityReason
         ? 'Reliability for this claim: medium. ' + v.reliabilityReason : '',
-      ref: s.citation && s.citation.ref
+      ref: s.citation && s.citation.ref,
+      cite: citoidHolder(s, persist)
     };
   }
 
@@ -4525,7 +4852,8 @@
       quote: words || (ev.fullText ? c.snippet : '…' + c.snippet + '…'),
       warnings: warnings,
       note: notes.join(' '),
-      ref: c.citation && c.citation.ref
+      ref: c.citation && c.citation.ref,
+      cite: citoidHolder(c, persistArchive)
     };
   }
 
@@ -4986,10 +5314,13 @@
 
     var actions = el('div', 'cnf-actions');
     if (item.ref) {
+      // Look the record up now, so the buttons usually have the full
+      // citation by the time they are clicked.
+      if (item.cite) completeHeldCitation(item.cite);
       actions.appendChild(button('cnf-btn cnf-btn-pri', 'Insert in editor', function () {
-        openEditorWithRef(i, { citation: { ref: item.ref } });
-      }, 'Open the section editor with this <ref> in place of the {{citation needed}} tag'));
-      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { copyRef(item.ref); }));
+        insertInEditor(i, item);
+      }, 'Open the section editor in a new tab with this <ref> in place of the {{citation needed}} tag'));
+      actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { refFor(item).then(copyRef); }));
     }
     if (item.url) {
       var open = el('a', 'cnf-open', 'Open source');
@@ -5002,6 +5333,11 @@
     detail.appendChild(actions);
     wrap.appendChild(detail);
     return wrap;
+  }
+
+  function refFor(item) {
+    if (!item.cite) return Promise.resolve(item.ref);
+    return completeHeldCitation(item.cite).then(function (citation) { return citation.ref; });
   }
 
   function copyRef(ref) {
@@ -5275,16 +5611,54 @@
   }
 
   // ---- Editor integration ------------------------------------------------
-  // The "Insert <ref> in editor" CTA stages the chosen <ref> in sessionStorage,
-  // then navigates to the section's edit URL with a pre-filled summary. The
-  // same script runs again on the edit page, picks up the staged payload, and
-  // replaces the corresponding {{citation needed}} template in the textarea.
+  // "Insert in editor" opens the section's source editor in a new tab, with a
+  // pre-filled summary and a one-time token in the URL, and stages the <ref>
+  // in localStorage under that token (sessionStorage is per tab). The tab is
+  // opened on the click itself, since a browser blocks a tab opened after a
+  // wait, and the <ref> follows once its Citoid lookup is done; the same
+  // script runs on the edit page, waits for it, and puts it in place of the
+  // corresponding {{citation needed}} template in the textarea.
 
   var EDIT_INSERT_PREFIX = 'cnfirmed:pending-insert:';
+  var EDIT_INSERT_PARAM = 'cnfirmedInsert';
+  var EDIT_INSERT_DONE = 'cnfirmed:insert-done:';
+  // Longer than a Citoid lookup may take, so the <ref> has time to arrive.
+  var EDIT_INSERT_WAIT_MS = CITOID_TIMEOUT_MS + 4000;
+  var EDIT_INSERT_POLL_MS = 200;
+  var EDIT_INSERT_MAX_AGE_MS = 10 * 60 * 1000;
   var sectionEditLinksCache = null;
 
-  function pendingInsertKey() {
-    return EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
+  function insertToken() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // A staged <ref> nobody picked up (a tab closed before it loaded) is
+  // dropped once it is old, so localStorage does not collect them.
+  function writeStagedInsert(token, payload) {
+    try {
+      var now = Date.now();
+      for (var n = localStorage.length - 1; n >= 0; n--) {
+        var k = localStorage.key(n);
+        if (!k || k.indexOf(EDIT_INSERT_PREFIX) !== 0) continue;
+        var old = null;
+        try { old = JSON.parse(localStorage.getItem(k)); } catch (e) { /* drop it */ }
+        if (!old || !(now - old.stagedAt < EDIT_INSERT_MAX_AGE_MS)) localStorage.removeItem(k);
+      }
+      localStorage.setItem(EDIT_INSERT_PREFIX + token, JSON.stringify(payload));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // The staged <ref> for this token, once: it is removed as it is read.
+  function takeStagedInsert(token) {
+    var key = EDIT_INSERT_PREFIX + token;
+    var raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) { return null; }
+    if (!raw) return null;
+    try { localStorage.removeItem(key); } catch (e) { /* read once anyway */ }
+    try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
   function sectionEditLinkFor(supEl) {
@@ -5341,8 +5715,8 @@
     return url + sep + encodeURIComponent(key) + '=' + encodeURIComponent(value);
   }
 
-  function openEditorWithRef(i, suggestion) {
-    if (!suggestion || !suggestion.citation || !suggestion.citation.ref) {
+  function insertInEditor(i, item) {
+    if (!item.ref) {
       toast('No <ref> to insert.');
       return;
     }
@@ -5350,48 +5724,59 @@
     var link = links[i];
     var k = 0;
     for (var j = 0; j < i; j++) if (links[j] === link) k++;
-    var editUrl = sourceEditorUrl(link);
-
-    var payload = {
-      pageTitle: pageTitle,
-      revid: revid,
-      cnIndexInSection: k,
-      ref: suggestion.citation.ref,
-      sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
-      stagedAt: Date.now()
-    };
-    try {
-      sessionStorage.setItem(pendingInsertKey(), JSON.stringify(payload));
-    } catch (e) {
-      toast('Could not stage edit (sessionStorage unavailable).');
-      return;
-    }
-
+    var token = insertToken();
     var summary = 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])';
-    window.location.href = appendQueryParam(editUrl, 'summary', summary);
+    var url = appendQueryParam(appendQueryParam(sourceEditorUrl(link), 'summary', summary), EDIT_INSERT_PARAM, token);
+
+    var tab = window.open(url, '_blank');
+    if (tab) { try { tab.opener = null; } catch (e) { /* not needed */ } }
+
+    refFor(item).then(function (ref) {
+      var staged = writeStagedInsert(token, {
+        pageTitle: pageTitle,
+        revid: revid,
+        cnIndexInSection: k,
+        ref: ref,
+        sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
+        stagedAt: Date.now()
+      });
+      if (!staged) {
+        toast('Could not stage the edit (localStorage unavailable). Use Copy <ref> instead.');
+        return;
+      }
+      // Pop-ups blocked: this tab, then.
+      if (!tab) window.location.href = url;
+    });
   }
 
-  // Edit-mode: locate the staged payload and apply it to the textarea.
+  // Edit-mode: wait for the staged payload and apply it to the textarea.
 
   function handlePendingEditorInsertion() {
-    var key = EDIT_INSERT_PREFIX + lang + ':' + pageTitle;
-    var raw = null;
-    try { raw = sessionStorage.getItem(key); } catch (e) { return; }
-    if (!raw) return;
-    var payload;
-    try { payload = JSON.parse(raw); } catch (e) {
-      try { sessionStorage.removeItem(key); } catch (e2) {}
-      return;
-    }
-    try { sessionStorage.removeItem(key); } catch (e) {}
+    var token = null;
+    try { token = new URL(location.href).searchParams.get(EDIT_INSERT_PARAM); } catch (e) { return; }
+    if (!token) return;
+    // A preview or a reload of the same tab: the <ref> is already in.
+    try { if (sessionStorage.getItem(EDIT_INSERT_DONE + token)) return; } catch (e) { /* go on */ }
 
-    if (!payload || !payload.ref) return;
-
-    mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
-      applyPendingInsertion(payload);
-    }, function () {
-      applyPendingInsertion(payload);
-    });
+    var deadline = Date.now() + EDIT_INSERT_WAIT_MS;
+    (function poll() {
+      var payload = takeStagedInsert(token);
+      if (payload && payload.ref && payload.pageTitle === pageTitle) {
+        try { sessionStorage.setItem(EDIT_INSERT_DONE + token, '1'); } catch (e) { /* best effort */ }
+        mw.loader.using(['mediawiki.util', 'jquery.textSelection']).then(function () {
+          applyPendingInsertion(payload);
+        }, function () {
+          applyPendingInsertion(payload);
+        });
+        return;
+      }
+      if (Date.now() < deadline) {
+        setTimeout(poll, EDIT_INSERT_POLL_MS);
+        return;
+      }
+      showEditBanner('CNfirmed: the <ref> did not arrive from the article tab. ' +
+        'Use Copy <ref> in the panel there and paste it in place of the tag.', 'warn');
+    })();
   }
 
   // Best effort: a browser may refuse the clipboard to a page that was not
