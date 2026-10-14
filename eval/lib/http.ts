@@ -53,6 +53,8 @@ export interface CassetteOptions {
   hostConcurrency?: Record<string, number>;
   /** Retries on 429 / 5xx / network errors before giving up (default 6). */
   maxRetries?: number;
+  /** The same, for particular hosts: a local copy of the Worker that times out will time out again. */
+  hostMaxRetries?: Record<string, number>;
   /**
    * Per host, how long one live request may take (default 60 s), and whether
    * a timeout or dropped connection is retried (default yes). A model call
@@ -163,7 +165,7 @@ function retryAfterMs(res: Response, attempt: number): number {
 export function installCassette(options: CassetteOptions): CassetteStats {
   const realFetch = globalThis.fetch.bind(globalThis);
   const minInterval = options.minIntervalMs ?? 1000;
-  const maxRetries = options.maxRetries ?? 6;
+  const defaultRetries = options.maxRetries ?? 6;
   const log = options.log ?? (() => {});
   const stats: CassetteStats = { hits: 0, recorded: 0, misses: [], retries: 0 };
 
@@ -181,6 +183,7 @@ export function installCassette(options: CassetteOptions): CassetteStats {
     clientRetries: boolean,
   ): Promise<{ res: Response; body: string; ms: number }> {
     const timeout = options.hostTimeouts?.[host] ?? { ms: 60_000, retryNetworkErrors: true };
+    const maxRetries = options.hostMaxRetries?.[host] ?? defaultRetries;
     for (let attempt = 0; ; attempt++) {
       // The slot is taken before the wait, so lanes waiting together go out
       // one gap apart.

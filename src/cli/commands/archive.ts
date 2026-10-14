@@ -46,7 +46,8 @@ export function librarianLine(f: ArchiveFunnel): string {
     `planner ${l.plan ? `${l.plan.queries.length} quer${l.plan.queries.length === 1 ? "y" : "ies"}, ${l.planned} books` : "gave no plan"}; ` +
     `named ${l.namedFound} of ${l.named.length} readable; ` +
     `${l.shelfTerms.length} term(s) searched inside; ` +
-    `${l.pages.books} open book(s) page by page, ${l.pages.found} with a passage; +${l.added} lead(s)`
+    `${l.pages.books} open book(s) page by page (${l.pages.beyond} beyond the leads), ${l.pages.found} with a passage; ` +
+    `+${l.added} lead(s)`
   );
 }
 
@@ -153,7 +154,9 @@ export async function archiveCommand(args: ArchiveArgs): Promise<void> {
     r.candidates.forEach((c, j) => {
       const access = c.evidence.access === "borrow" ? ", borrow" : "";
       const whole = c.evidence.fullText ? ", whole text" : "";
-      const via = c.evidence.via ? `, ${c.evidence.via === "named" ? "named by the model" : "planner's query"}` : "";
+      const via = c.evidence.via
+        ? `, ${{ named: "named by the model", planner: "planner's query", pages: "read page by page" }[c.evidence.via]}`
+        : "";
       console.log(`    📚 [${j + 1}] ${c.title}  (match ${c.evidence.score}${access}${whole}${via})`);
       const v = Array.isArray(check) ? check[j] : undefined;
       if (v) console.log(`       check: ${v.verdict}${v.quote ? ` — "${v.quote}"` : ""}${v.reason ? ` (${v.reason})` : ""}`);

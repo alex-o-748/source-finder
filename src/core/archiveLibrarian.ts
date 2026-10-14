@@ -301,6 +301,11 @@ export function nameConcepts(terms: string[][]): string[][] {
   return terms.filter((g) => specificity(g) === 1);
 }
 
+/** The plan's numbers and names, by their first wording folded: how `planMatched` reports them. */
+export function specificConcepts(terms: string[][]): string[] {
+  return terms.filter((g) => specificity(g) <= 1).map((g) => fold(g[0]));
+}
+
 /** Folded words, hyphens as spaces: "Saxe-Coburg-Gotha" holds "Saxe-Coburg". */
 function splitKey(text: string): string {
   return fold(String(text ?? "")).replace(/[^\p{L}\p{N}]+/gu, " ").trim();

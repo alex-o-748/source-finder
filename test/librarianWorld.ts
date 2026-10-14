@@ -89,6 +89,8 @@ const CATALOGUE: Record<string, unknown[]> = {
  */
 export const PAGE_P1 =
   "On 31 March 1889 the tower was completed, and Eiffel climbed to its summit, 300 metres above the Champ de Mars, to raise the flag.";
+export const PAGE_P2 =
+  "The Eiffel tower, completed this spring of 1889, rises 300 metres above the Champ de Mars, more than twice the height of the Washington Monument.";
 export const PAGES: Record<string, { doc?: string; pageConfidence: number | null; matches: Record<string, [number, string | null, string][]> }> = {
   tourdetroiscents00eiff: {
     pageConfidence: 97,
@@ -102,6 +104,14 @@ export const PAGES: Record<string, { doc?: string; pageConfidence: number | null
     doc: "2015.1234.Paris-Guide",
     pageConfidence: null,
     matches: { "1889": [[12, null, "The Eiffel Tower, finished in 1889, is 300 metres high, and from its summit all Paris may be seen."]] },
+  },
+  // Not a lead: its highlights show the tower but not the claim; a page does.
+  "sim_scientific-american_1889-05-18_60_20": {
+    pageConfidence: 99,
+    matches: {
+      "1889": [[14, "306", PAGE_P2]],
+      Eiffel: [[14, "306", PAGE_P2]],
+    },
   },
   // Numbered, but the Archive is unsure of it: the leaf only.
   eiffeltowerdescr00tiss: {

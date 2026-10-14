@@ -55,6 +55,7 @@ import {
   parseBooks,
   parsePlan,
   nameConcepts,
+  specificConcepts,
   planCoverage,
   planMatched,
   planPrompt,
@@ -123,14 +124,24 @@ export const NAMED_ROWS = 5;
 export const NAMED_SCANS = 2;
 /** Leads the librarian may add in all, after the metadata checks. */
 export const LIBRARIAN_LEADS = 8;
-/** Open books searched inside page by page, per claim: the search's leads first. */
+/**
+ * Open books searched inside page by page, per claim: the leads first, then
+ * while there is room the books the searches found but kept no lead of.
+ */
 export const PAGE_BOOKS = 12;
+/** Leads that only reading a book page by page found, beyond the librarian's. */
+export const PAGE_LEADS = 3;
 /** Books searched inside page by page at a time. */
 export const PAGE_CONCURRENCY = 4;
 /** Paragraphs kept from each book's search inside. */
 export const PAGE_PASSAGES = 3;
 /** Characters kept of a paragraph: the stretch holding most of the claim. */
 export const PAGE_PASSAGE_CHARS = 600;
+/**
+ * Concepts a kept stretch must hold. One is any paragraph with the search
+ * term in it ("Roman", "sister"): on the evaluation set mostly another subject.
+ */
+export const PAGE_MIN_CONCEPTS = 2;
 const STRETCH_STEP = 50;
 /**
  * Below this confidence (0-100) in a book's page numbering, its printed page
@@ -145,6 +156,9 @@ const PRINT_DISABLED = "printdisabled";
 
 /** How an editor gets at the book: read it, or borrow it with a free account. */
 export type ArchiveAccess = "open" | "borrow";
+
+/** Which of the librarian's steps found a lead (see `ArchiveEvidence.via`). */
+export type Via = "planner" | "named" | "pages";
 
 // ---------------------------------------------------------------------------
 // 1. Query construction
@@ -1146,7 +1160,7 @@ export function toArchiveCandidate(
   s: ScoredHit,
   details: (Pick<ItemDetails, "publisher" | "isbn"> & Partial<Pick<ItemDetails, "books">>) | null,
   terms: ClaimTerms,
-  via?: "planner" | "named",
+  via?: Via,
 ): ArchiveCandidate {
   const { hit } = s;
   const best = s.passages[0];
@@ -1243,7 +1257,7 @@ export interface LibrarianFunnel {
   shelfTerms: string[];
   shelfQueries: number;
   /** Open books searched inside page by page, and how many gave a paragraph. */
-  pages: { books: number; found: number };
+  pages: { books: number; beyond: number; found: number };
   /** Leads the librarian added to the search's, after the metadata checks. */
   added: number;
 }
@@ -1359,8 +1373,8 @@ export async function findArchiveCandidates(
   // 4. Metadata for the few kept: publisher, ISBN, and whether it is still
   // readable. The search's own leads are looked up while the librarian's
   // models think, so its leads are judged new against the books shown.
-  const shown: { s: ScoredHit; details: ItemDetails | null; via?: "planner" | "named" }[] = [];
-  const lookUp = async (list: ScoredHit[], cap: number, via?: "planner" | "named"): Promise<void> => {
+  const shown: { s: ScoredHit; details: ItemDetails | null; via?: Via }[] = [];
+  const lookUp = async (list: ScoredHit[], cap: number, via?: Via): Promise<void> => {
     let added = 0;
     for (const s of list) {
       if (added >= cap) break;
@@ -1385,19 +1399,21 @@ export async function findArchiveCandidates(
 
   // The librarian: the planner's books and the named ones, then a search
   // inside every lead for the claim's telling terms.
-  const added: { s: ScoredHit; via: "planner" | "named" }[] = [];
+  const added: { s: ScoredHit; via: Via }[] = [];
   if (models) {
     funnel.librarian = await librarianLeads({
-      planning, naming, client, claim: claim.claim, terms, shortlist: shown.map((x) => x.s), added, funnel,
+      planning, naming, client, claim: claim.claim, terms, hits: all, shortlist: shown.map((x) => x.s), added, funnel,
     });
     const before = shown.length;
-    // Planner and named leads in their order, one call each so `via` is kept.
-    let room = LIBRARIAN_LEADS;
+    // Planner and named leads in their order, one call each so `via` is kept;
+    // the books found only page by page have room of their own.
+    const room = { librarian: LIBRARIAN_LEADS, pages: PAGE_LEADS };
     for (const a of added) {
-      if (room <= 0) break;
+      const key = a.via === "pages" ? "pages" : "librarian";
+      if (room[key] <= 0) continue;
       const n = shown.length;
       await lookUp([a.s], 1, a.via);
-      room -= shown.length - n;
+      room[key] -= shown.length - n;
     }
     funnel.librarian.added = shown.length - before;
   }
@@ -1478,18 +1494,28 @@ export function bestStretch(text: string, matched: (t: string) => string[], char
 
 /**
  * A book's paragraphs from its search inside, as passages: the ones holding
- * most of the claim's concepts first (one at least), each cut to the stretch
- * around them, `PAGE_PASSAGES` at most. Each says where in the book it is;
- * the printed page number only when the Archive is sure of the numbering.
+ * most of the claim's concepts first, each cut to the stretch around them,
+ * which must hold two at least, one of them among `specific` (the claim's
+ * numbers and names) when it has any: "sister" and "named" are in a hundred
+ * paragraphs about other people's sisters. `PAGE_PASSAGES` at most. Each says
+ * where in the book it is; the printed page number only when the Archive is
+ * sure of the numbering.
  */
-export function pagePassages(r: InsideResponse, matched: (t: string) => string[]): ScoredHit["passages"] {
+export function pagePassages(
+  r: InsideResponse,
+  matched: (t: string) => string[],
+  specific: string[] = [],
+): ScoredHit["passages"] {
+  const about = (keys: string[]): boolean =>
+    keys.length >= PAGE_MIN_CONCEPTS && (!specific.length || keys.some((k) => specific.includes(k)));
   const numbered = r.pageConfidence !== null && r.pageConfidence >= PAGE_NUMBER_CONFIDENCE;
   const found: { p: ScoredHit["passages"][number]; n: number }[] = [];
   for (const m of Array.isArray(r.matches) ? r.matches : []) {
-    if (!m || typeof m.text !== "string" || !matched(m.text).length) continue;
+    if (!m || typeof m.text !== "string" || !about(matched(m.text))) continue;
     const text = bestStretch(m.text, matched, PAGE_PASSAGE_CHARS);
     if (found.some((f) => f.p.text === text)) continue;
     const p: ScoredHit["passages"][number] = { text, score: 0, matched: matched(text) };
+    if (!about(p.matched)) continue;
     if (typeof m.leaf === "number") {
       p.page = { leaf: m.leaf, page: numbered ? m.page : null };
       if (typeof m.leafEnd === "number" && m.leafEnd !== m.leaf) {
@@ -1533,8 +1559,10 @@ async function librarianLeads(a: {
   client: ArchiveClient;
   claim: string;
   terms: ClaimTerms;
+  /** Every book the word search found, for reading page by page those it kept no lead of. */
+  hits: ArchiveHit[];
   shortlist: ScoredHit[];
-  added: { s: ScoredHit; via: "planner" | "named" }[];
+  added: { s: ScoredHit; via: Via }[];
   funnel: ArchiveFunnel;
 }): Promise<LibrarianFunnel> {
   const { client, terms, added, funnel } = a;
@@ -1542,7 +1570,7 @@ async function librarianLeads(a: {
   if (planError) funnel.errors.push(planError);
   if (booksError) funnel.errors.push(booksError);
   const lib: LibrarianFunnel = {
-    plan, planned: 0, named, namedFound: 0, shelfTerms: [], shelfQueries: 0, pages: { books: 0, found: 0 }, added: 0,
+    plan, planned: 0, named, namedFound: 0, shelfTerms: [], shelfQueries: 0, pages: { books: 0, beyond: 0, found: 0 }, added: 0,
   };
   const concepts = plan?.terms ?? [];
   // What a paragraph found inside a book shares with the claim: the plan's
@@ -1551,6 +1579,7 @@ async function librarianLeads(a: {
   const matched = concepts.length
     ? (t: string): string[] => planMatched(t, concepts)
     : (t: string): string[] => unitsIn(t, units).map((u) => u.key);
+  const specific = concepts.length ? specificConcepts(concepts) : units.filter((u) => u.strong).map((u) => u.key);
   // An open book can be searched inside page by page whatever its identifier.
   const pageable = (h: ArchiveHit): boolean => {
     const gate = accessGate(h);
@@ -1647,8 +1676,32 @@ async function librarianLeads(a: {
     }),
   );
   const pageTerms = lib.shelfTerms.map(insideTerm);
-  const paged = pageTerms.length ? everyone.filter((s) => pageable(s.hit)).slice(0, PAGE_BOOKS) : [];
+  const leadsPaged = pageTerms.length ? everyone.filter((s) => pageable(s.hit)).slice(0, PAGE_BOOKS) : [];
+  // While there is room, the open books the searches found and kept no lead
+  // of, whose highlights name who or what the claim is about (a year alone is
+  // in every other book): those holding most of the claim first. A topical
+  // book states a fact on one page of three hundred, which five highlights a
+  // term rarely show.
+  const beyond: ScoredHit[] = [];
+  if (pageTerms.length) {
+    const names = nameConcepts(concepts).map((g) => fold(g[0]));
+    const about = names.length ? names : specific;
+    const pool: { h: ArchiveHit; n: number; i: number }[] = [];
+    for (const h of [...a.hits, ...lists.flatMap((l) => l.hits)]) {
+      if (!pageable(h) || !isNew(h) || pool.some((p) => p.h.identifier === h.identifier || sameWork(p.h, h))) continue;
+      const keys = matched(h.highlights.join(" "));
+      if (!keys.length || (about.length && !keys.some((k) => about.includes(k)))) continue;
+      pool.push({ h, n: keys.length, i: pool.length });
+    }
+    pool.sort((x, y) => y.n - x.n || x.i - y.i);
+    for (const { h } of pool.slice(0, Math.max(0, PAGE_BOOKS - leadsPaged.length))) {
+      const passages = h.highlights.map((text) => ({ text, score: 0, matched: matched(text) }));
+      beyond.push({ hit: h, access: "open", passages, score: 0 });
+    }
+  }
+  const paged = [...leadsPaged, ...beyond];
   lib.pages.books = paged.length;
+  lib.pages.beyond = beyond.length;
   const paging = mapLimit(paged, PAGE_CONCURRENCY, async (s) => {
     try {
       return { r: await client.searchInside!({ identifier: s.hit.identifier, doc: s.hit.file, terms: pageTerms }), error: null };
@@ -1673,14 +1726,20 @@ async function librarianLeads(a: {
     if (s.hit.file === null) s.hit.file = hits.find((h) => h.file !== null)?.file ?? null;
     addPassages(s, hits.filter((h) => h.file === null || h.file === s.hit.file).flatMap((h) => h.highlights));
   }
+  const read: { s: ScoredHit; n: number; i: number }[] = [];
   paged.forEach((s, i) => {
     const { r, error } = pageReplies[i];
     if (error) funnel.errors.push(error);
     if (!r) return;
-    const found = pagePassages(r, matched);
+    const found = pagePassages(r, matched, specific);
     if (found.length) lib.pages.found++;
     addPageParagraphs(s, found, matched);
+    if (found.length && beyond.includes(s)) read.push({ s, n: found[0].matched.length, i: read.length });
   });
+  // A book read beyond the leads becomes one when a paragraph carries the
+  // claim; the most of it first.
+  read.sort((x, y) => y.n - x.n || x.i - y.i);
+  for (const { s } of read.slice(0, PAGE_LEADS)) added.push({ s, via: "pages" });
   // The librarian's leads show their best-covered passage first; one with no
   // passage at all has nothing to show or check, and a named book needs only
   // one scan.

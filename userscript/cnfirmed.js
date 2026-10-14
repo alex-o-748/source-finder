@@ -3172,16 +3172,18 @@
             // search inside every lead for the claim's telling terms.
             if (!IA_LIBRARIAN) return;
             var shownLeads = shown.map(function (x) { return x.s; });
-            return librarianLeads(planning, naming, ctx.claim, terms, shownLeads, added, funnel).then(function (lib) {
+            return librarianLeads(planning, naming, ctx.claim, terms, hits, shownLeads, added, funnel).then(function (lib) {
               funnel.librarian = lib;
-              // Planner and named leads in their order, one at a time so `via` is kept.
+              // Planner and named leads in their order, one at a time so `via`
+              // is kept; the books found only page by page have room of their own.
               var before = shown.length;
-              var room = IA_LIBRARIAN_LEADS;
+              var room = { librarian: IA_LIBRARIAN_LEADS, pages: IA_PAGE_LEADS };
               return added.reduce(function (p, a) {
                 return p.then(function () {
-                  if (room <= 0) return;
+                  var key = a.via === 'pages' ? 'pages' : 'librarian';
+                  if (room[key] <= 0) return;
                   var n = shown.length;
-                  return lookUp([a.s], 1, a.via).then(function () { room -= shown.length - n; });
+                  return lookUp([a.s], 1, a.via).then(function () { room[key] -= shown.length - n; });
                 });
               }, Promise.resolve()).then(function () {
                 funnel.librarian.added = shown.length - before;
@@ -3248,14 +3250,16 @@
   }
 
   // "planner 3 queries, 12 books; named 4 of 6 readable; 3 term(s) searched
-  // inside; 6 open book(s) page by page, 4 with a passage; +5 lead(s)".
+  // inside; 9 open book(s) page by page (3 beyond the leads), 4 with a
+  // passage; +5 lead(s)".
   function archiveLibrarianLine(l) {
     var n = l.plan ? l.plan.queries.length : 0;
-    var pages = l.pages || { books: 0, found: 0 };
+    var pages = l.pages || { books: 0, beyond: 0, found: 0 };
     return 'planner ' + (l.plan ? n + ' quer' + (n === 1 ? 'y' : 'ies') + ', ' + l.planned + ' books' : 'gave no plan') +
       '; named ' + l.namedFound + ' of ' + l.named.length + ' readable; ' +
       l.shelfTerms.length + ' term(s) searched inside; ' +
-      pages.books + ' open book(s) page by page, ' + pages.found + ' with a passage; +' + l.added + ' lead(s)';
+      pages.books + ' open book(s) page by page (' + (pages.beyond || 0) + ' beyond the leads), ' +
+      pages.found + ' with a passage; +' + l.added + ' lead(s)';
   }
 
   // Why passages did or did not count. Mirrors passageSummary in
@@ -3390,10 +3394,17 @@
   // an archive.org login the Archive refuses. Off with
   // window.cnfirmedArchivePageSearch = false.
   var IA_PAGE_SEARCH = window.cnfirmedArchivePageSearch !== false;
+  // Open books searched page by page per claim: the leads first, then while
+  // there is room the books the searches found but kept no lead of, of which
+  // up to three become leads when a page carries the claim.
   var IA_PAGE_BOOKS = 12;
+  var IA_PAGE_LEADS = 3;
   var IA_PAGE_CONCURRENCY = 4;
   var IA_PAGE_PASSAGES = 3;
   var IA_PAGE_PASSAGE_CHARS = 600;
+  // Concepts a kept stretch must hold: one is any paragraph with the search
+  // term in it ("Roman", "sister"), mostly about something else.
+  var IA_PAGE_MIN_CONCEPTS = 2;
   var IA_STRETCH_STEP = 50;
   var IA_PAGE_NUMBER_CONFIDENCE = 50;
 
@@ -3637,6 +3648,13 @@
     return terms.filter(function (g) { return libSpecificity(g) === 1; });
   }
 
+  // The plan's numbers and names, by their first wording folded. Mirrors
+  // specificConcepts.
+  function libSpecificConcepts(terms) {
+    return terms.filter(function (g) { return libSpecificity(g) <= 1; })
+      .map(function (g) { return foldText(g[0]); });
+  }
+
   // Folded words, hyphens as spaces: "Saxe-Coburg-Gotha" holds "Saxe-Coburg".
   function libSplitKey(text) {
     return foldText(String(text == null ? '' : text)).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -3835,18 +3853,25 @@
   }
 
   // A book's paragraphs from its search inside, as passages: most concepts
-  // first (one at least), each cut around them, three at most; the printed
-  // page number only when the Archive is sure of the numbering. Mirrors
-  // pagePassages.
-  function iaPagePassages(r, matched) {
+  // first, each cut around them and holding two at least, one of them among
+  // `specific` (the claim's numbers and names) when it has any; three at
+  // most; the printed page number only when the Archive is sure of the
+  // numbering. Mirrors pagePassages.
+  function iaPagePassages(r, matched, specific) {
+    specific = specific || [];
+    function about(keys) {
+      return keys.length >= IA_PAGE_MIN_CONCEPTS &&
+        (!specific.length || keys.some(function (k) { return specific.indexOf(k) !== -1; }));
+    }
     var numbered = r.pageConfidence !== null && r.pageConfidence !== undefined &&
       r.pageConfidence >= IA_PAGE_NUMBER_CONFIDENCE;
     var found = [];
     (Array.isArray(r.matches) ? r.matches : []).forEach(function (m) {
-      if (!m || typeof m.text !== 'string' || !matched(m.text).length) return;
+      if (!m || typeof m.text !== 'string' || !about(matched(m.text))) return;
       var text = iaBestStretch(m.text, matched, IA_PAGE_PASSAGE_CHARS);
       if (found.some(function (f) { return f.p.text === text; })) return;
       var p = { text: text, score: 0, matched: matched(text) };
+      if (!about(p.matched)) return;
       if (typeof m.leaf === 'number') {
         p.page = { leaf: m.leaf, page: numbered ? m.page : null };
         if (typeof m.leafEnd === 'number' && m.leafEnd !== m.leaf) {
@@ -3922,7 +3947,7 @@
   // by a search inside it for the claim's telling terms. Mirrors librarianLeads
   // in src/core/archiveSources.ts: failures are noted in the funnel, in the
   // same order, and never fail the stage.
-  function librarianLeads(planning, naming, claim, terms, shortlist, added, funnel) {
+  function librarianLeads(planning, naming, claim, terms, hits, shortlist, added, funnel) {
     return Promise.all([planning, naming]).then(function (r) {
       var plan = r[0].plan;
       var named = r[1].books;
@@ -3930,7 +3955,7 @@
       if (r[1].error) funnel.errors.push(r[1].error);
       var lib = {
         plan: plan, planned: 0, named: named, namedFound: 0, shelfTerms: [], shelfQueries: 0,
-        pages: { books: 0, found: 0 }, added: 0
+        pages: { books: 0, beyond: 0, found: 0 }, added: 0
       };
       var concepts = plan ? plan.terms : [];
       // What a paragraph found inside a book shares with the claim: the
@@ -3939,6 +3964,8 @@
       var matched = concepts.length
         ? function (t) { return libPlanMatched(t, concepts); }
         : function (t) { return iaUnitsIn(t, units).map(function (u) { return u.key; }); };
+      var specific = concepts.length ? libSpecificConcepts(concepts)
+        : units.filter(function (u) { return u.strong; }).map(function (u) { return u.key; });
       // An open book can be searched inside page by page whatever its identifier.
       function pageable(h) {
         var gate = archiveGate(h);
@@ -4031,9 +4058,36 @@
           });
         }));
         var pageTerms = lib.shelfTerms.map(libInsideTerm);
-        var paged = pageTerms.length
+        var leadsPaged = pageTerms.length
           ? everyone.filter(function (s) { return pageable(s.hit); }).slice(0, IA_PAGE_BOOKS) : [];
+        // While there is room, the open books the searches found and kept no
+        // lead of, whose highlights name who or what the claim is about: those
+        // holding most of the claim first. Mirrors librarianLeads.
+        var beyond = [];
+        if (pageTerms.length) {
+          var names = libNameConcepts(concepts).map(function (g) { return foldText(g[0]); });
+          var about = names.length ? names : specific;
+          var pool = [];
+          hits.concat(lists.reduce(function (acc, l) { return acc.concat(l.hits); }, [])).forEach(function (h) {
+            if (!pageable(h) || !isNew(h)) return;
+            if (pool.some(function (x) { return x.h.identifier === h.identifier || iaSameWork(x.h, h); })) return;
+            var keys = matched(h.highlights.join(' '));
+            if (!keys.length || (about.length && !keys.some(function (k) { return about.indexOf(k) !== -1; }))) return;
+            pool.push({ h: h, n: keys.length, i: pool.length });
+          });
+          pool.sort(function (x, y) { return y.n - x.n || x.i - y.i; });
+          pool.slice(0, Math.max(0, IA_PAGE_BOOKS - leadsPaged.length)).forEach(function (x) {
+            beyond.push({
+              hit: x.h,
+              access: 'open',
+              passages: x.h.highlights.map(function (text) { return { text: text, score: 0, matched: matched(text) }; }),
+              score: 0
+            });
+          });
+        }
+        var paged = leadsPaged.concat(beyond);
         lib.pages.books = paged.length;
+        lib.pages.beyond = beyond.length;
         var paging = iaMapLimit(paged, IA_PAGE_CONCURRENCY, function (s) {
           return iaSearchInside({ identifier: s.hit.identifier, doc: s.hit.file, terms: pageTerms })
             .then(function (r) { return { r: r, error: null }; }, function (err) {
@@ -4064,14 +4118,20 @@
             addPassages(s, hits.filter(function (h) { return h.file === null || h.file === s.hit.file; })
               .reduce(function (acc, h) { return acc.concat(h.highlights); }, []));
           });
+          var read = [];
           paged.forEach(function (s, i) {
             var reply = pageReplies[i];
             if (reply.error) funnel.errors.push(reply.error);
             if (!reply.r) return;
-            var found = iaPagePassages(reply.r, matched);
+            var found = iaPagePassages(reply.r, matched, specific);
             if (found.length) lib.pages.found++;
             iaAddPageParagraphs(s, found, matched);
+            if (found.length && beyond.indexOf(s) !== -1) read.push({ s: s, n: found[0].matched.length, i: read.length });
           });
+          // A book read beyond the leads becomes one when a paragraph carries
+          // the claim; the most of it first.
+          read.sort(function (x, y) { return y.n - x.n || x.i - y.i; });
+          read.slice(0, IA_PAGE_LEADS).forEach(function (x) { added.push({ s: x.s, via: 'pages' }); });
           // The librarian's leads show their best-covered passage first; one
           // with no passage has nothing to show or check, and a named book
           // needs only one scan.
@@ -5162,7 +5222,8 @@
     notes.push(at && at.page
       ? 'The citation gives the page the Archive numbers it, p. ' + (at.pageEnd && at.pageEnd !== at.page ? at.page + '–' + at.pageEnd : at.page) +
         ': check it against the scan.'
-      : 'Find the page in the book and add |page= to the citation.');
+      : at ? 'The link opens the book on the passage: add its page number to the citation as |page=.'
+        : 'Find the page in the book and add |page= to the citation.');
     if (ev.year && new Date().getUTCFullYear() - ev.year > 100) {
       notes.push('Old sources can be outdated (WP:AGEMATTERS).');
     }

@@ -151,8 +151,12 @@ export interface ArchiveEvidence {
   bundle?: { title: string; books: number };
   /** The best passage was read from the book's whole text, not the search's highlights. */
   fullText?: true;
-  /** Found by the librarian: the planner's queries, or a book a model named. */
-  via?: "planner" | "named";
+  /**
+   * Found by the librarian: the planner's queries, a book a model named, or a
+   * book the searches found whose highlights did not show the claim and whose
+   * pages, read page by page, do.
+   */
+  via?: "planner" | "named" | "pages";
 }
 
 /** A book on the Internet Archive, open or borrowable, with a passage matching the claim. */

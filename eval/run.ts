@@ -136,14 +136,19 @@ const stats = installCassette({
   }),
   hostConcurrency: {
     "archive.org": 3, "api.anthropic.com": 4, [WORKER_HOST]: 3,
-    ...(insideUrl && { [new URL(insideUrl).host]: 4 }),
+    ...(insideUrl && { [new URL(insideUrl).host]: 6 }),
   },
-  // The Worker allows 20 requests a minute per address.
-  hostMinIntervalMs: { [WORKER_HOST]: 3500 },
+  // The Worker allows 20 model requests a minute per address, and 60 searches inside.
+  hostMinIntervalMs: { [WORKER_HOST]: 3500, ...(insideUrl && { [new URL(insideUrl).host]: 1000 }) },
+  // A local copy of the Worker relays upstream with a shorter timeout than the
+  // deployed one has: what timed out once will again.
+  ...(insideUrl && { hostMaxRetries: { [new URL(insideUrl).host]: 1 } }),
   // A model call is billed even when abandoned: a long wait, and no retry.
   hostTimeouts: {
     "api.anthropic.com": { ms: 600_000, retryNetworkErrors: false },
     [WORKER_HOST]: { ms: 300_000, retryNetworkErrors: false },
+    // The metadata, three searches inside and the page numbers: up to a minute upstream.
+    ...(insideUrl && { [new URL(insideUrl).host]: { ms: 150_000, retryNetworkErrors: true } }),
   },
   // A search inside's 403 (a lent book) or 404 (no text) is a fact; a model's error is not.
   recordOnlyOk: ["api.anthropic.com", ...WORKER_MODELS],

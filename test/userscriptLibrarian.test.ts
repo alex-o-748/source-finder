@@ -199,7 +199,7 @@ test("the user script's librarian finds what the core's does", async () => {
   );
   assert.deepEqual(fromScript.candidates, fromCore.candidates);
   assert.deepEqual(fromScript.funnel, fromCore.funnel);
-  assert.equal(fromScript.funnel.librarian.added, 3);
+  assert.equal(fromScript.funnel.librarian.added, 4);
   // The same model calls, word for word.
   const calls = (sent: Sent[]) => sent.filter((s) => s.url.endsWith("/hf")).map((s) => JSON.stringify(s.body));
   assert.deepEqual(calls(scriptSent).sort(), calls(coreSent).sort());
@@ -312,6 +312,12 @@ test("the user script searches inside page by page as the core does: terms, requ
     const r = { ...reply, pageConfidence: confidence };
     assert.deepEqual(script.iaPagePassages(r, matched), pagePassages(r, matched), String(confidence));
   }
+  for (const terms of [PLAN.terms, [["Philoteria"], ["sister"], ["named"]], [["x"]]]) {
+    assert.deepEqual(script.libSpecificConcepts(terms), lib.specificConcepts(terms));
+    const m = (t: string) => lib.planMatched(t, terms);
+    const r = { ...reply, matches: [...reply.matches, { text: "Ada, the sister of Mausolus, was named queen.", terms: [0], leaf: 7, page: "9" }] };
+    assert.deepEqual(script.iaPagePassages(r, m, lib.specificConcepts(terms)), pagePassages(r, m, lib.specificConcepts(terms)));
+  }
 });
 
 test("the user script gives a checked quote's page to the citation and the viewer as the core does", () => {
@@ -341,6 +347,10 @@ test("the user script gives a checked quote's page to the citation and the viewe
   assert.match(item.ref, /\|page=41 \|url=https:\/\/archive\.org\/details\/tour\/page\/41 \|/);
   const unpaged = script.archiveItem({ ...c, check: { ...c.check, quote: "Eiffel completed it in 1889" } }, "supports", true, "k", script.iaClaimTerms(CLAIM, "Eiffel Tower"));
   assert.match(unpaged.note, /Find the page in the book and add \|page=/);
+  const leafOnly = { ...c, evidence: { ...c.evidence, pages: [null, { leaf: 57, page: null }] } };
+  const unnumbered = script.archiveItem(leafOnly, "supports", true, "k", script.iaClaimTerms(CLAIM, "Eiffel Tower"));
+  assert.match(unnumbered.note, /opens the book on the passage: add its page number/);
+  assert.match(unnumbered.url, /\/page\/leaf57\?q=/);
 });
 
 test("the user script asks the Worker for the same pages as the core, and none with page search off", async () => {
@@ -358,11 +368,11 @@ test("the user script asks the Worker for the same pages as the core, and none w
   );
   const pages = (sent: Sent[]) => sent.map((s) => s.url).filter((u) => u.includes("/archive/inside?")).sort();
   assert.deepEqual(pages(scriptSent), pages(coreSent));
-  assert.equal(pages(scriptSent).length, 5);
+  assert.equal(pages(scriptSent).length, 7, "five leads, and two books no lead came from");
   assert.deepEqual(fromScript.funnel, fromCore.funnel);
   assert.deepEqual(fromScript.candidates, fromCore.candidates);
   assert.equal(page.archiveLibrarianLine(fromScript.funnel.librarian), librarianLine(fromCore.funnel));
-  assert.match(librarianLine(fromCore.funnel), /5 open book\(s\) page by page, 3 with a passage/);
+  assert.match(librarianLine(fromCore.funnel), /7 open book\(s\) page by page \(2 beyond the leads\), 4 with a passage/);
 
   const off = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, { window: { cnfirmedArchivePageSearch: false } });
   off.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
@@ -370,5 +380,5 @@ test("the user script asks the Worker for the same pages as the core, and none w
   globalThis.fetch = worldFetch(offSent);
   const r = await off.findArchiveCandidates(0);
   assert.equal(pages(offSent).length, 0);
-  assert.deepEqual(r.funnel.librarian.pages, { books: 0, found: 0 });
+  assert.deepEqual(r.funnel.librarian.pages, { books: 0, beyond: 0, found: 0 });
 });

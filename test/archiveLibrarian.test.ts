@@ -302,8 +302,10 @@ test("findArchiveCandidates with the librarian: planner leads, named books, a se
     ["in.ernet.dli.2015.1234", "planner"],
     // The second scan: the first has nothing in the full-text index.
     ["eiffeltowertour0000loyr_b2c3", "named"],
+    // A book no lead came from, whose page carries the claim (test/archivePages.test.ts).
+    ["sim_scientific-american_1889-05-18_60_20", "pages"],
   ]);
-  assert.equal(lib.added, 3);
+  assert.equal(lib.added, 4);
   const loyrette = r.candidates.find((c) => c.evidence.via === "named")!;
   assert.equal(loyrette.evidence.access, "borrow");
   assert.match(loyrette.snippet, /completed in 1889 the tower stood 300 metres/);
@@ -355,7 +357,9 @@ test("findArchiveCandidates: a failed planner is noted, and the search inside us
   assert.deepEqual(r.funnel.errors, ["planner: Worker 400: no provider"]);
   assert.equal(r.funnel.librarian!.plan, null);
   assert.deepEqual(r.funnel.librarian!.shelfTerms, ["1889", "300", "gustave eiffel"]);
-  assert.equal(r.funnel.librarian!.added, 0);
+  // Reading page by page needs no plan: the claim's own words find the page.
+  assert.deepEqual(r.candidates.filter((c) => c.evidence.via).map((c) => c.evidence.via), ["pages"]);
+  assert.equal(r.funnel.librarian!.added, 1);
   assert.ok(!sent.some((s) => s.body && (s.body.messages as { content: string }[])[0].content.includes("reference librarian")));
 });
 

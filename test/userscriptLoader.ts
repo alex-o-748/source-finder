@@ -78,6 +78,7 @@ const EXPOSED = [
   "libShelfSearchable",
   "libShelfQueries",
   "libInsideTerm",
+  "libSpecificConcepts",
   "iaInsideUrl",
   "iaBestStretch",
   "iaPagePassages",

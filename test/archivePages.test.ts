@@ -6,7 +6,7 @@
  */
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
-import { insideTerm, workerChatClient } from "../src/core/archiveLibrarian.js";
+import { insideTerm, planMatched, specificConcepts, workerChatClient } from "../src/core/archiveLibrarian.js";
 import { httpArchiveClient, insideUrl } from "../src/core/internetArchive.js";
 import type { InsideResponse } from "../src/core/internetArchive.js";
 import {
@@ -21,7 +21,7 @@ import {
   withQuotePage,
 } from "../src/core/archiveSources.js";
 import type { ArchiveCandidate } from "../src/core/types.js";
-import { CLAIM, PAGE_P1, PARAGRAPH, PLAN, worldFetch, type Sent } from "./librarianWorld.js";
+import { CLAIM, PAGE_P1, PAGE_P2, PARAGRAPH, PLAN, worldFetch, type Sent } from "./librarianWorld.js";
 
 const realFetch = globalThis.fetch;
 after(() => {
@@ -53,19 +53,20 @@ test("bestStretch: the stretch holding most of the claim, cut at spaces", () => 
   assert.equal(bestStretch("short", plan, 200), "short");
 });
 
-test("pagePassages: most concepts first, at least one, each cut around them; printed pages only when the Archive is sure", () => {
+test("pagePassages: most concepts first, two at least, each cut around them; printed pages only when the Archive is sure", () => {
   const long = `${"x ".repeat(500)}The tower was completed in 1889 by Eiffel. ${"y ".repeat(500)}`;
   const r: InsideResponse = {
     id: "b", doc: "b", q: ["1889"], counts: [4], pageConfidence: 90,
     matches: [
-      { text: "Paris, 1889.", terms: [0], leaf: 3, page: "iv" },
+      { text: "Eiffel in Paris, 1889.", terms: [0], leaf: 3, page: "iv" },
       { text: "Nothing here about it.", terms: [0], leaf: 4, page: "v" },
+      { text: "Paris, 1889.", terms: [0], leaf: 5, page: "vi" },
       { text: long, terms: [0], leaf: 9, page: "3", leafEnd: 10, pageEnd: "4" },
-      { text: "Paris, 1889.", terms: [0], leaf: 3, page: "iv" },
+      { text: "Eiffel in Paris, 1889.", terms: [0], leaf: 3, page: "iv" },
     ],
   };
   const p = pagePassages(r, plan);
-  assert.deepEqual(p.map((x) => x.matched.length), [3, 1], "the concept-less one goes, the copy too");
+  assert.deepEqual(p.map((x) => x.matched.length), [3, 2], "one concept is not enough, and a copy goes");
   assert.ok(p[0].text.length <= PAGE_PASSAGE_CHARS + 2 && p[0].text.includes("completed in 1889 by Eiffel"));
   assert.deepEqual(p[0].page, { leaf: 9, page: "3", leafEnd: 10, pageEnd: "4" });
   assert.deepEqual(p[1].page, { leaf: 3, page: "iv" });
@@ -75,8 +76,23 @@ test("pagePassages: most concepts first, at least one, each cut around them; pri
   const six = Array.from({ length: 6 }, (_, i) => ({ text: `Eiffel completed part ${i} in 1889.`, terms: [0], leaf: i, page: null }));
   assert.equal(pagePassages({ ...r, matches: six }, plan).length, 3);
   // Two paragraphs whose stretches around the claim are the same text are one passage.
-  const twice = [r.matches[2], { ...r.matches[2], text: `${r.matches[2].text} trailing words` }];
+  const twice = [r.matches[3], { ...r.matches[3], text: `${r.matches[3].text} trailing words` }];
   assert.equal(pagePassages({ ...r, matches: twice }, plan).length, 1);
+});
+
+test("pagePassages: two weak concepts are not enough when the claim has a name to hold", () => {
+  const terms = [["Ptolemy II Philadelphus", "Philadelphus"], ["Philoteria"], ["sister"], ["named", "called"]];
+  const matched = (t: string) => planMatched(t, terms);
+  assert.deepEqual(specificConcepts(terms), ["ptolemy ii philadelphus", "philoteria"]);
+  const r: InsideResponse = {
+    id: "ocd", doc: "ocd", q: ["sister"], counts: [2], pageConfidence: null,
+    matches: [
+      { text: "Ada, the sister of Mausolus, was called queen of Caria.", terms: [0], leaf: 1, page: null },
+      { text: "Philadelphus founded the town and called it after his sister.", terms: [0], leaf: 2, page: null },
+    ],
+  };
+  assert.deepEqual(pagePassages(r, matched, specificConcepts(terms)).map((p) => p.page!.leaf), [2]);
+  assert.deepEqual(pagePassages(r, matched).map((p) => p.page!.leaf), [2, 1], "with no name to hold, two concepts do");
 });
 
 test("findArchiveCandidates: every open lead is searched inside page by page, its paragraphs first with their pages", async () => {
@@ -88,20 +104,21 @@ test("findArchiveCandidates: every open lead is searched inside page by page, it
     { librarian: { client: workerChatClient() } },
   );
   const asked = sent.filter((s) => s.url.includes("/archive/inside?")).map((s) => new URL(s.url).searchParams);
-  // The open leads only, borrowable ones never; the shelf's terms, a phrase quoted.
-  assert.deepEqual(asked.map((p) => p.get("id")).sort(), [
+  // The open leads, borrowable ones never, and then two books no lead came
+  // from; the shelf's terms, a phrase quoted.
+  assert.deepEqual(asked.slice(0, 5).map((p) => p.get("id")).sort(), [
     "eiffeltowerdescr00tiss", "guidetoparis1925", "in.ernet.dli.2015.1234", "tourdetroiscents00eiff", "undatedpamphlet",
   ]);
   assert.deepEqual(asked[0].getAll("q"), ["1889", '"300 metres"', "Eiffel"]);
   assert.ok(asked.every((p) => !p.has("doc")), "no hit here names its book: each item's one book");
-  assert.deepEqual(r.funnel.librarian!.pages, { books: 5, found: 3 });
+  assert.deepEqual(r.funnel.librarian!.pages, { books: 7, beyond: 2, found: 4 });
   assert.deepEqual(r.funnel.errors, [], "a book with no searchable text is no failure");
 
   const lead = (id: string): ArchiveCandidate => r.candidates.find((c) => c.evidence.identifier === id)!;
   const tour = lead("tourdetroiscents00eiff");
   assert.equal(tour.evidence.passages[0], PAGE_P1);
   assert.deepEqual(tour.evidence.pages![0], { leaf: 57, page: "41" });
-  assert.equal(tour.evidence.pages![tour.evidence.passages.indexOf("Paris: Imprimerie Lemercier, 1889.")]!.page, "iv");
+  assert.ok(!tour.evidence.passages.includes("Paris: Imprimerie Lemercier, 1889."), "a paragraph with one concept is not kept");
   assert.ok(tour.evidence.passages.includes("The Eiffel tower, completed in 1889, rose 300 metres above the Champ de Mars."), "the planner's highlight stays");
   assert.match(tour.evidence.viewerUrl, /^https:\/\/archive\.org\/details\/tourdetroiscents00eiff\/page\/leaf57\?q=%22/);
   // A dotted identifier the full-text search cannot search inside: its
@@ -121,6 +138,28 @@ test("findArchiveCandidates: every open lead is searched inside page by page, it
   assert.equal(lead("guidetoparis1925").evidence.pages, undefined);
 });
 
+test("findArchiveCandidates: a book no lead came from is read page by page, and becomes one when a page carries the claim", async () => {
+  const sent: Sent[] = [];
+  globalThis.fetch = worldFetch(sent);
+  const r = await findArchiveCandidates(
+    { claim: CLAIM, context: PARAGRAPH, section: null, offset: 0, tag: "{{cn}}" },
+    "Eiffel Tower",
+    { librarian: { client: workerChatClient() } },
+  );
+  const asked = sent.filter((s) => s.url.includes("/archive/inside?")).map((s) => new URL(s.url).searchParams.get("id"));
+  // Read beyond the leads: the two periodicals whose highlights name the
+  // tower; not the cable price list or the yearbook, which only say 1889.
+  assert.deepEqual(asked.slice(5), ["sim_engineering_1889_47_index", "sim_scientific-american_1889-05-18_60_20"]);
+  const sa = r.candidates.find((c) => c.evidence.identifier === "sim_scientific-american_1889-05-18_60_20")!;
+  assert.equal(sa.evidence.via, "pages");
+  assert.equal(sa.evidence.passages[0], PAGE_P2);
+  assert.deepEqual(sa.evidence.pages![0], { leaf: 14, page: "306" });
+  assert.match(sa.evidence.viewerUrl, /\/page\/leaf14\?q=/);
+  // A book read with nothing to show stays out.
+  assert.ok(!r.candidates.some((c) => c.evidence.identifier === "sim_engineering_1889_47_index"));
+  assert.equal(r.funnel.librarian!.added, 4);
+});
+
 test("findArchiveCandidates: a failed search inside is noted; a lent or bundled book is not", async () => {
   const sent: Sent[] = [];
   globalThis.fetch = worldFetch(sent, { insideStatus: { undatedpamphlet: 502, guidetoparis1925: 403, eiffeltowerdescr00tiss: 400 } });
@@ -130,7 +169,7 @@ test("findArchiveCandidates: a failed search inside is noted; a lent or bundled 
     { librarian: { client: workerChatClient() } },
   );
   assert.deepEqual(r.funnel.errors, ["search inside undatedpamphlet: Internet Archive: HTTP 502"]);
-  assert.deepEqual(r.funnel.librarian!.pages, { books: 5, found: 2 });
+  assert.deepEqual(r.funnel.librarian!.pages, { books: 7, beyond: 2, found: 3 });
 });
 
 test("findArchiveCandidates: a client that cannot search inside page by page leaves the books as they were", async () => {
@@ -144,7 +183,7 @@ test("findArchiveCandidates: a client that cannot search inside page by page lea
     { client, librarian: { client: workerChatClient() } },
   );
   assert.ok(!sent.some((s) => s.url.includes("/archive/inside")));
-  assert.deepEqual(r.funnel.librarian!.pages, { books: 0, found: 0 });
+  assert.deepEqual(r.funnel.librarian!.pages, { books: 0, beyond: 0, found: 0 });
   assert.ok(r.candidates.every((c) => c.evidence.pages === undefined));
 });
 

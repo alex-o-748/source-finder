@@ -295,6 +295,62 @@ out of tokens, past the Worker's 60-second limit to Hugging Face, so the
 calls are capped and tried once more. Raising the Worker's upstream timeout
 would let the check think longer on claims with many leads.
 
+## Search inside, page by page (October 2026)
+
+Item 7, the BookReader's own search inside one book, checked from the
+CNfirmed Worker (it is served by the item's numbered `ia8xxxxx.us.archive.org`
+server, which neither Wikipedia's CSP nor this sandbox allows; the Worker can
+reach it):
+
+- **Request.** `https://{server}/fulltext/inside.php?item_id={id}&doc={book}&path={dir}&q={query}&pre_tag={{{&post_tag=}}}`,
+  `server` and `dir` from `/metadata/{id}` — or from its sub-paths
+  `/metadata/{id}/server` and `/dir`, a few bytes each, where the whole record
+  runs to 4.6 MB for an item of a thousand newspaper issues. Slashes in `doc`
+  and `path` go unencoded, as the reader sends them.
+- **The book.** `doc` is the book's file name without `_djvu.txt`, which the
+  full-text search returns as `file_basename`. For an item holding several
+  books it must be the right one, and it is often not the identifier
+  ("History of Civilizations of Central Asia, Volume 2", `2015.54366.Miltons-…`
+  for a Digital Library of India item, `497097` for a JSTOR one): asked for the
+  wrong one, inside.php answers "No hOCR or Abbyy file present", or nothing. It
+  can be a path, with spaces, `&` and `%` in it.
+- **The query.** One term per request. Unquoted, every word of it must be in
+  the book but each paragraph returned need hold only one; quoted, a phrase.
+  No stemming ("terraces" does not find "terrace"), no wildcards, and OCR
+  hyphenation breaks a phrase ("global warm- ing").
+- **The answer.** Every paragraph holding a hit, whole (a few hundred to
+  1,500 characters), the hits marked, with its leaf (`par[0].page`) and word
+  boxes. One to two seconds for a book with hOCR, three to six for one with
+  only `_djvu.xml` (JSTOR, the Digital Library of India), and over ten for a
+  few large ones. A common word in a long book is hundreds of paragraphs and
+  over 100 kB.
+- **Pages.** The leaf is the scan, not the printed page: the book's
+  `_page_numbers.json` maps leaves to the numbers the reader shows, with a
+  confidence (93 to 100 on the books sampled). `/details/{id}/page/leaf{N}`
+  opens the reader on a leaf, and with `?q=` it highlights the words without
+  jumping to the first hit (BookReader's `parsePageString` and `pageFound`).
+- **Access.** Open books only. A lending-library book answers 403 without an
+  archive.org login (the reader sends its cookies for a protected book), so
+  the "lending-library books included" below was wrong: for those, the
+  full-text search's five highlights a book remain the only window. Dotted
+  identifiers, which `identifier:` cannot search, work.
+- **Reach.** On the 44 good open leads of the evaluation set, searched for
+  their claim's three telling terms, every book answered (one dropped
+  connection in some 130 requests). Fifteen of them are bundles: searched
+  under the item's first book rather than their own, eight found nothing, and
+  the three tried again under their own book's name all found their passage.
+
+The Worker's `/archive/inside` wraps this (its README has the request and the
+answer): up to three terms a request, merged per paragraph, the most terms
+first, at most 40 paragraphs of 1,500 characters, each with its leaf and
+printed page; 403 for a lent book. Both front ends now search every open lead
+this way, side by side with the full-text search over the shortlist, and keep
+each book's three paragraphs holding most of the claim's concepts (two at
+least, one a number or a name when the claim has any: "sister" and "named"
+alone are in a hundred paragraphs about other people's sisters), cut to 600
+characters around them. A checked quote in such a paragraph gives the
+citation its `|page=` and a link to that page.
+
 ## Cost, and the path to free
 
 Per claim, as measured here:
@@ -321,12 +377,9 @@ This sandbox could not reach them (network policy, no key, or no credit), so
 they are leads, not results. Each is reachable from the user script through
 the Worker, which is on Wikipedia's CSP allowlist.
 
-- **Search inside one book, page by page.** The BookReader's own search
-  (`{server}/fulltext/inside.php?item_id=…&q=…`, on the item's numbered
-  `ia8xxxxx.us.archive.org` server, server and path from `/metadata/{id}`)
-  returns every hit in a book with its page number and longer context,
-  lending-library books included. That is the page an editor needs for
-  `|page=`, and the "read the page" step for books whose text is not public.
+- **Search inside one book, page by page.** Checked and built for open books:
+  see "Search inside, page by page" above. Lending-library books need an
+  archive.org login.
 - **Open Library's search inside** (`openlibrary.org/search/inside.json?q=`):
   the same full-text index presented per edition, which should bring edition
   records (publisher, ISBN) for a better `{{cite book}}`; whether it also gives

@@ -38,6 +38,7 @@ npx tsx eval/score.ts --unlabelled        # leads nobody has judged yet
 npx tsx eval/run.ts --engine core         # the Node core (CLI) instead of the user script
 npx tsx eval/run.ts --only military       # one stratum
 npx tsx eval/run.ts --full-text --name fulltext  # also read open books' whole text (see below)
+npx tsx eval/run.ts --no-page-search      # without searching open books page by page (see below)
 ```
 
 Replay needs no network. The default engine is the shipped user script, run over
@@ -55,6 +56,19 @@ npm run eval:record
 Wikipedia rate-limits API traffic from shared cloud addresses hard: recording
 goes one request at a time per host and waits out every 429, so a full
 re-record takes the better part of an hour. Replay is instant.
+
+A Worker route the pipeline calls before it is deployed (the search inside
+books page by page, `/archive/inside`) can be recorded from a local copy of
+the Worker, `wrangler dev` in alex-o-748/public-ai-proxy:
+
+```sh
+NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --inside-url http://127.0.0.1:8787
+```
+
+Its answers are recorded under the deployed Worker's name, so a replay needs
+nothing local. A search inside's refusals (403 for a lent book, 404 for one
+with no text) are recorded like any answer; the Worker's model calls keep
+their own rule (an error or an answerless reply is never recorded).
 
 ## When a change lands
 
