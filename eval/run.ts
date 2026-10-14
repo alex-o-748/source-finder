@@ -105,13 +105,27 @@ if (web && record && !apiKey) {
 
 /** Model usage across the run, read off each Claude response (replayed or live). */
 const usage = { calls: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, searches: 0, ms: [] as number[] };
+/** The same for the Worker's models (the librarian's GLM-5.2 calls). */
+const workerUsage = { calls: 0, input: 0, output: 0 };
 function tallyUsage(key: string, body: string, ms: number | undefined): void {
+  const n = (v: unknown) => (typeof v === "number" ? v : 0);
+  if (key.startsWith(`POST ${WORKER_HOST}/hf`)) {
+    try {
+      const u = (JSON.parse(body) as { usage?: Record<string, unknown> }).usage;
+      if (!u) return;
+      workerUsage.calls++;
+      workerUsage.input += n(u.prompt_tokens);
+      workerUsage.output += n(u.completion_tokens);
+    } catch {
+      // An error body: nothing to count.
+    }
+    return;
+  }
   if (!key.startsWith("POST api.anthropic.com/v1/messages")) return;
   if (ms !== undefined) usage.ms.push(ms);
   try {
     const u = (JSON.parse(body) as { usage?: Record<string, unknown> }).usage;
     if (!u) return;
-    const n = (v: unknown) => (typeof v === "number" ? v : 0);
     usage.calls++;
     usage.input += n(u.input_tokens);
     usage.output += n(u.output_tokens);
@@ -426,6 +440,12 @@ async function main(): Promise<void> {
     `  requests: ${stats.hits} replayed, ${stats.recorded} recorded, ${stats.misses.length} not recorded; ` +
       `${failed} claim(s) with errors`,
   );
+  if (workerUsage.calls) {
+    console.log(
+      `  Worker models: ${workerUsage.calls} call(s), ` +
+        `${workerUsage.input} input + ${workerUsage.output} output tokens`,
+    );
+  }
   if (usage.calls) {
     console.log(
       `  Claude: ${usage.calls} call(s), ${usage.searches} web searches, ` +
