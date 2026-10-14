@@ -892,6 +892,7 @@
         var ranked = rankSuggestions(suggestions);
         var result = { claim: ctx, suggestions: ranked, provider: providerId };
         state[i] = { status: 'done', result: result, provider: providerId };
+        logWebSearch(i, state[i]);
         persist(); renderPanel(i);
       })
       .catch(function (err) {
@@ -905,8 +906,19 @@
         }
         var msg = (err && err.message) ? err.message : String(err);
         state[i] = { status: 'error', error: msg, provider: providerId };
+        logWebSearch(i, state[i]);
         persist(); renderPanel(i);
       });
+  }
+
+  function logWebSearch(i, s) {
+    logSearch(i, 'web', {
+      status: s.status,
+      provider: s.provider,
+      model: PROVIDERS[s.provider] ? modelFor(s.provider) : null,
+      error: s.error || null,
+      sources: s.result ? webLogSources(s.result.suggestions) : []
+    });
   }
 
   // "Find sources for all": both free searches for every claim, one claim at
@@ -991,6 +1003,7 @@
                 };
               })
               .then(function () {
+                if (state[k]) logWebSearch(k, state[k]);
                 inFlight--;
                 persist(); renderPanel(k);
                 // Free searches running out leaves the rest unsearched.
@@ -2206,11 +2219,13 @@
         'candidate(s)', candidates);
       wikiState[index] = { status: 'done', candidates: candidates, warnings: corpus.warnings };
       persistWiki();
+      logSearch(index, 'wiki', { status: 'done', sources: wikiLogSources(candidates) });
       renderRow(index); renderBadge(index);
       return wikiState[index];
     }).catch(function (err) {
       console.error('[CNfirmed] wiki-local stage failed for claim', index, ':', err);
       wikiState[index] = { status: 'error', error: (err && err.message) || String(err) };
+      logSearch(index, 'wiki', { status: 'error', error: wikiState[index].error });
       renderRow(index); renderBadge(index);
       return wikiState[index];
     });
@@ -3252,12 +3267,14 @@
       persistArchive();
       renderPanel(index);
       // The passages are checked straight away: unchecked, most of them only
-      // share words with the claim.
+      // share words with the claim. The search is logged once they are.
       if (r.candidates.length) return checkArchiveStage(index);
+      logSearch(index, 'books', { status: 'done', sources: [] });
       return archiveState[index];
     }).catch(function (err) {
       console.error('[CNfirmed] Internet Archive search failed for claim', index, ':', err);
       archiveState[index] = { status: 'error', error: (err && err.message) || String(err) };
+      logSearch(index, 'books', { status: 'error', error: archiveState[index].error });
       renderPanel(index);
       return archiveState[index];
     });
@@ -4108,10 +4125,121 @@
       }).then(function () {
         delete a.checking;
         persistArchive();
+        // A failed check still found the books; they go in unchecked.
+        logSearch(index, 'books', {
+          status: 'done',
+          model: a.check.by || null,
+          error: a.check.error || null,
+          sources: bookLogSources(a.candidates)
+        });
         renderPanel(index);
         return a;
       });
     return a.checking;
+  }
+
+  // ---- Result log -------------------------------------------------------
+  // Every search that finishes is posted to the Worker's /cnfirmed/log, which
+  // writes it to the Neon database Source Verifier logs to: one row per
+  // search per claim, with every source it returned, including those it
+  // judged not to state the claim. Fire-and-forget, like Source Verifier's
+  // /log: nothing waits on it and a failure is dropped. No username, no key.
+  // Set window.cnfirmedLogResults = false before the script loads to turn it
+  // off. Results read back from localStorage are not posted again.
+
+  var LOG_RESULTS = window.cnfirmedLogResults !== false;
+  var LOG_MAX_SOURCES = 25;     // the Worker drops the rest
+  var LOG_MAX_QUOTE = 1000;     // and truncates past this
+  var LOG_MAX_TEXT = 2000;
+
+  // The web search's verdicts, in the vocabulary the books' check uses.
+  var LOG_WEB_VERDICTS = {
+    'SUPPORTED': 'supports',
+    'PARTIALLY SUPPORTED': 'partial',
+    'NOT SUPPORTED': 'unsupported',
+    'SOURCE UNAVAILABLE': 'unavailable'
+  };
+
+  function newSearchId() {
+    var bytes = new Uint8Array(8);
+    (window.crypto || crypto).getRandomValues(bytes);
+    return Array.prototype.map.call(bytes, function (b) {
+      return (b < 16 ? '0' : '') + b.toString(16);
+    }).join('');
+  }
+
+  function logSource(origin, url, title, verdict, quote, extra) {
+    var out = {
+      url: url || null,
+      title: title ? truncate(String(title), 500) : null,
+      origin: origin,
+      verdict: verdict || null,
+      quote: quote ? truncate(String(quote), LOG_MAX_QUOTE) : null
+    };
+    if (extra) Object.keys(extra).forEach(function (k) { out[k] = extra[k]; });
+    return out;
+  }
+
+  function webLogSources(suggestions) {
+    return (suggestions || []).map(function (s) {
+      var v = s.verdict || {};
+      return logSource('web', s.source && s.source.url, s.source && s.source.title,
+        LOG_WEB_VERDICTS[v.verdict], v.comments, {
+          confidence: typeof v.confidence === 'number' ? v.confidence : null,
+          reliability: v.reliability || null
+        });
+    });
+  }
+
+  function bookLogSources(candidates) {
+    return (candidates || []).map(function (c) {
+      var check = c.check;
+      return logSource('book', c.url, c.title, check ? check.verdict : 'unchecked',
+        (check && check.quote) || c.snippet);
+    });
+  }
+
+  function wikiLogSources(candidates) {
+    return (candidates || []).map(function (c) {
+      var ev = c.evidence || {};
+      return logSource(ev.origin, c.url, c.title, 'lead', ev.sentence || c.snippet,
+        { lang: ev.lang || null });
+    });
+  }
+
+  // The row for one finished search. outcome: { status, sources?, error?,
+  // provider?, model? }.
+  function searchLogPayload(index, stage, outcome) {
+    var ctx = claimContexts[index] || {};
+    var revision = Number(mw.config.get('wgRevisionId')) || Number(revid) || null;
+    return {
+      search_id: newSearchId(),
+      wiki: WIKI_CODE,
+      article_title: pageTitle,
+      revision_id: revision > 0 ? revision : null,
+      claim_index: index,
+      claim_text: truncate(ctx.claim || '', LOG_MAX_TEXT),
+      section: ctx.section || null,
+      stage: stage,
+      provider: outcome.provider || null,
+      model: outcome.model || null,
+      status: outcome.status,
+      error: outcome.error ? truncate(String(outcome.error), LOG_MAX_TEXT) : null,
+      sources: (outcome.sources || []).slice(0, LOG_MAX_SOURCES)
+    };
+  }
+
+  function logSearch(index, stage, outcome) {
+    if (!LOG_RESULTS) return;
+    var ctx = claimContexts[index];
+    if (!ctx || !ctx.claim) return;
+    try {
+      fetch(PROXY_BASE + '/cnfirmed/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchLogPayload(index, stage, outcome))
+      }).catch(function () { /* logging never gets in the way */ });
+    } catch (e) { /* likewise */ }
   }
 
   // ---- Provider implementations -----------------------------------------
@@ -5722,6 +5850,11 @@
     free.appendChild(el('p', 'cnf-note', 'Citations already on Wikipedia (this article and other languages), ' +
       'and books on the Internet Archive, found and checked with open-weight models through the CNfirmed Worker.'));
     pad.appendChild(free);
+
+    if (LOG_RESULTS) {
+      pad.appendChild(el('p', 'cnf-note', 'Search results are logged for research. ' +
+        'Your username and API keys are not recorded.'));
+    }
 
     var done = el('div');
     done.appendChild(button('cnf-btn cnf-btn-pri', 'Done', closeSettings));

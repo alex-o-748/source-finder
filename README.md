@@ -22,7 +22,7 @@ And a lot of the time nobody needs to search at all. A tagged sentence often sit
 
 ## User script (recommended)
 
-The user script is the primary way to use CNfirmed. It runs on the Wikipedia page, with no server of its own. Besides your model provider, it calls archive.org, the CNfirmed Cloudflare Worker (open-weight models for the Internet Archive stage, and the relay for the Tavily provider) and the Verify API; none of them needs a key from you.
+The user script is the primary way to use CNfirmed. It runs on the Wikipedia page, with no server of its own. Besides your model provider, it calls archive.org, the CNfirmed Cloudflare Worker (open-weight models for the Internet Archive stage, the relay for the Tavily provider, and the [result log](#result-log)) and the Verify API; none of them needs a key from you.
 
 The wiki-local stage works with no API key at all. The web search starts out free, too: the Tavily + GPT-OSS provider (the default) searches on the Worker's own Tavily key while its credits last. When they run out, the panel says so and asks for your own Tavily key, or for a switch to Claude, Gemini, or OpenAI, which search the web themselves. A key you add is kept in your browser's `localStorage` and only sent to the provider you chose.
 
@@ -74,6 +74,12 @@ Sources checked and found not to state the claim are not listed, only counted. C
 For a web source or an Internet Archive book, the `<ref>` is a fully filled citation template, made the way ProveIt and VisualEditor's Automatic tab make one. Opening the source asks the wiki's Citoid (`/api/rest_v1/data/citation/mediawiki/…`) about it: a book's ISBN, else the DOI in the link (`doi.org/10.…`, `…/doi/full/10.…`), else the page itself. The wiki's `MediaWiki:Citoid-template-type-map.json` picks the template for what Citoid found (a newspaper article → `{{cite news}}`, a journal article → `{{cite journal}}`), and that template's TemplateData `citoid` map says where each field goes: `|last=`/`|first=` per author, `|date=`, `|work=`/`|journal=`, `|volume=`, `|issue=`, `|pages=`, `|doi=`, `|location=`, `|oclc=`… The link the source was found at and `|access-date=` stay, as do an Archive scan's `|url-access=` and `|via=`; the rest of what we had fills only what Citoid left out. A wiki without those pages gets built-in copies of en.wikipedia's. A lookup that fails, or takes over 8 seconds, leaves the plain citation. Leads from Wikipedia citations are inserted as their editors wrote them. On the command line, `find` completes the sources found to support a claim and `archive` its leads, before printing.
 
 Under the list, **Searched** says what each search (Wikipedia, books, web) found, or that it is still running, and holds the button for any search not yet run or failed.
+
+### Result log
+
+Each search that finishes is posted to the Worker's `/cnfirmed/log`, which writes it to the same Neon database [Source Verifier](https://github.com/alex-o-748/citation-checker-script) logs its checks to, in a `cnfirmed_searches` table: one row per search (Wikipedia, books or web) per claim, with the article, revision, claim, provider and model, and every source the search returned with its verdict and quote, including those found not to state the claim. Over many pages that says which search finds what, and how often each one's sources hold up. The table's schema and some queries are in the Worker's README (`alex-o-748/public-ai-proxy`).
+
+It is fire-and-forget, as Source Verifier's is: nothing waits on it and a failed post is dropped. Your username, IP and API keys are not recorded, and results read back from `localStorage` are not posted again. Set `window.cnfirmedLogResults = false` before the script loads to turn it off.
 
 ## Node CLI
 

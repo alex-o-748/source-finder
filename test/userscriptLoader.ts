@@ -97,6 +97,11 @@ const EXPOSED = [
   "takeStagedInsert",
   "taggedSentenceSpan",
   "removeTaggedSentence",
+  "searchLogPayload",
+  "webLogSources",
+  "bookLogSources",
+  "wikiLogSources",
+  "logSearch",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,6 +111,7 @@ export type UserScriptModule = Record<string, (...args: any[]) => any> & {
   citoidMaps: Record<string, Record<string, unknown>>;
   citoidTypeMap: Record<string, string>;
   limits: { plan: number; books: number; judge: number; booksEffort: string };
+  logVerdicts: { archive: string[]; web: Record<string, string> };
   setClaimContexts(value: unknown[]): void;
   setCnSups(value: unknown[]): void;
   getClaimContexts(): { claim: string; context: string; section: string | null; links: string[] }[];
@@ -137,6 +143,7 @@ export function loadUserScript(
       citoidMaps: BUILTIN_CITOID_MAPS,
       citoidTypeMap: CITOID_TYPE_MAP,
       limits: { plan: LIB_PLAN_MAX_TOKENS, books: LIB_BOOKS_MAX_TOKENS, judge: LIB_JUDGE_MAX_TOKENS, booksEffort: LIB_BOOKS_EFFORT },
+      logVerdicts: { archive: ARCHIVE_VERDICTS, web: LOG_WEB_VERDICTS },
       setClaimContexts: function (v) { claimContexts = v; },
       setCnSups: function (v) { cnSups = v; },
       getClaimContexts: function () { return claimContexts; },
