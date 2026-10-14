@@ -287,13 +287,14 @@ Archive's "found or partly" went from 17% to 28% (book-plausible: 22% to
 before), at about 2.4 US cents a claim of GLM-5.2 paid by the Worker.
 
 Not built yet: whole texts through the Worker (item 4), Tavily as a source of
-books (item 5), page-level search inside (item 7). Two things the production
-run taught: archive.org's full-text backend fails some 1 query in 8 under
-load and serves the failure again for the same URL, so a failed search is
-asked again for one more hit; and GLM-5.2 now and then reasons until it runs
-out of tokens, past the Worker's 60-second limit to Hugging Face, so the
-calls are capped and tried once more. Raising the Worker's upstream timeout
-would let the check think longer on claims with many leads.
+books (item 5), and subject shelves and cited books (item 7), though the
+page-level search inside they waited on now is (below). Two things the
+production run taught: archive.org's full-text backend fails some 1 query in
+8 under load and serves the failure again for the same URL, so a failed
+search is asked again for one more hit; and GLM-5.2 now and then reasons
+until it runs out of tokens, past what was then the Worker's 60-second limit
+to Hugging Face, so the calls are capped and tried once more. The limit is
+now two minutes: with paragraphs from a dozen books, the check outgrew one.
 
 ## Search inside, page by page (October 2026)
 
@@ -350,6 +351,17 @@ least, one a number or a name when the claim has any: "sister" and "named"
 alone are in a hundred paragraphs about other people's sisters), cut to 600
 characters around them. A checked quote in such a paragraph gives the
 citation its `|page=` and a link to that page.
+
+On the 100 evaluation claims (`eval/README.md`, "Baseline (October 2026: page
+by page)"), against the same pipeline without it, recorded the same day: the
+checked leads find the claim or part of it for 34% of claims (23% without),
+48% of the book-plausible ones (33%), and the fact itself for 10% (5%); 63% of
+them are good (56%), and the top lead shown is a good one for 67% of claims
+(53%). Twelve claims gained a good checked lead, one lost one. 1,026 books
+were searched, 635 of them beyond the leads, and 431 had a paragraph to keep;
+the paragraphs add some 15% to the check's input. It is a lower bound: 15
+searches timed out on the relay this sandbox needed to reach the Archive's
+servers.
 
 ## Cost, and the path to free
 

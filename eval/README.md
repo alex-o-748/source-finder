@@ -78,6 +78,73 @@ their own rule (an error or an answerless reply is never recorded).
 3. If the change is kept, copy `results/latest.json` to `results/baseline.json`
    and put the before/after table in the PR.
 
+## Baseline (October 2026: page by page)
+
+The user script on all 100 claims with the check (`--check`), searching every
+open lead, and open books the searches found but kept no lead of, inside page
+by page through the Worker's `/archive/inside` (README, "Books on the
+Internet Archive", step 7). `results/baseline.json` is this run
+(`results/pages.json`); `results/main.json` is the same pipeline without it
+(`--no-page-search`), recorded the same day.
+
+| Method | Found | Found or partly | Claims with any lead | Precision of leads |
+| --- | --- | --- | --- | --- |
+| Same article | 0% | 1% | 7% | 14% (of 7) |
+| Other language editions | 2% | 3% | 9% | 21% (of 28) |
+| Internet Archive, all leads | 10% | 39% | 91% | 41% (of 213 judged; 648 leads) |
+| Internet Archive, checked | 10% | 34% | 45% | 63% (of 117) |
+| Any | 12% | 41% | 91% | 38% (of 248 judged) |
+
+What searching page by page changed:
+
+| | Without (`main`) | With (`pages`) |
+| --- | --- | --- |
+| Archive, checked: found / or partly | 5% / 23% | 10% / 34% |
+| …on the 46 book-plausible claims | 9% / 33% | 15% / 48% |
+| …precision | 56% (of 88) | 63% (of 117) |
+| …top lead shown is a good one | 53% | 67% |
+| Internet Archive, all leads: found / or partly | 6% / 28% | 10% / 39% |
+| …on the book-plausible claims | 9% / 39% | 15% / 54% |
+| Any method: found / or partly | 8% / 30% | 12% / 41% |
+| Archive leads | 517 | 648 |
+| Worker model tokens, in / out | 297k / 400k | 343k / 398k |
+
+Twelve claims gained a good checked lead and one lost its only one; five
+gained a lead that states the claim (Elena Aiello, the Cathedral of Évora,
+the Vipakasutra, Kim Stanley Robinson, the Black Country Urban Forest). Of
+1,026 books searched page by page, 635 of them beyond the leads, 431 had a
+paragraph to keep. Of the 74 good checked leads, 58 carry such a paragraph:
+30 were good on their highlights alone, and 28 were judged with their
+paragraphs, 12 of them books that were no lead without it. A highlight is
+cut around one term, a paragraph holds the sentence: Elena Aiello's highlight
+stopped at "for three months to the very day of his happy death, he
+received"; its paragraph has the condition the sick man set ("that Elena
+would come and assist him every day") and the end of the sentence ("he
+received Elena's attention and care"). The claim lost (Abigail May Alcott
+Nieriker) lost it to the check: given ten books' passages, GLM-5.2 ran past
+the Worker's 60-second limit to Hugging Face twice, and the Verify API, the
+fallback, rejected the lead. The Worker now waits two minutes. The Worker's
+model calls cost the same, about 2.2 US cents a claim at $1.40 / $4.40 per
+million tokens: the paragraphs add some 15% to the input, all of it the
+check's, and nothing to the output.
+
+Two caveats. This sandbox cannot reach the Archive's numbered servers, so the
+run was recorded through a local copy of the Worker (`--inside-url`) whose
+requests went through the deployed Worker's relay (ten seconds, 100 kB an
+answer): 15 searches page by page timed out there (13 claims), which the
+figures count as books not searched. They are not recorded, so a replay
+reports them as such; once the Worker is deployed, `npm run eval:record`
+records them from it. And a lead with paragraphs is judged on its own
+(`ia:<id>#page`): 37 such leads took the label of the same book without them,
+where its highlights already state the claim or part of it (the paragraphs
+only add, so the label can only understate); the other 48, and 16 leads
+without paragraphs that had appeared since the librarian baseline, were
+labelled by one reader on the rubric above.
+
+The Worker's `/archive/inside` must be deployed before the user script that
+calls it; until then the script's searches page by page fail (HTTP 405) and
+each lead keeps its highlights.
+
 ## Baseline (October 2026: the librarian)
 
 The user script on all 100 claims, with the Internet Archive librarian and its
@@ -231,9 +298,10 @@ verdicts against the labels, with the precision of what it keeps and how many
 of the good leads it keeps. Recording needs no key, only network access to the
 Worker (and the Verify API for the fallback).
 
-Measured in October 2026 (above): 55% precision, 50 of 63 good leads kept. On
-September's 97 hand-labelled leads, the Verify API alone kept 6 of 19 good
-ones and passed 6 bad; GLM-5.2 kept 12 and passed 3
+Measured in October 2026 (above): 63% precision, 74 of 88 good leads kept
+(without the search page by page: 56%, 49 of 61). On September's 97
+hand-labelled leads, the Verify API alone kept 6 of 19 good ones and passed 6
+bad; GLM-5.2 kept 12 and passed 3
 (`eval/experiments/calibrate-check.ts`). The Verify API misses who a claim is
 about ("Feodora's father" vs "the Prince of Leiningen, who died in 1814"),
 calls a claim with one part missing unsupported, and passes shared words (an

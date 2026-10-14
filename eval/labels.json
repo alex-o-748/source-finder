@@ -127,6 +127,18 @@
     "ia:makingofgeorgian0000rona": {
       "verdict": "partial",
       "why": "States \"On December 18, 1800, Tsar Paul ... declared Kartli-Kakheti's annexation\" and names \"Paul's son, Tsar Alexander I (1801-1825)\", but gives no assassination date and nothing on a policy toward the eastern Caucasus khanates."
+    },
+    "ia:anastasia-a-don-bluth-gary-goldman-film-my-anastasia-memory-book#page": {
+      "verdict": "partial",
+      "why": "As ia:anastasia-a-don-bluth-gary-goldman-film-my-anastasia-memory-book: its highlights state it (States \"1801 Tsar Paul strangled (March 12). Georgia annexed by Russia. Alexander I (1801-1825)\", covering the assassination and succession (with a March 12 date), but nothing on the December 1800 decision or Alexander's policy toward the eastern Caucasus khanates.); the paragraphs found page by page only add to them."
+    },
+    "ia:russia-and-iran-1780-1828-muriel-atkin#page": {
+      "verdict": "partial",
+      "why": "As ia:russia-and-iran-1780-1828-muriel-atkin: its highlights state it (Mentions \"Tsar Paul's decision in 1800 to annex Georgia\" and an incident \"in which Paul was killed\", with no date for the killing and nothing on Alexander I's activist policy toward the khanates.); the paragraphs found page by page only add to them."
+    },
+    "ia:bournoutian-1998-russians-armenians-1797-1889#page": {
+      "verdict": "partial",
+      "why": "Paul's annexation of eastern Georgia on 18 December 1800, his murder, and Alexander I's annexation; not the policy on the khanates."
     }
   },
   "Royal Marine Police@1368542794#3076": {
@@ -211,6 +223,30 @@
     "ia:gov.gpo.fdsys.CHRG-108shrg88089#text": {
       "verdict": "topic",
       "why": "Navy family housing in the town of Groton; not why the base is named for New London."
+    },
+    "ia:carrollsmilitary00wash": {
+      "verdict": "partial",
+      "why": "'LOCATION: At Groton, E of New London' for NSB New London: where it is, not why New London is in its name."
+    },
+    "ia:scrpa-open-space-and-recreation-1964": {
+      "verdict": "topic",
+      "why": "Tourist stops: 'the Submarine Base in Groton' in passing; nothing on why New London is in its name."
+    },
+    "ia:submarinehistory00parr": {
+      "verdict": "topic",
+      "why": "The submarine base at Groton in passing, in a history of submarines; not why New London is in its name."
+    },
+    "ia:ed9c40331ca9a7383a8b74cf6322c2c59896e7c9.23#page": {
+      "verdict": "partial",
+      "why": "As ia:ed9c40331ca9a7383a8b74cf6322c2c59896e7c9.23: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:scrpa-open-space-and-recreation-1964#page": {
+      "verdict": "topic",
+      "why": "'the Naval Submarine Base in Groton' among tourist attractions; not why New London is in its name."
+    },
+    "ia:micro_IA41152822_0406#page": {
+      "verdict": "topic",
+      "why": "Index entries for 'Naval Submarine Base, New London, Groton' and Groton as a submarine base site; not why New London is in its name."
     }
   },
   "USS Shasta (AE-33)@1376634405#10149": {
@@ -319,6 +355,10 @@
     "ia:osprey-duel-079-uss-lawrence-vs-hms-detroit-the-war-of-1812-on-the-great-lakes_202607": {
       "verdict": "topic",
       "why": "Discusses BMP-1/BMP-2 armament and tank ammunition (\"main ammo storage in the hull and turret. If the ammunition store was hit or cooked off\") without saying the BMP's ammunition is stored in or near the troop compartment."
+    },
+    "ia:osprey-duel-079-uss-lawrence-vs-hms-detroit-the-war-of-1812-on-the-great-lakes_202607#page": {
+      "verdict": "partial",
+      "why": "'compartments for main ammo storage in the hull and turret. If the ammunition store was hit or cooked off': the risk, cut off; not the troop compartment or the BMP-2."
     }
   },
   "Junkers Ju 52@1374490506#15921": {
@@ -381,6 +421,26 @@
     "ia:flugzeug-classic-2010-nr.-1#text": {
       "verdict": "topic",
       "why": "Magazine contents: the DFS 230 and a Ju 52 in separate articles."
+    },
+    "ia:EnemyAir-BorneForces-nsia": {
+      "verdict": "partial",
+      "why": "The Ju-52 'ordinarily used to tow the DFS-230 glider'; not 'up to two'."
+    },
+    "ia:osprey-combat-aircraft-121-a-6-intruder-units-1974-96": {
+      "verdict": "partial",
+      "why": "A Ju 52/3m towing a DFS 230; not 'up to two'."
+    },
+    "ia:orbis-war-machine-003-armed-combat-helicopters#page": {
+      "verdict": "partial",
+      "why": "As ia:orbis-war-machine-003-armed-combat-helicopters: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:EnemyAir-BorneForces-nsia#page": {
+      "verdict": "partial",
+      "why": "As ia:EnemyAir-BorneForces-nsia: its highlights state it (The Ju-52 'ordinarily used to tow the DFS-230 glider'; not 'up to two'.); the paragraphs found page by page only add to them."
+    },
+    "ia:osprey-combat-aircraft-121-a-6-intruder-units-1974-96#page": {
+      "verdict": "partial",
+      "why": "As ia:osprey-combat-aircraft-121-a-6-intruder-units-1974-96: its highlights state it (A Ju 52/3m towing a DFS 230; not 'up to two'.); the paragraphs found page by page only add to them."
     }
   },
   "Walter HWK 109-509@1357930638#10451": {
@@ -449,6 +509,14 @@
     "books.google.com/books?id=yzbu9bairfkc&pg=pa183": {
       "verdict": "partial",
       "why": "Cited for the reading of the name in the same lead sentence; likely gives the sign sequence."
+    },
+    "ia:epochs-of-chinese-and-japanese-art-volume-2": {
+      "verdict": "topic",
+      "why": "A-imdugud as a donor's name on seal impressions; not the cuneiform spelling the tag is on."
+    },
+    "ia:artofancientmeso00moor": {
+      "verdict": "topic",
+      "why": "A-imdugud as a donor's name on seal impressions; not the cuneiform spelling the tag is on."
     }
   },
   "Moses ben Joseph ben Merwan ha-Levi@1375319065#3308": {
@@ -537,6 +605,26 @@
     "ia:newgrovedictiona0003stan": {
       "verdict": "topic",
       "why": "An entry on Cardoso, a pupil not in the claim, which only mentions Mendes in passing (\"choir school maintained by the cathedral in Évora. There his teachers were Manuel Mendes\"); Aranda, Lobo and Magalhães are absent."
+    },
+    "ia:MusicTreatisesAndArtesParaTangerIn#page": {
+      "verdict": "partial",
+      "why": "As ia:MusicTreatisesAndArtesParaTangerIn: its highlights state it (States \"Duarte Lobo, himself a pupil of the Manuel Mendes at Evora\" and \"his time as chapelmaster in Evora ... Aranda\", but never mentions Filipe de Magalhães.); the paragraphs found page by page only add to them."
+    },
+    "ia:historyofmusic0000ruiv#page": {
+      "verdict": "supports",
+      "why": "Duarte Lobo trained by Manuel Mendes as a choirboy of Évora Cathedral, Filipe de Magalhães his favourite pupil and successor there, and Mateus de Aranda Chapel Master in Évora from 1528."
+    },
+    "ia:cc_dl_05744.008.02047#page": {
+      "verdict": "partial",
+      "why": "Manuel Mendes, chapel master of Évora Cathedral, as teacher of Duarte Lobo and Filipe de Magalhães; no Mateus de Aranda."
+    },
+    "ia:dicionario-biographicode-musicos-portuguezes-v-1#page": {
+      "verdict": "partial",
+      "why": "Duarte Lobo and Filipe de Magalhães studied in Évora with Manuel Mendes, chapel master of its cathedral; no Mateus de Aranda."
+    },
+    "ia:litoral__#page": {
+      "verdict": "partial",
+      "why": "Duarte Lobo studied in Évora with Manuel Mendes, chapel master of its cathedral; not the others."
     }
   },
   "Vipakasutra@1242493963#775": {
@@ -559,6 +647,18 @@
     "ia:in.ernet.dli.2015.62068": {
       "verdict": "unrelated",
       "why": "Judged on this passage in the September 2026 Archive query experiment."
+    },
+    "ia:u-08-u-09-u-10-u-11-u-12-2_202210#page": {
+      "verdict": "topic",
+      "why": "Lists the Vipakasutra among the Angas and mentions twenty chapters; not the ten and ten stories."
+    },
+    "ia:mahavirahistimes0000jain": {
+      "verdict": "topic",
+      "why": "'Vipaka means the fruit of Karmas'; not the ten and ten stories."
+    },
+    "ia:jaina-path-of-purification-jaini#page": {
+      "verdict": "supports",
+      "why": "The Vipakasruta's 'stories, which depict ten good and ten evil “outcomes”', of good and bad deeds in previous lives."
     }
   },
   "Mari Iijima@1371035676#4445": {
@@ -639,6 +739,14 @@
     "ia:oapen-20.500.12657-31273": {
       "verdict": "topic",
       "why": "Discusses the novel (\"In Forty Signs of Rain, regular blackouts bring the 'shadow of the future'\") and quotes on global warming, but never says global warming is its principal subject or that its thrust is entirely ecological."
+    },
+    "ia:LocusV54n02200502IfcIbcBcKilroyAutolycus0152#page": {
+      "verdict": "supports",
+      "why": "As ia:LocusV54n02200502IfcIbcBcKilroyAutolycus0152: its highlights state it (Locus: Forty Signs of Rain, 'first in a trilogy concerning global warming', 'a passionately involved piece of ecological' fiction.); the paragraphs found page by page only add to them."
+    },
+    "ia:Fantasy_Science_Fiction_v107n0405_2004-1011_N633_DaisyChainsaw#page": {
+      "verdict": "partial",
+      "why": "As ia:Fantasy_Science_Fiction_v107n0405_2004-1011_N633_DaisyChainsaw: its highlights state it (F&SF review: the novel 'centers on the preeminent environmental' issue; global warming not named in the passage.); the paragraphs found page by page only add to them."
     }
   },
   "Lance Fung Gallery@1200606096#1353": {
@@ -675,12 +783,20 @@
     "ia:the-cultural-landscape-books#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:FinancialTimes1997UKEnglish#page": {
+      "verdict": "supports",
+      "why": "In 1997 the Millennium Commission 'awarded £4.2m to plant 2m trees' in the Black Country 'by 2000', in a separate NUFU project."
     }
   },
   "Zhangjiajie National Forest Park@1376163968#3963": {
     "web.archive.org/web/20110606043905/http://www2.chinadaily.com.cn/life/2010-01/26/content_9375209.htm": {
       "verdict": "supports",
       "why": "China Daily is cited at the end of this same sentence."
+    },
+    "ia:worlds-greatest-national-parks#page": {
+      "verdict": "partial",
+      "why": "The 1,080-metre quartz-sandstone 'Southern Sky Column', and the pillars that 'inspired Avatar's Hallelujah Mountains'; not the renaming."
     }
   },
   "Xi Sagittarii@1369728394#573": {
@@ -765,6 +881,18 @@
     "ia:geovagando-in-fvg-01": {
       "verdict": "topic",
       "why": "\"upper Cenomanian (95 million years ago)\" is the age of the fossils, not when the substage begins; another passage gives the Cenomanian as \"about 100 to 95 million years ago\", which makes 95 its end, so the number is used for something else."
+    },
+    "ia:bulletin-american-museum-natural-history-195-001-191#page": {
+      "verdict": "partial",
+      "why": "As ia:bulletin-american-museum-natural-history-195-001-191: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:adele-h-pentland-a-review-of-the-jurassic-and#page": {
+      "verdict": "partial",
+      "why": "As ia:adele-h-pentland-a-review-of-the-jurassic-and: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:geovagando-in-fvg-01#page": {
+      "verdict": "partial",
+      "why": "Rudist limestones 'of the upper Cenomanian (95 million years ago)': consistent, not the stage's start."
     }
   },
   "Tyson Miller@1373361987#9190": {
@@ -811,6 +939,10 @@
     "ia:strib-06-17-2022": {
       "verdict": "partial",
       "why": "In the report of the Astros' 9-2 win, \"The first nine faced fill-in starter Tyson Miller (0-1)\" shows he started and took the loss against Houston, but the six runs, four hits, two walks and two-thirds of an inning are not given."
+    },
+    "ia:strib-06-17-2022#page": {
+      "verdict": "partial",
+      "why": "As ia:strib-06-17-2022: its highlights state it (In the report of the Astros' 9-2 win, \"The first nine faced fill-in starter Tyson Miller (0-1)\" shows he started and took the loss against Houston, but the six runs, four hits, two walks and two-thirds of an inning are not given.); the paragraphs found page by page only add to them."
     }
   },
   "Popular Problems@1351791401#1453": {
@@ -861,6 +993,22 @@
     "ia:the-crown-v-32n-01-2014-september": {
       "verdict": "topic",
       "why": "The album in a September 2014 list; not its release dates."
+    },
+    "ia:LesInrocks2No.72-LeonardCohen2016#page": {
+      "verdict": "partial",
+      "why": "As ia:LesInrocks2No.72-LeonardCohen2016: its highlights state it (Cohen presented the new album Popular Problems on 16 September 2014; not the release dates.); the paragraphs found page by page only add to them."
+    },
+    "ia:researchers-beware-wikipedia-entries-about-high-control-groups-are-not-very-trustworthy#page": {
+      "verdict": "topic",
+      "why": "A copy of Wikipedia's Leonard Cohen article (WP:CIRCULAR), giving 24 September 2014."
+    },
+    "ia:penguineggs64#page": {
+      "verdict": "topic",
+      "why": "'he has just released Popular Problems, his 13th album'; no date."
+    },
+    "ia:spex-2014-10-356#page": {
+      "verdict": "topic",
+      "why": "A review of the album; no date."
     }
   },
   "Clinton Sparks@1371326718#746": {
@@ -1077,6 +1225,14 @@
     "ia:computer-games-issue-127-june-2001": {
       "verdict": "topic",
       "why": "Says only that \"Guido Henkel is working with a startup called eMusement, Inc.\"; nothing about SquareSoft, the cancellation after six months, or the company shutting down."
+    },
+    "ia:computer-games-issue-127-june-2001#page": {
+      "verdict": "topic",
+      "why": "Henkel 'is working with a startup called eMusement, Inc.'; nothing on Squaresoft or the shutdown."
+    },
+    "ia:evolveeventprogr2004unse#page": {
+      "verdict": "partial",
+      "why": "Henkel as VP of Product Development at eMusement, 'a now-defunct start up company that worked on a massively multiplayer' RPG for Squaresoft; not the six months."
     }
   },
   "Brian Kernighan@1371976733#7302": {
@@ -1135,6 +1291,38 @@
     "ia:unix-a-history-and-a-memoir": {
       "verdict": "topic",
       "why": "Says \"Software Tools, which was published in 1976, presented Ratfor\" for people \"writing Fortran on non-Unix systems\"; nothing about spreading C/Unix thinking or makeovers for BASIC."
+    },
+    "ia:login_february-1981#page": {
+      "verdict": "partial",
+      "why": "As ia:login_february-1981: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:bitsavers_cdcmp32173olsDec82_3727528#page": {
+      "verdict": "topic",
+      "why": "Ratfor, conceived for the Software Tools book; not the spread of Unix thinking or BASIC."
+    },
+    "ia:isbn_9780835247009": {
+      "verdict": "unrelated",
+      "why": "Other software tools in a software catalogue."
+    },
+    "ia:subjectguidetobo0004unse": {
+      "verdict": "topic",
+      "why": "A listing of Software Tools in Pascal; not BASIC."
+    },
+    "ia:booksoutloudbowk0001unse": {
+      "verdict": "topic",
+      "why": "A listing of Software Tools in Pascal on tape; not BASIC."
+    },
+    "ia:softwaretoolsinp00kern": {
+      "verdict": "topic",
+      "why": "Front matter of Software Tools in Pascal; not BASIC."
+    },
+    "ia:evolution-of-unix#page": {
+      "verdict": "topic",
+      "why": "The Software Tools book 'redone in Pascal'; not BASIC or the spread of Unix thinking."
+    },
+    "ia:aquartercenturyofunixpeterh.salus_201910#page": {
+      "verdict": "topic",
+      "why": "Software Tools 'far more influential' than their earlier book, with its Ratfor tape; not BASIC."
     }
   },
   "Rail shooter@1365330287#5172": {
@@ -1171,6 +1359,10 @@
     "ia:eparlib.nic.in.65848#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:gamer-games-iv#page": {
+      "verdict": "partial",
+      "why": "As ia:gamer-games-iv: its highlights state it ('Presented again in 2015 as a PS4 release': the second half of the claim.); the paragraphs found page by page only add to them."
     }
   },
   "Viva (Bolivia)@1359623532#498": {
@@ -1245,6 +1437,30 @@
     "ia:historia-de-la-conquista-del-oriente-boliviano": {
       "verdict": "unrelated",
       "why": "Colonial history of Santa Cruz de la Sierra (\"la ciudad de Santa Cruz de la Sierra\"); nothing about the airline or its CEO."
+    },
+    "ia:micro_IA41948434_0416": {
+      "verdict": "unrelated",
+      "why": "Airfield data for Santa Cruz, Bolivia; nothing on the airline or its CEO."
+    },
+    "ia:hernando-sanabria-fernandez-breve-historia-de-santa-cruz": {
+      "verdict": "unrelated",
+      "why": "A history of Santa Cruz de la Sierra; nothing on the airline or its CEO."
+    },
+    "ia:leo-7499#page": {
+      "verdict": "topic",
+      "why": "A Santa Cruz de la Sierra newspaper mentioning the operator VIVA; nothing on its CEO."
+    },
+    "ia:micro_IA41948434_0416#page": {
+      "verdict": "unrelated",
+      "why": "Airfield data for Santa Cruz, Bolivia; nothing on the airline or its CEO."
+    },
+    "ia:micro_IA40706410_0033#page": {
+      "verdict": "unrelated",
+      "why": "Airport traffic tables for Bolivian cities; nothing on the airline or its CEO."
+    },
+    "ia:geographicalname014817mbp#page": {
+      "verdict": "unrelated",
+      "why": "Library of Congress place-name index entries for Bolivian cities."
     }
   },
   "Belstaff@1369795595#5996": {
@@ -1275,6 +1491,14 @@
     "ia:Now_October_12_2015_UK": {
       "verdict": "partial",
       "why": "An October 2015 issue mentions \"a screening of the Belstaff short film Outlaws\", but the passage never names any of the cast."
+    },
+    "ia:Marie_Claire_December_2015#page": {
+      "verdict": "partial",
+      "why": "As ia:Marie_Claire_December_2015: its highlights state it (A December 2015 issue mentions a film \"for Belstaff called Outlaws, filmed in the Mexican desert\" and \"David Beckham about his new short film\", but names none of Keitel, Waterston or Moriarty.); the paragraphs found page by page only add to them."
+    },
+    "ia:Now_October_12_2015_UK#page": {
+      "verdict": "partial",
+      "why": "As ia:Now_October_12_2015_UK: its highlights state it (An October 2015 issue mentions \"a screening of the Belstaff short film Outlaws\", but the passage never names any of the cast.); the paragraphs found page by page only add to them."
     }
   },
   "Democracy in Mexico@1369756707#49059": {
@@ -1313,6 +1537,10 @@
     "ia:velvetcoupconsti00laza": {
       "verdict": "unrelated",
       "why": "The US Supreme Court; matched 'supreme court'."
+    },
+    "ia:electoral-oppositions#page": {
+      "verdict": "partial",
+      "why": "'executive dominance is indicated by the president's control over the legislature, the courts and other institutions': the outcome, not the PRI's steps."
     }
   },
   "Belgium–Luxembourg relations@1360654760#8370": {
@@ -1377,6 +1605,10 @@
     "ia:inwarsdarkshadow0000linc_g4e8": {
       "verdict": "topic",
       "why": "The Okhrana in February 1905; not Bloody Sunday."
+    },
+    "ia:cia-reports_prex-317ok-2#page": {
+      "verdict": "partial",
+      "why": "As ia:cia-reports_prex-317ok-2: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
     }
   },
   "Khirbet Kerak@1368547483#14129": {
@@ -1433,6 +1665,10 @@
     "ia:sim_japan-times_1956-11-21_20757": {
       "verdict": "topic",
       "why": "Mitsui as vice-president of the Japanese-German Society; not philately."
+    },
+    "ia:stamps_1960-02-06_110_6#page": {
+      "verdict": "partial",
+      "why": "'Baron Takaharu Mitsui, the country's leading collector' and the guiding spirit of Kitte Kenkyu: his standing, not the 'dean' epithet."
     }
   },
   "Didius Julianus@1370266531#1728": {
@@ -1561,6 +1797,30 @@
     "ia:lifetimesofqueen01wils": {
       "verdict": "supports",
       "why": "States \"When the Prince of Leiningen died, in 1814, his widow...\", giving the year Feodora's father died."
+    },
+    "ia:dli.ministry.02539#page": {
+      "verdict": "partial",
+      "why": "As ia:dli.ministry.02539: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:dli.ernet.51562#page": {
+      "verdict": "partial",
+      "why": "As ia:dli.ernet.51562: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:aldens-manifold-cyclopedia-of-knowledge-and-language-v-10#page": {
+      "verdict": "supports",
+      "why": "As ia:aldens-manifold-cyclopedia-of-knowledge-and-language-v-10: its highlights state it (States \"husband of Princess V.'s mother, the Prince of Leiningen, died 1814\", which is Feodora's father dying in 1814.); the paragraphs found page by page only add to them."
+    },
+    "ia:newimperialencyc38unse#page": {
+      "verdict": "supports",
+      "why": "As ia:newimperialencyc38unse: its highlights state it (States \"Princess V.'s mother, the Prince of Leiningen, died 1814\", so the Prince of Leiningen (Feodora's father) died in 1814.); the paragraphs found page by page only add to them."
+    },
+    "ia:lifetimesofqueen01wils#page": {
+      "verdict": "supports",
+      "why": "As ia:lifetimesofqueen01wils: its highlights state it (States \"When the Prince of Leiningen died, in 1814, his widow...\", giving the year Feodora's father died.); the paragraphs found page by page only add to them."
+    },
+    "ia:memoirsbaronsto01stocgoog#page": {
+      "verdict": "supports",
+      "why": "Victoria of Saxe-Coburg 'first married in 1803 to the Prince of Leiningen, who died 1814': Feodora's father."
     }
   },
   "September 1954@1348095199#6345": {
@@ -1641,6 +1901,26 @@
     "ia:dubrovnikhistory0000robi": {
       "verdict": "partial",
       "why": "Two overlapping passages read \"went to war with Dubrovnik in 1403 and 1404. But the Ragusans crucially managed to turn Hrvoje against Ostoja\", which shows Ostoja's war on Ragusa, but nothing says Ragusa was allied with Hungary."
+    },
+    "ia:croats-serbs#page": {
+      "verdict": "partial",
+      "why": "As ia:croats-serbs: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:emir-o.-filipovic-the-most-nobleand-royal-houseof-kotromanic.-constructing-dynas#page": {
+      "verdict": "partial",
+      "why": "As ia:emir-o.-filipovic-the-most-nobleand-royal-houseof-kotromanic.-constructing-dynas: its highlights state it (Judged on this passage in the September 2026 Archive query experiment.); the paragraphs found page by page only add to them."
+    },
+    "ia:enes-dedic-the-bosnian-kingdom-and-the-serbian-despotate-1402-1459pdf#page": {
+      "verdict": "partial",
+      "why": "As ia:enes-dedic-the-bosnian-kingdom-and-the-serbian-despotate-1402-1459pdf: its highlights state it (States \"Ostoja found the reason for the attack on Ragusa in giving shelter to Pavle\", but never says Ragusa was then an ally of Hungary.); the paragraphs found page by page only add to them."
+    },
+    "ia:fine-v.-a.-john-the-bosnian-church-a-new-intrerpretation-new-york-1975.#page": {
+      "verdict": "partial",
+      "why": "Dubrovnik 'recognizing Sigismund as its overlord' as relations with Bosnia deteriorated in 1403; the war itself cut off."
+    },
+    "ia:archivfrslavis19berluoft#page": {
+      "verdict": "partial",
+      "why": "Ostoja sought 'die Republik Ragusa zu unterwerfen, obwohl dieselbe kurz vorher dem König Sigismund...': the war, the tie to Sigismund cut off mid-sentence."
     }
   },
   "Afuzhiluo@1337056068#3140": {
@@ -1671,6 +1951,18 @@
     "ia:kim-hyun-jin-2016.-the-huns": {
       "verdict": "topic",
       "why": "The Hephthalites taking over from the Rouran, and hostages of other peoples; nothing on Karashahr, Qiongqi or Mi'etu."
+    },
+    "ia:898nar_Sas#page": {
+      "verdict": "partial",
+      "why": "As ia:898nar_Sas: its highlights state it (Says \"the Hephthalites held sway over Karashahr\" (as its \"easternmost\" extremity), but nothing on this being the first time, on Qiongqi's death, or on Mi'etu being taken hostage.); the paragraphs found page by page only add to them."
+    },
+    "ia:the-huns-hyun-jin-kim#page": {
+      "verdict": "partial",
+      "why": "As ia:the-huns-hyun-jin-kim: its highlights state it (\"These Hephthalites after eliminating\" the Rouran, and \"between 497 AD and 509 AD Karashahr and the region of modern day Urumchi\" were occupied: the expansion to Karashahr, but not Qiongqi or Mi'etu.); the paragraphs found page by page only add to them."
+    },
+    "ia:syriac-music#page": {
+      "verdict": "partial",
+      "why": "The Hephthalites 'extended their power into the Tarim basin, attacking Khotan, Yanqi': Karashahr, not Qiongqi or Mi'etu."
     }
   },
   "Transcendental Meditation movement@1374321389#44979": {
@@ -1709,6 +2001,10 @@
     "ia:oapen-20.500.12657-27375": {
       "verdict": "partial",
       "why": "States \"Maharishi Ayurveda as a seal of quality supported by the All India Ayurvedic Congress\" but gives no 1997 date (the 1997s in the passages refer to other works)."
+    },
+    "ia:oapen-20.500.12657-27375#page": {
+      "verdict": "partial",
+      "why": "As ia:oapen-20.500.12657-27375: its highlights state it (States \"Maharishi Ayurveda as a seal of quality supported by the All India Ayurvedic Congress\" but gives no 1997 date (the 1997s in the passages refer to other works).); the paragraphs found page by page only add to them."
     }
   },
   "Jelena Skerlić Ćorović@1371735455#3111": {
@@ -1739,6 +2035,10 @@
     "ia:ljubljanskizvon41ljubuoft#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:VladimiroroviCrnaKnjigaPatnjeSrbaBosneIHercegovineZaVremeSvetskogRata19141918.Godine#page": {
+      "verdict": "partial",
+      "why": "Vladimir Ćorović moved to Zagreb in 1918, after prison in Travnik: one of the residences."
     }
   },
   "Erasmus Darwin House@1344721583#4434": {
@@ -1795,6 +2095,10 @@
     "ia:in.ernet.dli.2015.169426#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:FrontMatterTitlePageContents#page": {
+      "verdict": "topic",
+      "why": "'The overland stage arrived galloping from Fort Buford, Fort Berthold, and Fort Stevenson'; nothing on this road."
     }
   },
   "Otter civet@1371730282#2216": {
@@ -1837,6 +2141,18 @@
     "ia:encyclopediaofen00eman": {
       "verdict": "supports",
       "why": "\"The otter civet derives its common name from its semi-aquatic habits\" and \"Feet are slightly webbed to facilitate swimming, but the otter civet is also a good climber.\""
+    },
+    "ia:bwb_P8-DFJ-493": {
+      "verdict": "partial",
+      "why": "'The little known Otter civet (Cynogale bennettii) has a broad mouth and webbed feet'; not the adaptation."
+    },
+    "ia:fieldguidetomamm0000payn": {
+      "verdict": "topic",
+      "why": "Another civet's partly webbed feet, with the otter-civet named as a similar species."
+    },
+    "ia:field-guide-to-carnivores-of-the-world-pdfdrive#page": {
+      "verdict": "supports",
+      "why": "The otter civet: 'Very distinctive semi-aquatic civet... Feet... partially webbed', of wet lowland and swamp forest."
     }
   },
   "Endocrine system@1356929510#9852": {
@@ -1859,6 +2175,14 @@
     "ia:biology_books_collection": {
       "verdict": "partial",
       "why": "\"Pancreatic acinar cells secrete enzymes in active and inactive forms\" says the acinar cells secrete enzymes but never calls them digestive, so it supports only part of the claim."
+    },
+    "ia:98hhjk#page": {
+      "verdict": "supports",
+      "why": "As ia:98hhjk: its highlights state it (States \"Digestive enzymes secreted by the pancreatic acini include...\".); the paragraphs found page by page only add to them."
+    },
+    "ia:biology_books_collection#page": {
+      "verdict": "partial",
+      "why": "As ia:biology_books_collection: its highlights state it (\"Pancreatic acinar cells secrete enzymes in active and inactive forms\" says the acinar cells secrete enzymes but never calls them digestive, so it supports only part of the claim.); the paragraphs found page by page only add to them."
     }
   },
   "Diagonal band of Broca@1220886502#2424": {
@@ -1889,6 +2213,18 @@
     "ia:neuroanatomy0000moye": {
       "verdict": "topic",
       "why": "Fibres \"emerge from that gyrus [subcallosal] as the diagonal band of Broca\", but no passage says the band connects it with the hippocampus or the lateral olfactory area."
+    },
+    "ia:bwb_S0-CEK-395#page": {
+      "verdict": "partial",
+      "why": "The band 'extending from the lateral olfactory tubercle' to become 'the subcallosal gyrus'; not the hippocampus."
+    },
+    "ia:IA41522104_0031#page": {
+      "verdict": "partial",
+      "why": "Connected 'by way of the diagonal band of Broca with the lateral olfactory area' (in the alligator); not the subcallosal gyrus."
+    },
+    "ia:in.ernet.dli.2015.108902#page": {
+      "verdict": "partial",
+      "why": "'the diagonal band (of Broca) connecting the subcallosal gyrus with the hippocampal gyrus'; not the lateral olfactory area."
     }
   },
   "Nitroxinil@1352698310#3075": {
@@ -1927,6 +2263,10 @@
     "ia:handbuchderexper0077unse": {
       "verdict": "topic",
       "why": "Nitroxynil and \"benzimidazole-resistant Haemonchus contortus\" occur only in separate references and passages (e.g. \"Nitroxynil at a dose of 10 mg/kg body weight given\"); no passage says nitroxynil is used against resistant strains."
+    },
+    "ia:asociatia-medicilor-revista-romana-de-medicina-veterinara-vol.-5-nr.-2-din-1995#page": {
+      "verdict": "topic",
+      "why": "References on benzimidazole-resistant Haemonchus contortus; nitroxinil not named in them."
     }
   },
   "MS Ilos@1368787865#9100": {
@@ -2049,6 +2389,10 @@
     "ia:internationalism0000dura": {
       "verdict": "topic",
       "why": "\"According to National Shinto, the emperor of Japan was a living god\" and \"In 1947, Japan adopted a new constitution\", but nothing about the novel or the fear-and-trembling protocol."
+    },
+    "ia:the-japanese-empire-disaster-world-war-ii#page": {
+      "verdict": "topic",
+      "why": "The emperor accepted as a living god and Hirohito's reign to 1947; nothing on the novel or the protocol."
     }
   },
   "Genny Lim@1371387863#3125": {
@@ -2241,6 +2585,10 @@
     "ia:pro-wrestling-mma-strategy-guides#text": {
       "verdict": "unrelated",
       "why": "Matched on common words, dates or numbers; not about the claim."
+    },
+    "ia:pdfy-C0G2c0Sdny-mxA-1#page": {
+      "verdict": "partial",
+      "why": "As ia:pdfy-C0G2c0Sdny-mxA-1: its highlights state it (UFC 97: 'lost via unanimous decision to Denis Kang' — the win, not the months out.); the paragraphs found page by page only add to them."
     }
   },
   "Deepak Jain (cricketer)@1366672876#1810": {
@@ -2305,6 +2653,26 @@
     "ia:2024-julho-07": {
       "verdict": "partial",
       "why": "Has fullback (\"pasó a jugar de fullback\") and fly-half (\"Santiago Carreras, que otra vez fue el apertura\") but no wing."
+    },
+    "ia:tv-satellite-week-28-january-2023#page": {
+      "verdict": "partial",
+      "why": "As ia:tv-satellite-week-28-january-2023: its highlights state it ('Gloucester's fly-half Santiago Carreras': one of the three positions.); the paragraphs found page by page only add to them."
+    },
+    "ia:2024-setembro-22#page": {
+      "verdict": "partial",
+      "why": "As ia:2024-setembro-22: its highlights state it (Supports fullback and fly-half (\"Santiago Carreras, fullback por naturaleza\", \"el ex apertura titular\", \"un excelente 10\"); the line \"puede jugar de 10, de wing, de fullback\" does not name who it is about, so wing is not established.); the paragraphs found page by page only add to them."
+    },
+    "ia:los-andes#page": {
+      "verdict": "partial",
+      "why": "As ia:los-andes: its highlights state it (Has fullback (\"Santiago Carreras reemplazará a Juan Cruz Mallía como fullback\") and fly-half (\"mantendrá la conducción con la camiseta número\" 10) but never wing.); the paragraphs found page by page only add to them."
+    },
+    "ia:2024-julho-07#page": {
+      "verdict": "partial",
+      "why": "As ia:2024-julho-07: its highlights state it (Has fullback (\"pasó a jugar de fullback\") and fly-half (\"Santiago Carreras, que otra vez fue el apertura\") but no wing.); the paragraphs found page by page only add to them."
+    },
+    "ia:2024-julho-21#page": {
+      "verdict": "partial",
+      "why": "Carreras 'se paró como fullback': one of the three positions."
     }
   },
   "Al Hodge (rock musician)@1375828388#2605": {
@@ -2419,6 +2787,10 @@
     "ia:in.gazette.central.e.2012-03-31.32365": {
       "verdict": "supports",
       "why": "Candidate list reads \"3. Shri Sanjiv Kumar ... Jharkhand Mukti Morcha\"."
+    },
+    "ia:in.gazette.central.e.2012-05-04.34108#page": {
+      "verdict": "supports",
+      "why": "As ia:in.gazette.central.e.2012-05-04.34108: its highlights state it (Gazette lists \"Shri Sanjiv Kumar, , sponsored by ... Jharkhand Mukti Morcha\".); the paragraphs found page by page only add to them."
     }
   },
   "2010 Yeonpyeongdo bombardment@1376755701#61635": {
@@ -2495,6 +2867,26 @@
     "ia:eu_SciAm_2010-01_OCR": {
       "verdict": "topic",
       "why": "Says partnerships \"came together in 2006 to form the Global Network for NTDs\" and names \"THE GRISLY SEVEN\" diseases, but never names the SCI as a founding partner."
+    },
+    "ia:gov.gpo.fdsys.CHRG-113hhrg81698#page": {
+      "verdict": "partial",
+      "why": "The 2006 rapid impact package against seven NTDs, with the Global Network's advocacy; SCI not named as a founding partner."
+    },
+    "ia:eu_SciAm_2010-01_OCR#page": {
+      "verdict": "partial",
+      "why": "Public-private partnerships 'came together in 2006 to form the Global Network for NTDs', for integrated control of the seven; SCI not named."
+    },
+    "ia:kathryn-a.-ann-agard-leadership-in-nonprofit-o-book-zz.org#page": {
+      "verdict": "topic",
+      "why": "The Global Network 'Founded in 2006 at the Clinton Global Initiative'; nothing on SCI or the seven diseases."
+    },
+    "ia:lescienze-499#page": {
+      "verdict": "partial",
+      "why": "'nel 2006 alcune delle principali iniziative si sono unite nel Global Network', for integrated NTD control; SCI not named."
+    },
+    "ia:weill21#page": {
+      "verdict": "topic",
+      "why": "Hotez co-founded the Global Network in 2006; nothing on SCI."
     }
   },
   "Eileen Ascroft@1353902884#2491": {
@@ -2535,6 +2927,10 @@
     "ia:bookofdaniel0000laco": {
       "verdict": "topic",
       "why": "Speaks of \"the Baal Shamin of the Syrians who had become Zeus Olympios\" (an equation among Syrians), not of Syriac writers' usage; the Syriac passages are about unrelated words."
+    },
+    "ia:the-return-of-the-gods-jonathan-cahn#page": {
+      "verdict": "partial",
+      "why": "'Syriac writers referred to Baalshamin as Zeus Olympios'; nothing on 'Zeus who shines'."
     }
   },
   "Methyl isobutyl ketone@1353925244#7532": {
@@ -2593,6 +2989,31 @@
     "ia:TheIncredibleLifeStoryOfSisterElenaAielloTheCalabrianHolyNun": {
       "verdict": "topic",
       "why": "The passages cover her visit to the freemason \"Alessandro A.\" and his \"Sacraments from Father Eugenio Scotti and, for three months to the very day of his happy death, he received\", but the three months is something he received, not her tending him, and no promise conditional on her care is given."
+    },
+    "ia:TheIncredibleLifeStoryOfSisterElenaAielloTheCalabrianHolyNun#page": {
+      "verdict": "supports",
+      "why": "He 'promised to do so, but on one condition, i.e., that Elena would come and assist him every day', and 'for three months... he received Elena's attention and care'."
     }
-  }
+  },
+  "Senate of the Roman Empire@1339603052#5947": {
+    "ia:in.ernet.dli.2015.73401#page": {
+      "verdict": "topic",
+      "why": "Bills drawn up by the emperor passed by the comitia, and magistrates needing his approval; not the senate's votes."
+    }
+  },
+  "Jelena Ćetković@1374357645#6993": {},
+  "Giovanna of Savoy@1366086768#3780": {},
+  "Mien Shiang@1349789729#2207": {},
+  "Erik Menkveld@1371553809#5371": {},
+  "Mahmuei@1376443929#5709": {},
+  "Chaleur Bay@1366531001#3353": {},
+  "Uintah Lake@1370072314#3368": {},
+  "Al-Fatat SC@1322980387#1256": {},
+  "Euan Burton@1367167230#7389": {},
+  "Jače manijače@1288911932#3972": {},
+  "Knytt Underground@1363780905#7377": {},
+  "OzSpy@1370437951#2568": {},
+  "KCC Malls@1359563706#1244": {},
+  "Oxiracetam@1368668595#7927": {},
+  "Chakapa@1291746289#1676": {}
 }

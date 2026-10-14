@@ -52,9 +52,10 @@ export const DEFAULT_LIBRARIAN_MODELS: LibrarianModels = {
 
 /**
  * Output tokens per call, thinking included. The Worker gives up on Hugging
- * Face after 60 seconds, about 8,000 tokens of GLM-5.2, and now and then the
- * model thinks until it runs out (finish_reason "length", no answer): the caps
- * keep a call inside the Worker's minute, and such a call is tried once more.
+ * Face after two minutes, some 16,000 tokens of GLM-5.2 (fewer when it is
+ * busy), and now and then the model thinks until it runs out (finish_reason
+ * "length", no answer): the caps keep a call inside the Worker's limit, and
+ * such a call is tried once more.
  */
 export const PLAN_MAX_TOKENS = 6000;
 export const BOOKS_MAX_TOKENS = 6000;
