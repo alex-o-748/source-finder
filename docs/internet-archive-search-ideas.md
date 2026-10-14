@@ -331,11 +331,12 @@ the Worker, which is on Wikipedia's CSP allowlist.
   the same full-text index presented per edition, which should bring edition
   records (publisher, ISBN) for a better `{{cite book}}`; whether it also gives
   page numbers needs checking.
-- **Google Books full-text search** (`books.googleapis.com/v1/volumes?q=`):
+- **Google Books full-text search** (`www.googleapis.com/books/v1/volumes?q=`):
   much better relevance ranking than the Archive's, phrase search, snippets;
   free with an API key, within a daily quota (the keyless quota is zero). Use
   it to *find* the book, then look the ISBN up on the Archive (`isbn:`) to get
-  a readable copy; or cite Google Books, as editors routinely do.
+  a readable copy; or cite Google Books, as editors routinely do. Both are
+  now strategies in the harness (`gbooks`, `gbooks-direct`), waiting on a key.
 - **HathiTrust full-text search** reports the pages where terms occur even in
   books it cannot show. No API; the HTML would have to be read through the
   Worker.
