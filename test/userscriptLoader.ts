@@ -97,6 +97,8 @@ const EXPOSED = [
   "takeStagedInsert",
   "taggedSentenceSpan",
   "removeTaggedSentence",
+  "locateClaimText",
+  "citationPointAfter",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
