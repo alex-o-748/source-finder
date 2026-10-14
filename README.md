@@ -262,7 +262,6 @@ v1 ships the user script + the CLI + core library, with the wiki-local stage
 in front of the web search in both. Deferred:
 
 - Wikidata statements and their references
-- Citoid for citation metadata, instead of formatting templates by hand
 - Browser extension wrapper (no install via common.js)
 - MCP server wrapper
 - Bot / talk-page integration
