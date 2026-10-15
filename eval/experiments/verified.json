@@ -1,5 +1,5 @@
 {
- "_about": "Hand check (October 2026) of every book the first judge said states the claim, in both runs: does the passage state the claim's fact? 'states' lists the books that do; 'not' records claims the judge passed that do not hold up, and why.",
+ "_about": "Hand check (October 2026) of every book the first judge said states the claim, in both runs: does the passage state the claim's fact? 'states' lists the books that do; 'not' records claims the judge passed that do not hold up, and why. The gbooks run (October 2026) was checked the same way; 'gb:<id>' is a Google Books volume, judged on Google's snippet.",
  "states": {
   "Princess Feodora of Leiningen@1373372849#2645": [
    "dli.ministry.02539",
@@ -11,7 +11,10 @@
    "kingwithoutcrown0000benn",
    "kingwithoutcrown0000unse",
    "lettersofqueenvi01victuoft",
-   "whitakerspeerage1907lond"
+   "whitakerspeerage1907lond",
+   "gb:UvTdC01jXsEC",
+   "peeragebritishe02innegoog",
+   "vol1897genealogi00unse"
   ],
   "Senate of the Roman Empire@1339603052#5947": [
    "historydescripti00abbouoft"
@@ -25,7 +28,8 @@
   "Vipakasutra@1242493963#775": [
    "in.ernet.dli.2015.52154",
    "early_jainism",
-   "xkhf_agamic-index-vol-1-prakrit-proper-names-part-2-by-mohanlal-mehta-k-rishabh-"
+   "xkhf_agamic-index-vol-1-prakrit-proper-names-part-2-by-mohanlal-mehta-k-rishabh-",
+   "in.ernet.dli.2015.52653"
   ],
   "Endocrine system@1356929510#9852": [
    "biology_books_collection",
@@ -34,7 +38,11 @@
    "mammalianaliment0000madg",
    "isbn_9781681352060",
    "humananatomyphys0000suza",
-   "isbn_9781599849331"
+   "isbn_9781599849331",
+   "gb:2xFfEQAAQBAJ",
+   "gb:r7ruDQAAQBAJ",
+   "gb:CGhTz-I3S1gC",
+   "per_uoc-pharmacology-dissertations_douglas-edwin-chand_1945_ia1515112-32"
   ],
   "Goodrich Quality Theaters@1373115973#4818": [
    "filmdailyyearboo00film_13",
@@ -51,6 +59,9 @@
   ],
   "Abigail May Alcott Nieriker@1373256207#9938": [
    "mayalcottmemoir0000caro"
+  ],
+  "Takaharu Mitsui@1366505112#345": [
+   "gb:Incw5KfqOkcC"
   ]
  },
  "not": {
@@ -65,6 +76,7 @@
   "Didius Julianus@1370266531#1728": "The judge's quote ('His reign marks the start of the Empire's decline') is not in the book: GPT-OSS invented it.",
   "Nitroxinil@1352698310#3075": "'also active against thiabendazole-resistant Haemonchus contortus': the passage does not show which drug. Unverified.",
   "Fort Buford Stage Road@1373286591#872": "An 1870 report of roads to Fort Buford, Dakota Territory; not this road. Partial.",
-  "Erasmus Darwin House@1344721583#4434": "Seward's 1804 Memoirs (and Uglow quoting it): the bridge of steps and the terrace, not the ditch or the basement windows. Partial, but the primary source."
+  "Erasmus Darwin House@1344721583#4434": "Seward's 1804 Memoirs (and Uglow quoting it): the bridge of steps and the terrace, not the ditch or the basement windows. Partial, but the primary source.",
+  "Iranian peoples@1371323076#78171": "Encyclopedia of Indo-European Culture: 'descended from Old Persian' is said of Middle Persian (Pahlavi), not the Bashkardi language the table row is about."
  }
 }

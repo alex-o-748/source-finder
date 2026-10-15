@@ -248,6 +248,72 @@ export async function tavily(body: Record<string, unknown>): Promise<TavilyResul
   return r.results;
 }
 
+// ---------------------------------------------------------------------------
+// Google Books (needs a key: GOOGLE_BOOKS_API_KEY, or one the network proxy
+// injects for books.googleapis.com; without one the quota is zero)
+// ---------------------------------------------------------------------------
+
+export interface GbVolume {
+  id: string;
+  title: string;
+  authors: string[];
+  year: number | null;
+  isbns: string[];
+  /** Google's snippet around the match, as plain text. */
+  snippet: string;
+  /** NO_PAGES, PARTIAL, ALL_PAGES: how much of the book Google shows. */
+  viewability: string;
+  link: string;
+}
+
+function unhtml(s: string): string {
+  return s
+    .replace(/<[^>]+>/g, "")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&");
+}
+
+/** Google Books full-text search: relevance-ranked volumes with a snippet each. */
+export async function googleBooks(q: string, max = 10): Promise<GbVolume[]> {
+  const params = new URLSearchParams({
+    q,
+    maxResults: String(max),
+    printType: "books",
+    // Without it Google answers 403 "Cannot determine user location" from
+    // proxy and cloud addresses; with it, intermittent 503s (http() retries).
+    country: process.env.GOOGLE_BOOKS_COUNTRY ?? "US",
+    fields:
+      "items(id,volumeInfo(title,authors,publishedDate,industryIdentifiers,canonicalVolumeLink),accessInfo(viewability),searchInfo(textSnippet))",
+  });
+  const key = process.env.GOOGLE_BOOKS_API_KEY;
+  const r = await cached(`gbooks:${q}:${max}`, async () => {
+    const res = await http(`https://www.googleapis.com/books/v1/volumes?${params}`, key ? { headers: { "x-goog-api-key": key } } : {});
+    // Not cached: a missing key or a spent quota is not an answer.
+    if (res.status !== 200) throw new Error(`Google Books HTTP ${res.status}: ${res.body.slice(0, 200)}`);
+    return { items: (JSON.parse(res.body).items ?? []) as unknown[] };
+  });
+  return (r.items as Record<string, any>[]).map((it) => {
+    const vi = it.volumeInfo ?? {};
+    return {
+      id: String(it.id),
+      title: String(vi.title ?? ""),
+      authors: arr(vi.authors),
+      year: yearOf(vi.publishedDate),
+      isbns: ((vi.industryIdentifiers ?? []) as { type: string; identifier: string }[])
+        .filter((x) => x.type === "ISBN_13" || x.type === "ISBN_10")
+        .map((x) => x.identifier),
+      snippet: unhtml(String(it.searchInfo?.textSnippet ?? "")),
+      viewability: String(it.accessInfo?.viewability ?? ""),
+      link: String(vi.canonicalVolumeLink ?? `https://books.google.com/books?id=${it.id}`),
+    };
+  });
+}
+
 /** archive.org/details/X, /stream/X/…, /download/X/… → X */
 export function iaIdentifier(url: string): string | null {
   const m = /^https?:\/\/(?:www\.)?archive\.org\/(?:details|stream|download|embed)\/([^/?#]+)/.exec(url);

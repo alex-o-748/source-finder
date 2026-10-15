@@ -15,6 +15,12 @@
  *   cited      the books the article already cites, found on the Archive, then
  *              searched inside
  *   claude-web Claude with web search restricted to archive.org (paid baseline)
+ *   gbooks     Google Books full-text search (planner's queries and the restated
+ *              claim), each volume's Archive copy found by ISBN, else title and
+ *              author, then searched inside like the rest
+ *   gbooks-direct the same volumes judged on Google's own snippet: citing
+ *              Google Books itself. Both need a Books API key
+ *              (GOOGLE_BOOKS_API_KEY, or injected by the network proxy)
  *
  * The planner (which restates the claim and writes the queries) and the judge
  * are chosen by flag. Results go to eval/experiments/results/<name>.json; every
@@ -30,6 +36,7 @@
  *     --books-model <route>:<model>    # who names books for llm-books (default: the planner)
  *     --confirm                        # also ask the Verify API about every book the judge keeps
  *     [--limit N] [--only <claim id prefix>] [--skip a,b] [--name run] [--no-shelf]
+ *     [--compare results/<run>.json]   # also list the claims each strategy finds that run did not
  *   NODE_USE_ENV_PROXY=1 npx tsx eval/experiments/archive-ideas.ts --calibrate --judge verify
  *                                      # the judge against the hand labels, on today's leads
  *   npx tsx eval/experiments/review.ts <run> [--supports]   # what the judge kept, for checking by hand
@@ -45,6 +52,8 @@ import {
   catalogue,
   claude,
   fts,
+  type GbVolume,
+  googleBooks,
   iaIdentifier,
   jsonOf,
   metadata,
@@ -568,6 +577,51 @@ async function namedBooks(c: EvalClaim, p: Plan): Promise<NamedBook[]> {
   return (r?.books ?? []).filter((b) => b && typeof b.title === "string").slice(0, 6);
 }
 
+// Google Books as the finder: its relevance ranking and phrase search pick the
+// books; the Archive copy of each (by ISBN, else title and author) is what an
+// editor reads, so that is what gets searched inside and judged.
+
+/** What happened to each claim's Google Books volumes, for the report. */
+export const gbFunnels: Record<string, { volumes: number; withIsbn: number; byIsbn: number; byTitle: number; snippets: number; errors: string[] }> = {};
+
+let gbooksDown: string | null = null;
+
+/** The planner's full-text queries and the restated claim, each asked of Google Books, interleaved. */
+async function gbVolumes(c: EvalClaim, p: Plan): Promise<GbVolume[]> {
+  const f = (gbFunnels[c.id] ??= { volumes: 0, withIsbn: 0, byIsbn: 0, byTitle: 0, snippets: 0, errors: [] });
+  const queries = [...p.fulltext_queries, p.fact].filter((q) => q.trim());
+  const lists = await Promise.all(
+    queries.map(async (q) => {
+      if (gbooksDown) return [];
+      try {
+        return await googleBooks(q, 10);
+      } catch (e) {
+        const m = (e as Error).message;
+        // No key, or the day's quota spent: every further query fails the same way.
+        if (/HTTP (403|429)/.test(m)) gbooksDown = m;
+        f.errors.push(m.slice(0, 120));
+        return [];
+      }
+    }),
+  );
+  const seen = new Set<string>();
+  const vols = interleave(lists).filter((v) => (seen.has(v.id) ? false : (seen.add(v.id), true)));
+  f.volumes = vols.length;
+  f.withIsbn = vols.filter((v) => v.isbns.length).length;
+  f.snippets = vols.filter((v) => v.snippet).length;
+  return vols;
+}
+
+async function archiveCopy(v: GbVolume): Promise<{ book: Book; via: "isbn" | "title" } | null> {
+  for (const isbn of v.isbns) {
+    const hits = await catalogue(`isbn:${isbn}`, 3);
+    if (hits[0]) return { book: hits[0], via: "isbn" };
+  }
+  const surname = v.authors[0]?.trim().split(/\s+/).pop() ?? null;
+  const hit = await findOnArchive({ title: v.title, last: surname, isbn: null, inSection: false });
+  return hit ? { book: hit, via: "title" } : null;
+}
+
 const STRATEGIES: Record<string, Strategy> = {
   baseline: async (c) =>
     baselineBooks(c).map((b) => ({ strategy: "baseline", ...b, title: b.title, windows: [] }) as Lead),
@@ -615,7 +669,31 @@ const STRATEGIES: Record<string, Strategy> = {
     shortlists[c.id] = { named, exists, found: found.map((b) => b.identifier) };
     return leadsFrom("llm-books", found, p, 8);
   },
+  gbooks: async (c, p) => {
+    const found: Book[] = [];
+    for (const v of await gbVolumesOnce(c, p)) {
+      if (found.length >= 8) break;
+      const copy = await archiveCopy(v);
+      if (!copy) continue;
+      found.push(copy.book);
+      gbFunnels[c.id][copy.via === "isbn" ? "byIsbn" : "byTitle"]++;
+    }
+    return leadsFrom("gbooks", found, p);
+  },
+  // Citing Google Books itself, as editors do: judged on Google's snippet alone.
+  "gbooks-direct": async (c, p) =>
+    (await gbVolumesOnce(c, p))
+      .filter((v) => v.snippet)
+      .slice(0, MAX_LEADS)
+      .map((v) => ({ strategy: "gbooks-direct", identifier: `gb:${v.id}`, title: v.title, year: v.year, access: "open", native: [v.snippet], windows: [] }) as Lead),
 };
+
+/** Both Google Books strategies share one set of queries per claim. */
+const gbAsked = new Map<string, Promise<GbVolume[]>>();
+function gbVolumesOnce(c: EvalClaim, p: Plan): Promise<GbVolume[]> {
+  if (!gbAsked.has(c.id)) gbAsked.set(c.id, gbVolumes(c, p));
+  return gbAsked.get(c.id)!;
+}
 
 // ---------------------------------------------------------------------------
 // The judge
@@ -745,8 +823,9 @@ async function main(): Promise<void> {
     // Search inside every book any strategy proposed, in one query per term.
     if (!args.includes("--no-shelf")) {
       try {
-        const shelf = await shelfSearch([...new Set(r.leads.filter((l) => l.strategy !== "baseline").map((l) => l.identifier))], r.plan.evidence);
-        for (const l of r.leads) if (l.strategy !== "baseline") l.native = [...new Set([...l.native, ...(shelf.get(l.identifier) ?? [])])];
+        const onArchive = (l: Lead) => l.strategy !== "baseline" && !l.identifier.startsWith("gb:");
+        const shelf = await shelfSearch([...new Set(r.leads.filter(onArchive).map((l) => l.identifier))], r.plan.evidence);
+        for (const l of r.leads) if (onArchive(l)) l.native = [...new Set([...l.native, ...(shelf.get(l.identifier) ?? [])])];
       } catch (e) {
         r.errors.push(`shelf: ${(e as Error).message}`);
       }
@@ -784,6 +863,7 @@ async function main(): Promise<void> {
 
   mkdirSync(OUT_DIR, { recursive: true });
   for (const r of results) if (shortlists[r.id]) (r as ClaimResult & { shortlist?: unknown }).shortlist = shortlists[r.id];
+  for (const r of results) if (gbFunnels[r.id]) (r as ClaimResult & { gbooks?: unknown }).gbooks = gbFunnels[r.id];
   writeFileSync(`${OUT_DIR}/${flag("--name") ?? "latest"}.json`, JSON.stringify(results, null, 1));
   report(results, names, claims.length);
 }
@@ -824,6 +904,26 @@ function report(results: ClaimResult[], names: string[], n: number): void {
       return `| ${s} | ${pct(found)} (${found}) | ${pct(partly)} (${partly}) |`;
     });
     console.log(`\nKept by both judges:\n| Strategy | States it | States it or part |\n| --- | --- | --- |\n${crow.join("\n")}`);
+  }
+  const fs = Object.values(gbFunnels);
+  if (fs.length) {
+    const sum = (k: "volumes" | "withIsbn" | "byIsbn" | "byTitle" | "snippets") => fs.reduce((a, f) => a + f[k], 0);
+    console.log(
+      `\nGoogle Books: ${sum("volumes")} volumes on ${fs.filter((f) => f.volumes).length} claims, ${sum("snippets")} with a snippet, ${sum("withIsbn")} with an ISBN; ` +
+        `Archive copies by ISBN ${sum("byIsbn")}, by title and author ${sum("byTitle")} (up to 8 a claim looked up)` +
+        (gbooksDown ? `\n  STOPPED: ${gbooksDown}` : ""),
+    );
+  }
+  // Uplift: claims a strategy finds that an earlier run (--compare <results file>) did not.
+  const compare = flag("--compare");
+  if (compare) {
+    const before = JSON.parse(readFileSync(compare, "utf8")) as ClaimResult[];
+    const goodBefore = new Set(before.filter((r) => r.leads.some((l) => l.verdict && l.verdict.verdict !== "no")).map((r) => r.id));
+    console.log(`\nAgainst ${compare} (${goodBefore.size} claims with a lead judged good there):`);
+    for (const s of names) {
+      const fresh = results.filter((r) => !goodBefore.has(r.id) && r.leads.some((l) => l.strategy === s && l.verdict && l.verdict.verdict !== "no"));
+      console.log(`  ${s}: ${fresh.length} new claim(s)${fresh.length ? `: ${fresh.map((r) => r.title).join("; ")}` : ""}`);
+    }
   }
   console.log("\nCalls:");
   for (const [tag, u] of Object.entries(usage)) console.log(`  ${tag}: ${u.calls} calls, ${u.input} in / ${u.output} out tokens`);

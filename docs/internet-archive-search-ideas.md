@@ -203,6 +203,56 @@ five different authors). Naming books takes a model's recall of the
 literature, which a 20B model does not have. A name that does not exist costs
 only a catalogue lookup, so a strong model's occasional mistake is cheap.
 
+### Google Books as the finder
+
+`gbooks` asks Google Books the planner's three full-text queries and the
+restated claim (ten volumes each), finds each volume's Archive copy, and reads
+and judges it like every other lead; `gbooks-direct` judges the same volumes
+on Google's own snippet, for citing Google Books itself (`results/gbooks.json`,
+strong-model plans, GPT-OSS judge, Verify API second opinion). From a cloud or
+proxy address Google answers 403 "Cannot determine user location" unless the
+request names a `country`; with `country=US` about half the requests return 503
+and succeed on retry.
+
+| Strategy | States it (GPT-OSS) | …or part | States it (both) | …or part (both) |
+| --- | --- | --- | --- | --- |
+| gbooks | 7% | 26% | 11% | 20% |
+| gbooks-direct | 15% | 72% | 20% | 41% |
+| both | 17% | 72% | 26% | 46% |
+
+The funnel: 1,100 volumes for 46 claims, 983 with a snippet, but only 275 with
+an ISBN, and just 25 found on the Archive by ISBN (305 more by title and
+author, often a different edition or a namesake). Google's strength is old
+journals, trade papers and recent academic books with no ISBN or no Archive
+copy, which is exactly what the ISBN route loses.
+
+**By hand**, the judge's "states it" holds for 4 claims: Feodora's father
+(Foster's *Peerage* for 1882 on Google; the 1832 and 1897 peerages on the
+Archive), the Vipakasutra (*Some Jaina Canonical Sutras*, 1949), the acini
+(Guyton, *Pancreatitis*, *The Pancreas*, a 1945 dissertation), and one claim
+no earlier strategy found:
+**Takaharu Mitsui**, "Dean of Japanese Philately has long been Baron Takaharu
+Mitsui" (George van den Berg's column in *Stamps*, 1960; snippet view only).
+The otter civet is likely a fifth (Dudgeon, *Tropical Stream Ecology*:
+"…webbed to facilitate swimming. *Cynogale bennettii* lives in close proximity
+to streams"), but the snippet starts mid-sentence, so it is not counted.
+With the nine earlier finds and May Alcott, 11 of the 46 claims now have a book
+that states them, checked by hand.
+
+Where the judge is wrong: an image caption matched to funerary-banquet reliefs
+in general (Silvae, as before); "descended from Old Persian", said of Middle
+Persian, passed for the Bashkardi language (Iranian peoples); and one year's
+price ("25 cents for 1935", Sedgwick) for a decade's range, though it names
+the *Film Daily Year Book* found earlier. Google also surfaces books an editor
+should not cite: a Sherlock Holmes pastiche's notes and a 2022 novel both
+state Feodora's father's death, and a popular religious book (Cahn, *The
+Return of the Gods*) carries Wikipedia's own Baalshamin sentence. The judge
+should be told what kind of book it is reading.
+
+`--compare results/manual.json` reports nothing new, because that run has a
+lead judged at least partial on every claim; the comparison that matters is
+against the hand-checked list in `verified.json`.
+
 ### Open models that can be free to the user
 
 Through the Worker, three kinds of open model are reachable: Hugging Face
@@ -331,11 +381,13 @@ the Worker, which is on Wikipedia's CSP allowlist.
   the same full-text index presented per edition, which should bring edition
   records (publisher, ISBN) for a better `{{cite book}}`; whether it also gives
   page numbers needs checking.
-- **Google Books full-text search** (`books.googleapis.com/v1/volumes?q=`):
+- **Google Books full-text search** (`www.googleapis.com/books/v1/volumes?q=`):
   much better relevance ranking than the Archive's, phrase search, snippets;
   free with an API key, within a daily quota (the keyless quota is zero). Use
   it to *find* the book, then look the ISBN up on the Archive (`isbn:`) to get
-  a readable copy; or cite Google Books, as editors routinely do.
+  a readable copy; or cite Google Books, as editors routinely do. Both are
+  now strategies in the harness (`gbooks`, `gbooks-direct`); see "Google
+  Books as the finder" above for the run.
 - **HathiTrust full-text search** reports the pages where terms occur even in
   books it cannot show. No API; the HTML would have to be read through the
   Worker.
