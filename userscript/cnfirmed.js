@@ -6027,29 +6027,85 @@
     showEditBanner(message, kind);
   }
 
-  // Aliases that all redirect to {{Citation needed}} on en.wikipedia and render
-  // as <sup class="Template-Fact">. Compared after stripping subst:/safesubst:
-  // prefixes, normalising underscores/dashes/whitespace, and lowercasing — so
-  // "Citation_needed", "CITATION-NEEDED", and "citation needed" all match.
+  // Every en.wikipedia template that renders as <sup class="Template-Fact">,
+  // with its redirects: the page finds tags by that class, so the wikitext
+  // side must count the same set or the Nth tag is the wrong one (or none).
+  // Not only {{Citation needed}}: {{Better source needed}}, {{Citation needed
+  // span}} and the other sourcing tags below render the same way. Compared
+  // after stripping subst:/safesubst: prefixes, normalising
+  // underscores/dashes/whitespace, and lowercasing — so "Citation_needed",
+  // "CITATION-NEEDED", and "citation needed" all match.
   var CN_ALIASES = {
-    'cn': true,
-    'cb': true,
-    'fact': true,
-    'citation needed': true,
-    'citationneeded': true,
-    'cite needed': true,
-    'citeneeded': true,
-    'refneeded': true,
-    'ref needed': true,
-    'need citation': true,
-    'needs citation': true,
-    'citation requested': true,
-    'source needed': true,
-    'sourceneeded': true,
-    'need source': true,
-    'needs source': true,
-    'cn needed': true
+    // {{Citation needed}} and its redirects
+    'citation needed': true, 'facts': true, 'citeneeded': true, 'citationneeded': true,
+    'cite needed': true, 'citation required': true, 'uncited': true, 'cn': true,
+    'needs citation': true, 'reference needed': true, 'me fact': true, 'cb': true, 'sourceme': true,
+    'refneeded': true, 'source needed': true, 'citation missing': true, 'fact': true,
+    'cite missing': true, 'proveit': true, 'talkfact': true, 'fact t': true,
+    'reference necessary': true, 'refnec': true, 'source?': true, 'refplease': true,
+    'reference required': true, 'needcite': true, 'needsref': true, 'ref?': true,
+    'citationeeded': true, 'are you sure?': true, 'citesource': true, 'cite source': true,
+    'ref needed': true, 'citation requested': true, 'needs citations': true,
+    'fake citation needed': true, 'fake fact': true, 'fcitation needed': true,
+    'request citation': true, 'prove it': true, 'ctn': true, 'fake cn': true, 'citation need': true,
+    'prov statement': true, 'ciation needed': true, 'fakecn': true, 'cit': true,
+    'unsourced inline': true, 'fact?': true, 'need citation': true, 'no source given': true,
+    'need ref': true, 'citaiton needed': true, 'needcitation': true, 'citationrequired': true,
+    'unreferenced inline': true, 'cita requerida': true, 'needs reference': true, 'citn': true,
+    'citazione necessaria': true, 'cn needed': true, 'needs cite': true,
+    'dummy citation needed': true, 'needs source': true, 'citeneed': true, 'need reference': true,
+    'need a reference': true, 'ai retrieved source': true, 'ai retrieved': true,
+    'citation nedded': true, 'sourceneeded': true, 'need source': true,
+    // {{Citation needed span}} and its redirects
+    'citation needed span': true, 'fact span': true, 'cn span': true, 'citation span': true,
+    'cns': true, 'cnspan': true, 'ctn span': true, 'cit span': true, 'cspan': true,
+    'citations needed span': true, 'refsou': true, 'cite needed span': true,
+    'citation needed inline': true,
+    // {{Additional citation needed}} and its redirects
+    'additional citation needed': true, 'acn': true, 'additional citation': true,
+    'additional citations needed': true, 'another citation needed': true,
+    'single source inline': true, 'morecitationsneeded': true,
+    'additional citation(s) needed': true, 'additional source needed': true,
+    'further citation needed': true, 'additional': true, 'inlinemcn': true,
+    'more citations needed inline': true, 'more citations inline': true,
+    // {{Medical citation needed}} and its redirects
+    'medical citation needed': true, 'medcn': true, 'medref inline': true, 'medcite': true,
+    'citation needed (medicine)': true, 'citation needed (medical)': true,
+    'citation needed medical': true, 'medical source needed': true, 'med cn': true,
+    'medrs needed': true,
+    // {{Better source needed}} and its redirects
+    'better source needed': true, 'better cite': true, 'better citation': true,
+    'better reference': true, 'bettersource': true, 'refimprove inline': true, 'bsn': true,
+    'better': true, 'dubious source': true, 'need better citation': true, 'bcn': true,
+    'better ref needed': true, 'bettersourceneeded': true, 'better citation needed': true,
+    'betterfact': true, 'better reference needed': true, 'better source': true, 'brn': true,
+    'better cite needed': true,
+    // {{Primary source inline}} and its redirects
+    'primary source inline': true, 'primary source claim': true, 'psc': true,
+    'primary inline': true, 'npsn': true, 'psi': true, 'non primary source needed': true,
+    'secondary source needed': true, 'primary src inline': true, 'primarysourceinline': true,
+    'ssn': true,
+    // {{Third-party inline}}
+    'third party inline': true
   };
+
+  // The aliases above that wrap the claim's text instead of following it.
+  var CN_SPAN_ALIASES = {
+    'citation needed span': true, 'fact span': true, 'cn span': true, 'citation span': true,
+    'cns': true, 'cnspan': true, 'ctn span': true, 'cit span': true, 'cspan': true,
+    'citations needed span': true, 'refsou': true, 'cite needed span': true,
+    'citation needed inline': true
+  };
+
+  // The text a {{Citation needed span}} wraps: |text=, |1= or the first
+  // unnamed argument.
+  function spannedText(inner) {
+    var parsed = parseTemplateBody(inner);
+    var t = parsed.named.text;
+    if (t === undefined) t = parsed.named['1'];
+    if (t === undefined) t = parsed.positional[0];
+    return t || '';
+  }
 
   function normaliseTemplateName(raw) {
     return raw
@@ -6077,10 +6133,12 @@
           var name = normaliseTemplateName(pipe >= 0 ? inner.slice(0, pipe) : inner);
           if (Object.prototype.hasOwnProperty.call(CN_ALIASES, name)) {
             if (count === n) {
+              // {{Citation needed span}} wraps the claim itself: keep it.
+              var kept = CN_SPAN_ALIASES[name] ? spannedText(inner) : '';
               return {
                 replaced: true,
-                text: text.slice(0, i) + replacement + text.slice(end),
-                replacementStart: i
+                text: text.slice(0, i) + kept + replacement + text.slice(end),
+                replacementStart: i + kept.length
               };
             }
             count++;
