@@ -284,6 +284,9 @@ export async function googleBooks(q: string, max = 10): Promise<GbVolume[]> {
     q,
     maxResults: String(max),
     printType: "books",
+    // Without it Google answers 403 "Cannot determine user location" from
+    // proxy and cloud addresses; with it, intermittent 503s (http() retries).
+    country: process.env.GOOGLE_BOOKS_COUNTRY ?? "US",
     fields:
       "items(id,volumeInfo(title,authors,publishedDate,industryIdentifiers,canonicalVolumeLink),accessInfo(viewability),searchInfo(textSnippet))",
   });
