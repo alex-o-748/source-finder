@@ -324,6 +324,32 @@ In order of gain per effort:
 7. **Then** subject shelves and cited books, once page-level search inside is
    available (the BookReader search below).
 
+Not recommended: **Google Books** as a finder (tested; "Google Books as the
+finder" above). In 46 claims it found one that nothing else did, and the
+lessons carry beyond it:
+
+- *ISBNs do not bridge Google and the Archive.* A quarter of Google's volumes
+  carry one, and 1 in 11 of those has an Archive copy. Google's useful finds
+  are old periodicals and recent academic books, which the Archive lacks.
+- *A snippet is not evidence an editor can use.* About 150 characters, often
+  cut before the subject is named, and for many volumes (Mitsui's among them)
+  the page cannot be opened to check.
+- *A wider net brings in books an editor should not cite*: fiction, popular
+  books, books that copy Wikipedia. Whatever the source, the judge should be
+  told what kind of book it is reading and treat novels and Wikipedia mirrors
+  as no.
+- *Keep every snippet a volume comes with.* The same volume returned by two
+  queries carried different snippets, and only one held the quote; the harness
+  keeps the first one, which is what made the Mitsui quote look invented. A
+  "made-up quote" check has to look at all of them.
+- *Measure gains against the hand-checked list.* `--compare` counts a claim as
+  found if any lead was judged even partial, which every claim already had.
+- *From a cloud address, pass `country`*, or Google refuses with 403; expect
+  frequent 503s and retry.
+
+If it is ever revisited, its one use is a last resort when nothing on the
+Archive states the claim, citing Google Books directly.
+
 ## In production (October 2026)
 
 Items 1, 2, 3 and 6 above are in both front ends (README, "Books on the
@@ -385,9 +411,9 @@ the Worker, which is on Wikipedia's CSP allowlist.
   much better relevance ranking than the Archive's, phrase search, snippets;
   free with an API key, within a daily quota (the keyless quota is zero). Use
   it to *find* the book, then look the ISBN up on the Archive (`isbn:`) to get
-  a readable copy; or cite Google Books, as editors routinely do. Both are
-  now strategies in the harness (`gbooks`, `gbooks-direct`); see "Google
-  Books as the finder" above for the run.
+  a readable copy; or cite Google Books, as editors routinely do. Tested
+  (`gbooks`, `gbooks-direct`): one new claim in 46, not worth building; see
+  "Google Books as the finder" and the Recommendations above.
 - **HathiTrust full-text search** reports the pages where terms occur even in
   books it cannot show. No API; the HTML would have to be read through the
   Worker.
