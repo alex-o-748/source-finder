@@ -5149,6 +5149,9 @@
     root.appendChild(body);
     document.body.appendChild(root);
     makeResizable(handle, root);
+    document.addEventListener('wiki-side-panel-open', function (e) {
+      if (e.detail && e.detail.panel !== 'cnfirmed') closePanel();
+    });
     window.addEventListener('resize', applyBodyMargin);
     panel = { root: root, head: head, claimBox: claimBox, body: body, drawn: null };
     return panel;
@@ -5196,6 +5199,9 @@
     if (panel.root.hidden) {
       panel.root.style.width = storedPanelWidth() + 'px';
       panel.root.hidden = false;
+      // Source Verifier docks to the same edge: this panel would cover its
+      // sidebar while it keeps its Verify tab hidden. Ask it to close.
+      document.dispatchEvent(new CustomEvent('wiki-side-panel-open', { detail: { panel: 'cnfirmed' } }));
     }
     applyBodyMargin();
   }
