@@ -5149,9 +5149,8 @@
     root.appendChild(body);
     document.body.appendChild(root);
     makeResizable(handle, root);
-    document.addEventListener('wiki-side-panel-open', function (e) {
-      if (e.detail && e.detail.panel !== 'cnfirmed') closePanel();
-    });
+    // Using the panel puts it back on top of any other tool's.
+    root.addEventListener('mousedown', bringToFront);
     window.addEventListener('resize', applyBodyMargin);
     panel = { root: root, head: head, claimBox: claimBox, body: body, drawn: null };
     return panel;
@@ -5199,11 +5198,28 @@
     if (panel.root.hidden) {
       panel.root.style.width = storedPanelWidth() + 'px';
       panel.root.hidden = false;
-      // Source Verifier docks to the same edge: this panel would cover its
-      // sidebar while it keeps its Verify tab hidden. Ask it to close.
-      document.dispatchEvent(new CustomEvent('wiki-side-panel-open', { detail: { panel: 'cnfirmed' } }));
     }
     applyBodyMargin();
+    bringToFront();
+  }
+
+  // The outermost element covering the middle of the open panel, or null when
+  // the panel is on top. Another tool's panel docked to the same edge (Source
+  // Verifier, say) is the usual culprit.
+  function coveringElement() {
+    if (!panelVisible()) return null;
+    var r = panel.root.getBoundingClientRect();
+    var el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    if (!el || panel.root.contains(el)) return null;
+    while (el.parentElement && el.parentElement !== document.body) el = el.parentElement;
+    return el;
+  }
+
+  function bringToFront() {
+    var cover = coveringElement();
+    if (!cover) return;
+    var z = (parseInt(getComputedStyle(cover).zIndex, 10) || 0) + 1;
+    panel.root.style.zIndex = String(Math.max(z, 10001));
   }
 
   function closePanel() {
@@ -5213,9 +5229,11 @@
     setActive(null);
   }
 
+  // A panel another tool has covered is raised rather than closed.
   function togglePanel() {
-    if (panelVisible()) closePanel();
-    else openOverview();
+    if (!panelVisible()) openOverview();
+    else if (coveringElement()) bringToFront();
+    else closePanel();
   }
 
   function setActive(i) {
