@@ -2,6 +2,7 @@
   "name": "cnfirmed",
   "version": "0.1.0",
   "description": "Find and verify sources for Wikipedia {{citation needed}} claims using Claude.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "cnfirmed": "./dist/cli/index.js"

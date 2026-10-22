@@ -277,3 +277,8 @@ Toolforge, the three model providers, `archive.org` and `doi.org` are on it,
 but most third-party APIs are not, and a request to one is refused before it
 leaves the browser. A new retrieval source has to be checked against that list
 first (see the plan doc); what is not on it needs a Toolforge proxy.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE). The copy published on Wikipedia is also
+available under the wiki's own terms (CC BY-SA 4.0 and GFDL).
