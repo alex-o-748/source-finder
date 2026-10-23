@@ -263,7 +263,6 @@ v1 ships the user script + the CLI + core library, with the wiki-local stage
 in front of the web search in both. Deferred:
 
 - Wikidata statements and their references
-- Citoid for citation metadata, instead of formatting templates by hand
 - Browser extension wrapper (no install via common.js)
 - MCP server wrapper
 - Bot / talk-page integration
@@ -279,3 +278,8 @@ Toolforge, the three model providers, `archive.org` and `doi.org` are on it,
 but most third-party APIs are not, and a request to one is refused before it
 leaves the browser. A new retrieval source has to be checked against that list
 first (see the plan doc); what is not on it needs a Toolforge proxy.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE). The copy published on Wikipedia is also
+available under the wiki's own terms (CC BY-SA 4.0 and GFDL).
