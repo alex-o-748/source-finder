@@ -220,8 +220,9 @@
   // search tool to discover candidates and verify them in the same loop.
 
   var SYSTEM_PROMPT = [
-    'You find and verify sources for a Wikipedia claim currently tagged with',
-    '{{citation needed}}. You will receive a CLAIM, surrounding CONTEXT, and',
+    'You find and verify sources for a Wikipedia claim that needs a citation',
+    '(usually one tagged {{citation needed}}). You will receive a CLAIM,',
+    'surrounding CONTEXT, and',
     'the SECTION heading.',
     '',
     'Use web search (and URL retrieval where available) to find up to 3 candidate',
@@ -319,8 +320,6 @@
     '@keyframes cnfirmed-spin{to{transform:rotate(360deg)}}',
     '.cnfirmed-spin{animation:cnfirmed-spin 0.9s linear infinite}',
 
-    '#p-cnfirmed .cnfirmed-tool-link{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}',
-    '#p-cnfirmed .cnfirmed-tool-link:hover,#p-cnfirmed .cnfirmed-tool-link:focus{color:#36c}',
 
     // The badge after each [citation needed]. An SVG, not an emoji: CSS
     // cannot recolour an emoji, so its status colour never showed.
@@ -333,6 +332,9 @@
     '.cnfirmed-badge[data-status="partial"]{color:var(--cnf-warn)}',
     '.cnfirmed-badge[data-status="leads"],.cnfirmed-badge[data-status="running"]{color:var(--cnf-link)}',
     '.cnfirmed-badge[data-status="error"]{color:var(--cnf-err)}',
+    '.cnfirmed-badge-picked{border-style:dashed;border-color:var(--cnf-link)}',
+    '.cnfirmed-badge.cnfirmed-active{box-shadow:0 0 0 2px var(--cnf-hl)}',
+    '::highlight(cnfirmed-claim){background-color:var(--cnf-hl)}',
     'sup.cnfirmed-active{background:var(--cnf-hl);box-shadow:0 0 0 2px var(--cnf-hl);border-radius:2px}',
     '.cnfirmed-flash{background:var(--cnf-hl) !important;transition:background 0.4s}',
 
@@ -372,6 +374,15 @@
     '#cnfirmed-panel .cnf-linkbtn{padding:0;border:0;background:none;color:var(--cnf-link);font-size:12.5px;' +
       'cursor:pointer;text-decoration:underline;text-underline-offset:2px}',
     '#cnfirmed-panel .cnf-claim-acts{display:flex;flex-wrap:wrap;gap:4px 16px}',
+    '#cnfirmed-panel .cnf-claim-top{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}',
+    '#cnfirmed-panel .cnf-chip{padding:0 7px;border:1px dashed var(--cnf-link);border-radius:999px;' +
+      'font-size:11.5px;font-weight:600;line-height:18px;color:var(--cnf-link)}',
+    '#cnfirmed-panel .cnf-cites{margin:0 0 8px;font-size:12.5px;line-height:1.45;color:var(--cnf-ink3)}',
+    '#cnfirmed-panel .cnf-pick .cnf-quote{margin-bottom:12px}',
+    '#cnfirmed-panel .cnf-pick .cnf-actions{margin-top:0}',
+    '#cnfirmed-panel .cnf-pick-reason{color:var(--cnf-warn) !important}',
+    '#cnfirmed-panel .cnf-group-label{margin-top:14px}',
+    '#cnfirmed-panel .cnf-ov-foot{padding-top:12px;border-top:1px solid var(--cnf-line2)}',
     '#cnfirmed-panel .cnf-back{display:inline-flex;align-items:center;gap:2px;margin:-4px 0 8px -4px;padding:2px 6px 2px 2px;' +
       'border:0;border-radius:4px;background:none;color:var(--cnf-link);font:inherit;font-size:13px;font-weight:600;cursor:pointer}',
     '#cnfirmed-panel .cnf-back:hover{background:var(--cnf-line)}',
@@ -491,6 +502,11 @@
   var wikiState = {};     // { [index]: { status, candidates?, warnings?, error? } }
   var archiveState = {};  // { [index]: { status, candidates?, funnel?, error? } }
   var booted = false;     // claims extracted and caches read; see bootstrap()
+  // Claims picked from a selection come after the tagged ones: claim i is
+  // cnSups[i] while i < cnSups.length, then pickedAnchors[i - cnSups.length]
+  // (its badge). They last until the page is reloaded.
+  var pickedAnchors = [];
+  var pickedRanges = [];  // the text each covers, for the highlight
 
   // ---- Boot sequence ----------------------------------------------------
 
@@ -503,100 +519,34 @@
     cnSups = Array.prototype.slice.call(
       document.querySelectorAll('sup.Template-Fact')
     );
+    if (cnSups.length) insertBadges();
 
-    if (cnSups.length === 0) {
-      mw.loader.using(['mediawiki.util'])
-        .then(buildEmptyPortlet)
-        .catch(function (err) {
-          console.error('[CNfirmed] failed to load empty portlet:', err);
-        });
-      return;
-    }
-
-    insertBadges();
-
+    // A page without tags gets one Tools item and nothing else, until it is
+    // clicked: the script is meant to stay on, and most articles have none.
     mw.loader.using(['mediawiki.util'])
       .then(function () {
-        bootstrap();
+        if (cnSups.length) bootstrap();
+        addPickToolLink();
       })
       .catch(function (err) {
         console.error('[CNfirmed] failed to load:', err);
       });
   });
 
-  function buildEmptyPortlet() {
-    if (!mw.util || !mw.util.addPortletLink) return;
-    if (document.getElementById('p-cnfirmed')) return;
-    if (!ensurePortlet('CNfirmed')) return;
-    mw.util.addPortletLink(
-      'p-cnfirmed',
-      'https://en.wikipedia.org/wiki/Category:All_articles_with_unsourced_statements',
-      'No {{citation needed}} tags — try one →',
-      't-cnfirmed-test',
-      'CNfirmed loaded, but this page has no citation-needed tags. Pick an article from this category to try the script.'
-    );
-    linkifyPortletHeading();
-  }
-
-  // Turn the literal "CNfirmed" inside the portlet heading into a link to the
-  // on-wiki docs page, so users have one click from the sidebar to "what is
-  // this?". Robust across skins (legacy h3, Vector 2022 span heading-label).
-  function linkifyPortletHeading() {
-    var portlet = document.getElementById('p-cnfirmed');
-    if (!portlet) return;
-    if (portlet.querySelector('.cnfirmed-tool-link')) return;
-    var url = (mw.util && typeof mw.util.getUrl === 'function')
-      ? mw.util.getUrl('User:Alaexis/CNfirmed')
-      : '/wiki/User:Alaexis/CNfirmed';
-    var headings = portlet.querySelectorAll(
-      'h2, h3, h4, .vector-menu-heading-label, .mw-portlet-heading, label'
-    );
-    for (var i = 0; i < headings.length; i++) {
-      if (replaceTextWithAnchor(headings[i], 'CNfirmed', url, 'cnfirmed-tool-link')) return;
-    }
-  }
-
-  function replaceTextWithAnchor(root, target, url, className) {
-    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-    var node;
-    while ((node = walker.nextNode())) {
-      var idx = node.nodeValue.indexOf(target);
-      if (idx < 0) continue;
-      var before = node.nodeValue.slice(0, idx);
-      var after = node.nodeValue.slice(idx + target.length);
-      var a = document.createElement('a');
-      a.href = url;
-      a.textContent = target;
-      a.className = className;
-      a.title = 'About CNfirmed';
-      var parent = node.parentNode;
-      parent.insertBefore(document.createTextNode(before), node);
-      parent.insertBefore(a, node);
-      parent.insertBefore(document.createTextNode(after), node);
-      parent.removeChild(node);
-      return true;
-    }
-    return false;
-  }
-
-  // The sidebar box, now only for pages without a tag (everything else lives
-  // in the panel). mw.util.addPortlet() leaves placement to the caller unless given a
-  // sibling to go before, so the box is appended after the last section of
-  // the main menu, wherever the skin keeps it.
-  function ensurePortlet(label) {
-    var el = document.getElementById('p-cnfirmed');
-    if (el) return el;
-    if (!mw.util || typeof mw.util.addPortlet !== 'function') return null;
-    el = mw.util.addPortlet('p-cnfirmed', label);
-    if (!el) return null;
-    if (!el.parentNode) {
-      var anchor = document.getElementById('p-interaction') ||
-        document.getElementById('p-navigation') ||
-        document.getElementById('p-tb');
-      if (!anchor || !anchor.parentNode) return null;
-      anchor.parentNode.appendChild(el);
-    }
-    return el;
+  function addPickToolLink() {
+    if (!mw.util || typeof mw.util.addPortletLink !== 'function') return;
+    if (!document.getElementById('mw-content-text')) return;
+    var link = mw.util.addPortletLink('p-tb', '#', 'Find sources for a claim', 't-cnfirmed-pick',
+      'Select text in the article and find sources for it (CNfirmed)');
+    if (!link) return;
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!booted) {
+        insertBadges();
+        bootstrap();
+      }
+      startPicking();
+    });
   }
 
   // Inline icons. Constants only: nothing from a page or a response is ever
@@ -627,24 +577,35 @@
     return svg;
   }
 
+  function makeBadge(i) {
+    var badge = document.createElement('button');
+    badge.type = 'button';
+    badge.className = 'cnfirmed-badge';
+    badge.setAttribute('data-cn-index', String(i));
+    badge.setAttribute('aria-label', 'Find sources for this claim (CNfirmed)');
+    badge.title = 'Find sources with CNfirmed';
+    badge.appendChild(icon('search'));
+    return badge;
+  }
+
   function insertBadges() {
     cnSups.forEach(function (sup, i) {
-      var badge = document.createElement('button');
-      badge.type = 'button';
-      badge.className = 'cnfirmed-badge';
-      badge.setAttribute('data-cn-index', String(i));
-      badge.setAttribute('aria-label', 'Find sources for this claim (CNfirmed)');
-      badge.title = 'Find sources with CNfirmed';
-      badge.appendChild(icon('search'));
+      var badge = makeBadge(i);
       sup.parentNode.insertBefore(badge, sup.nextSibling);
       badges.push(badge);
     });
 
     document.addEventListener('click', onBadgeActivate);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && panelVisible()) closePanel();
+      if (e.key !== 'Escape') return;
+      if (picking) cancelPicking();
+      else if (panelVisible()) closePanel();
     });
   }
+
+  function claimCount() { return cnSups.length + pickedAnchors.length; }
+  function isPicked(i) { return i >= cnSups.length; }
+  function anchorOf(i) { return i < cnSups.length ? cnSups[i] : pickedAnchors[i - cnSups.length]; }
 
   function onBadgeActivate(e) {
     var t = e.target && e.target.closest ? e.target.closest('.cnfirmed-badge') : null;
@@ -661,8 +622,17 @@
     hydrateArchiveCache();
     extractAllClaims();
     booted = true;
-    addEntryLink();
+    if (cnSups.length) addEntryLink();
     for (var i = 0; i < cnSups.length; i++) renderBadge(i);
+  }
+
+  // Results saved for claims picked on an earlier visit: those claims are
+  // gone, and a new pick would take their index.
+  function dropPickedResults(saved) {
+    Object.keys(saved).forEach(function (k) {
+      if (!(Number(k) < cnSups.length)) delete saved[k];
+    });
+    return saved;
   }
 
   // One link to open the panel on the list of claims, where Source Verifier
@@ -692,7 +662,7 @@
       var raw = localStorage.getItem(cacheKey);
       if (!raw) return;
       var parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') state = parsed;
+      if (parsed && typeof parsed === 'object') state = dropPickedResults(parsed);
     } catch (e) { /* ignore */ }
     // A search still running when another claim's result was saved is not
     // running any more.
@@ -818,6 +788,230 @@
     return (c.textContent || '').trim() || null;
   }
 
+  // ---- A claim picked from a selection -----------------------------------
+  // Started from the Tools item or the list of claims, never by selecting
+  // alone: people select text for many reasons. While it is on, the panel
+  // shows what is selected, and Find sources turns it into a claim. The last
+  // usable selection is kept, since a tap on the panel can clear it on iOS.
+
+  var PICK_BLOCKS = 'p, li, dd, dt';
+  var PICK_EXCLUDED = 'table, .infobox, .navbox, .vertical-navbox, .sidebar, .metadata, .ambox, ' +
+    '.hatnote, .reflist, .references, .mw-references-wrap, figure, .thumb, .gallery, .toc, ' +
+    '.mw-heading, h1, h2, h3, h4, h5, h6, #cnfirmed-panel';
+  var PICK_MIN_WORDS = 3;
+  var PICK_CLOSERS = /[.,;:!?)"”’'»\]]/;
+  var picking = null; // while on: { pick, reason, timer }
+
+  function startPicking() {
+    if (!picking) {
+      picking = { pick: null, reason: null, timer: null };
+      document.addEventListener('selectionchange', onPickSelection);
+      readPickSelection();
+    }
+    panelView = 'pick';
+    showPanel();
+    setActive(null);
+    drawPanel();
+  }
+
+  function stopPicking() {
+    if (!picking) return;
+    clearTimeout(picking.timer);
+    document.removeEventListener('selectionchange', onPickSelection);
+    picking = null;
+    if (panelView === 'pick') panelView = 'overview';
+  }
+
+  function cancelPicking() {
+    stopPicking();
+    if (claimCount()) openOverview();
+    else closePanel();
+  }
+
+  function onPickSelection() {
+    clearTimeout(picking.timer);
+    picking.timer = setTimeout(function () {
+      if (picking && readPickSelection() && panelView === 'pick') drawPanel();
+    }, 150);
+  }
+
+  // A selection elsewhere, or none, leaves what was there.
+  function readPickSelection() {
+    var sel = window.getSelection ? window.getSelection() : null;
+    if (!sel || !sel.rangeCount || sel.isCollapsed) return false;
+    var found = pickFromRange(sel.getRangeAt(0));
+    if (!found) return false;
+    picking.pick = found.reason ? null : found;
+    picking.reason = found.reason || null;
+    return true;
+  }
+
+  function pickBlockOf(node) {
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    var block = el && el.closest(PICK_BLOCKS);
+    return block && !block.closest(PICK_EXCLUDED) ? block : null;
+  }
+
+  // The text a reader sees: footnote markers, edit links and badges left out.
+  function readableText(node) {
+    var copy = node.cloneNode(true);
+    Array.prototype.forEach.call(
+      copy.querySelectorAll('sup, .reference, .mw-editsection, .cnfirmed-badge, style'),
+      function (n) { n.parentNode && n.parentNode.removeChild(n); }
+    );
+    return (copy.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function rangeText(range) {
+    var holder = document.createElement('div');
+    holder.appendChild(range.cloneContents());
+    return readableText(holder);
+  }
+
+  // The selection grown to whole words, without the space after it.
+  function wordRange(range) {
+    var r = range.cloneRange();
+    var isWord = function (ch) { return /[\p{L}\p{N}]/u.test(ch); };
+    if (r.startContainer.nodeType === 3) {
+      var a = r.startOffset;
+      var d = r.startContainer.data;
+      while (a > 0 && isWord(d.charAt(a - 1))) a--;
+      r.setStart(r.startContainer, a);
+    }
+    if (r.endContainer.nodeType === 3) {
+      var b = r.endOffset;
+      var e = r.endContainer.data;
+      while (b < e.length && isWord(e.charAt(b))) b++;
+      while (b > 0 && /\s/.test(e.charAt(b - 1))) b--;
+      r.setEnd(r.endContainer, b);
+    }
+    return r;
+  }
+
+  function nextOutside(node, block) {
+    while (node && node !== block) {
+      if (node.nextSibling) return node.nextSibling;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  // Where the badge goes on the page, as the <ref> does in the wikitext:
+  // after the selection's closing punctuation and the footnotes already
+  // there. A [citation needed] there means the text is a tagged claim.
+  function pagePointAfter(range, block) {
+    var at = document.createRange();
+    var cites = [];
+    var node = range.endContainer;
+    var offset = range.endOffset;
+    if (node.nodeType !== 3) {
+      node = node.childNodes[offset] || nextOutside(node, block);
+      offset = 0;
+    }
+    var last = range.endContainer;
+    while (node) {
+      if (node.nodeType === 3) {
+        var o = offset;
+        while (o < node.data.length && PICK_CLOSERS.test(node.data.charAt(o))) o++;
+        if (o < node.data.length) {
+          at.setStart(node, o);
+          return { at: at, cites: cites, tag: -1 };
+        }
+      } else if (node.nodeType === 1 && node.matches('sup.Template-Fact')) {
+        return { at: at, cites: cites, tag: cnSups.indexOf(node) };
+      } else if (node.nodeType === 1 && node.matches('sup.reference')) {
+        cites.push(node.textContent.trim());
+      } else if (node.nodeType === 1 && !node.matches('.cnfirmed-badge')) {
+        at.setStartBefore(node);
+        return { at: at, cites: cites, tag: -1 };
+      }
+      last = node;
+      node = nextOutside(node, block);
+      offset = 0;
+    }
+    if (last === block || !block.contains(last)) {
+      at.setStart(block, block.childNodes.length);
+    } else {
+      while (last.parentNode !== block) last = last.parentNode;
+      at.setStartAfter(last);
+    }
+    return { at: at, cites: cites, tag: -1 };
+  }
+
+  function lastProseText(block) {
+    var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    var found = null;
+    var node;
+    while ((node = walker.nextNode())) {
+      if (/\S/.test(node.data) && !node.parentElement.closest('sup, .cnfirmed-badge')) found = node;
+    }
+    return found;
+  }
+
+  // What a selection would make: { reason } when it cannot be used, or the
+  // claim. Null for a selection outside the article, which is ignored.
+  function pickFromRange(range) {
+    var root = document.getElementById('mw-content-text');
+    if (!root || !root.contains(range.commonAncestorContainer)) return null;
+    var block = pickBlockOf(range.startContainer);
+    var endBlock = pickBlockOf(range.endContainer);
+    // A triple-click selects a paragraph up to the start of the next one.
+    if (block && endBlock !== block && range.endOffset === 0) {
+      var lastText = lastProseText(block);
+      if (lastText) {
+        range = range.cloneRange();
+        range.setEnd(lastText, lastText.data.length);
+        endBlock = block;
+      }
+    }
+    if (!block || !endBlock) return { reason: 'Select text in the article’s paragraphs or lists.' };
+    if (block !== endBlock) return { reason: 'Select text within one paragraph.' };
+    var r = wordRange(range);
+    var claim = rangeText(r);
+    if (wordsWithOffsets(claim).length < PICK_MIN_WORDS) return { reason: 'Select at least three words.' };
+    var lead = document.createRange();
+    lead.setStart(block, 0);
+    lead.setEnd(r.startContainer, r.startOffset);
+    return {
+      range: r,
+      block: block,
+      claim: claim,
+      before: rangeText(lead).slice(-200),
+      tag: pagePointAfter(r, block).tag
+    };
+  }
+
+  function addPickedClaim(p) {
+    var i = claimCount();
+    var point = pagePointAfter(p.range, p.block);
+    var badge = makeBadge(i);
+    badge.classList.add('cnfirmed-badge-picked');
+    point.at.insertNode(badge);
+    pickedAnchors.push(badge);
+    pickedRanges.push(p.range);
+    badges[i] = badge;
+    claimContexts[i] = {
+      claim: p.claim,
+      context: readableText(p.block),
+      section: nearestSection(p.block),
+      links: wikilinkTargets(p.block),
+      picked: true,
+      before: p.before,
+      cites: point.cites
+    };
+    renderBadge(i);
+    return i;
+  }
+
+  function usePick() {
+    var p = picking && picking.pick;
+    if (!p) return;
+    stopPicking();
+    try { window.getSelection().removeAllRanges(); } catch (e) { /* not needed */ }
+    if (p.tag >= 0) openClaim(p.tag, true);
+    else openClaim(addPickedClaim(p));
+  }
+
   // ---- Finding sources --------------------------------------------------
 
   // Free first, paid second. Opening a claim runs both free searches at once:
@@ -918,7 +1112,7 @@
   function findAllFree() {
     if (batch) return batch.promise;
     var indexes = [];
-    for (var i = 0; i < cnSups.length; i++) indexes.push(i);
+    for (var i = 0; i < claimCount(); i++) indexes.push(i);
     batch = { done: 0, total: indexes.length };
     renderPanel();
     batch.promise = indexes.reduce(function (chain, index) {
@@ -939,7 +1133,7 @@
   // Claims both free searches came back empty for, not yet searched on the web.
   function claimsForWeb() {
     var out = [];
-    for (var i = 0; i < cnSups.length; i++) {
+    for (var i = 0; i < claimCount(); i++) {
       var ctx = claimContexts[i];
       var s = state[i];
       if (!ctx || !ctx.claim || (s && s.status !== 'idle')) continue;
@@ -1416,6 +1610,116 @@
     if (small < 4) return false;
     var shared = b.filter(function (t) { return a[t]; }).length;
     return shared / small >= 0.9;
+  }
+
+  // -- Text someone selected on the page, found again in the wikitext --
+  // A claim picked from a selection has no tag to count, so its place in the
+  // wikitext is found by its words: the page's text and the wikitext's prose
+  // compared word by word, lower-cased, everything that does not render as
+  // prose blanked (refs, templates, comments, link targets, tags). Template
+  // output (a {{convert}}) is not in the wikitext, so a claim with some in it
+  // is matched by its last words alone; where even those are not found, or
+  // are found twice, the caller falls back.
+
+  var WORD = /[\p{L}\p{N}]+/gu;
+  var PICK_TAIL_WORDS = 6;
+  var PICK_BEFORE_WORDS = 6;
+
+  function wordsWithOffsets(text) {
+    var out = [];
+    var m;
+    WORD.lastIndex = 0;
+    while ((m = WORD.exec(text))) out.push({ w: m[0].toLowerCase(), start: m.index, end: m.index + m[0].length });
+    return out;
+  }
+
+  function proseWordsOf(wikitext) {
+    var blank = function (m) { return new Array(m.length + 1).join(MASKED); };
+    var masked = maskNonProse(wikitext)
+      .replace(/\[\[\s*(?:Category|File|Image|Media)\s*:[^\]]*\]\]/gi, blank)
+      .replace(/\[\[[^\[\]|\n]*\|/g, blank)
+      .replace(/\[(?:https?:)?\/\/[^\s\]]+/gi, blank)
+      .replace(/<\/?[a-zA-Z][^>]*>/g, blank)
+      .replace(/&[a-zA-Z0-9#]+;/g, blank);
+    return wordsWithOffsets(masked);
+  }
+
+  function wordRunsAt(prose, words) {
+    var out = [];
+    if (!words.length) return out;
+    for (var i = 0; i + words.length <= prose.length; i++) {
+      var k = 0;
+      while (k < words.length && prose[i + k].w === words[k]) k++;
+      if (k === words.length) out.push(i);
+    }
+    return out;
+  }
+
+  // { start, end } of the claim in the wikitext (start null when only its
+  // last words were found), or null. `before` is the page text just ahead of
+  // the claim in its paragraph, to tell apart two places with the same words.
+  function locateClaimText(wikitext, claim, before) {
+    var prose = proseWordsOf(wikitext);
+    var words = wordsWithOffsets(claim).map(function (t) { return t.w; });
+    if (!words.length) return null;
+    var lead = wordsWithOffsets(before || '').map(function (t) { return t.w; }).slice(-PICK_BEFORE_WORDS);
+    function preceded(at) {
+      if (!lead.length) return false;
+      for (var k = 1; k <= lead.length; k++) {
+        var p = prose[at - k];
+        if (!p) return k > 1;
+        if (p.w !== lead[lead.length - k]) return false;
+      }
+      return true;
+    }
+    function pick(hits) {
+      if (hits.length === 1) return hits[0];
+      var kept = hits.filter(preceded);
+      return kept.length === 1 ? kept[0] : -1;
+    }
+    var at = pick(wordRunsAt(prose, words));
+    if (at >= 0) return { start: prose[at].start, end: prose[at + words.length - 1].end };
+    var tail = words.slice(-PICK_TAIL_WORDS);
+    var hits = wordRunsAt(prose, tail);
+    at = hits.length === 1 ? hits[0] : -1;
+    if (at < 0) return null;
+    return { start: null, end: prose[at + tail.length - 1].end };
+  }
+
+  // Footnote templates, which sit after the text they cite as a <ref> does.
+  var FOOTNOTE_TEMPLATES = { sfn: true, sfnp: true, sfnm: true, efn: true, rp: true, r: true, refn: true };
+
+  // Where a <ref> for text ending at `end` goes: past the punctuation and
+  // closing markup right after it, and past the footnotes already there.
+  // Never past a space, so a claim ending mid-sentence is cited where it ends.
+  function citationPointAfter(text, end) {
+    var i = end;
+    for (;;) {
+      var rest = text.slice(i, i + 400);
+      var m = rest.match(/^(?:[.,;:!?)"”’']|\]\]|<\/[a-zA-Z]+\s*>|<!--[\s\S]*?-->)/);
+      if (m) { i += m[0].length; continue; }
+      m = rest.match(/^<ref\b[^>]*\/\s*>/i);
+      if (m) { i += m[0].length; continue; }
+      if (/^<ref\b/i.test(rest)) {
+        var close = text.toLowerCase().indexOf('</ref', i);
+        var gt = close < 0 ? -1 : text.indexOf('>', close);
+        if (gt < 0) break;
+        i = gt + 1;
+        continue;
+      }
+      if (rest.charAt(0) === '{' && rest.charAt(1) === '{') {
+        var tEnd = findTemplateEnd(text, i);
+        if (tEnd < 0) break;
+        var inner = text.slice(i + 2, tEnd - 2);
+        var pipe = inner.indexOf('|');
+        var name = normaliseTemplateName(pipe >= 0 ? inner.slice(0, pipe) : inner);
+        if (!FOOTNOTE_TEMPLATES[name]) break;
+        i = tEnd;
+        continue;
+      }
+      break;
+    }
+    return i;
   }
 
   function sectionAt(sections, pos) {
@@ -2035,6 +2339,20 @@
     return '{{' + parts.join(' |') + '}}';
   }
 
+  // Where claim `index` sits in the article's wikitext, as a tag's span: the
+  // tag itself, or for a picked claim the point its <ref> would go. Null when
+  // unknown, and matching then falls back to the section alone.
+  function claimPositionIn(corpus, ctx, index) {
+    if (!ctx.picked) return corpus.claimOffsets ? corpus.claimOffsets[index] : null;
+    if (ctx.wikitextAt === undefined) {
+      var text = corpus.local.wikitext;
+      var found = locateClaimText(text, ctx.claim, ctx.before);
+      var point = found ? citationPointAfter(text, found.end) : -1;
+      ctx.wikitextAt = point < 0 ? null : { start: point, end: point };
+    }
+    return ctx.wikitextAt;
+  }
+
   function sameArticleCandidates(corpus, ctx, index) {
     var background = tokenSetOf(pageTitle.replace(/_/g, ' ') + ' ' + (ctx.section || ''));
     // Deliberately just the tagged sentence, not ctx.context (the whole
@@ -2043,12 +2361,9 @@
     // match trivially against its own sentence sitting right there in the
     // query.
     var query = weightedTokensOf(ctx.claim, background);
-    var range = corpus.claimOffsets
-      ? paragraphRangeAt(corpus.local.wikitext, corpus.claimOffsets[index].start)
-      : null;
-    var own = corpus.claimOffsets
-      ? taggedSentenceRange(corpus.local.wikitext, corpus.claimOffsets[index].start, corpus.claimOffsets[index].end)
-      : null;
+    var at = claimPositionIn(corpus, ctx, index);
+    var range = at ? paragraphRangeAt(corpus.local.wikitext, at.start) : null;
+    var own = at ? taggedSentenceRange(corpus.local.wikitext, at.start, at.end) : null;
 
     var out = [];
     corpus.local.refs.forEach(function (ref) {
@@ -2071,7 +2386,7 @@
       // the field further, never substitutes for it.
       if (lexical < (sameParagraph ? 0.2 : 0.35)) return;
 
-      var distance = Math.abs(ref.occurrence.offset - (corpus.claimOffsets ? corpus.claimOffsets[index].start : 0));
+      var distance = Math.abs(ref.occurrence.offset - (at ? at.start : 0));
       var proximity = sameParagraph ? (distance < 200 ? 1 : 0.5) : 0.25;
       var score = 0.75 * lexical + 0.25 * proximity;
       if (score < WIKI_MIN_SCORE) return;
@@ -2222,7 +2537,7 @@
       var raw = localStorage.getItem(wikiCacheKey);
       if (!raw) return;
       var parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') wikiState = parsed;
+      if (parsed && typeof parsed === 'object') wikiState = dropPickedResults(parsed);
     } catch (e) { /* ignore */ }
   }
 
@@ -3269,7 +3584,7 @@
       var raw = localStorage.getItem(archiveCacheKey);
       if (!raw) return;
       var parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') archiveState = parsed;
+      if (parsed && typeof parsed === 'object') archiveState = dropPickedResults(parsed);
     } catch (e) { /* ignore */ }
   }
 
@@ -5224,6 +5539,7 @@
 
   function closePanel() {
     if (!panel) return;
+    stopPicking();
     panel.root.hidden = true;
     applyBodyMargin();
     setActive(null);
@@ -5236,26 +5552,39 @@
     else closePanel();
   }
 
+  // A picked claim's text is highlighted where the browser can do it
+  // without touching the article's HTML (the CSS Custom Highlight API).
   function setActive(i) {
     cnSups.forEach(function (sup, k) { sup.classList.toggle('cnfirmed-active', k === i); });
+    pickedAnchors.forEach(function (badge, k) { badge.classList.toggle('cnfirmed-active', cnSups.length + k === i); });
+    if (!window.CSS || !CSS.highlights || typeof Highlight !== 'function') return;
+    if (i !== null && i !== undefined && isPicked(i)) {
+      CSS.highlights.set('cnfirmed-claim', new Highlight(pickedRanges[i - cnSups.length]));
+    } else {
+      CSS.highlights.delete('cnfirmed-claim');
+    }
+  }
+
+  function showInArticle(i) {
+    anchorOf(i).scrollIntoView({ block: 'center', behavior: 'smooth' });
+    flash(anchorOf(i));
   }
 
   function openClaim(i, scroll) {
-    if (!booted || !cnSups[i]) return;
+    if (!booted || !anchorOf(i)) return;
+    stopPicking();
     currentIndex = i;
     panelView = 'claim';
     showPanel();
     setActive(i);
-    if (scroll) {
-      cnSups[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
-      flash(cnSups[i]);
-    }
+    if (scroll) showInArticle(i);
     drawPanel();
     startClaim(i);
   }
 
   function openOverview() {
     if (!booted) return;
+    stopPicking();
     panelView = 'overview';
     showPanel();
     drawPanel();
@@ -5300,6 +5629,7 @@
     var pad = el('div', 'cnf-pad');
     if (panelView === 'claim' && currentIndex !== null) drawClaimView(pad, currentIndex);
     else if (panelView === 'settings') drawSettings(pad);
+    else if (panelView === 'pick' && picking) drawPick(pad);
     else drawOverview(pad);
     panel.body.appendChild(pad);
     panel.body.scrollTop = panel.drawn === where ? scroll : 0;
@@ -5320,15 +5650,17 @@
       var i = currentIndex;
       var prev = iconButton('prev', 'Previous claim', function () { openClaim(i - 1, true); });
       prev.disabled = i === 0;
-      var count = button('cnf-ib', (i + 1) + ' of ' + cnSups.length, openOverview, 'All claims on this page');
-      count.setAttribute('aria-label', 'Claim ' + (i + 1) + ' of ' + cnSups.length + '. Show all claims');
+      var total = claimCount();
+      var count = button('cnf-ib', (i + 1) + ' of ' + total, openOverview, 'All claims on this page');
+      count.setAttribute('aria-label', 'Claim ' + (i + 1) + ' of ' + total + '. Show all claims');
       var next = iconButton('next', 'Next claim', function () { openClaim(i + 1, true); });
-      next.disabled = i === cnSups.length - 1;
+      next.disabled = i === total - 1;
       head.appendChild(prev);
       head.appendChild(count);
       head.appendChild(next);
     } else {
-      head.appendChild(el('span', 'cnf-title', panelView === 'settings' ? 'Settings' : 'All claims'));
+      head.appendChild(el('span', 'cnf-title', panelView === 'settings' ? 'Settings'
+        : panelView === 'pick' ? 'Find sources for a claim' : 'All claims'));
     }
 
     var gear = iconButton('gear', 'Settings', function () {
@@ -5351,13 +5683,23 @@
     back.appendChild(icon('prev'));
     back.appendChild(document.createTextNode('All claims'));
     box.appendChild(back);
-    if (ctx.section) box.appendChild(el('div', 'cnf-section', ctx.section));
+    var top = el('div', 'cnf-claim-top');
+    if (ctx.section) top.appendChild(el('span', 'cnf-section', ctx.section));
+    if (ctx.picked) top.appendChild(el('span', 'cnf-chip', 'No tag · picked by you'));
+    if (top.firstChild) box.appendChild(top);
     box.appendChild(el('p', 'cnf-claim-text', ctx.claim || '(no claim text found)'));
+    if (ctx.picked && ctx.cites && ctx.cites.length) {
+      box.appendChild(el('p', 'cnf-cites', 'Already cites ' + ctx.cites.join('') +
+        '. That source is left out of the leads; a new <ref> goes after it.'));
+    }
     var acts = el('div', 'cnf-claim-acts');
-    acts.appendChild(button('cnf-linkbtn', 'Show in article', function () {
-      cnSups[i].scrollIntoView({ block: 'center', behavior: 'smooth' });
-      flash(cnSups[i]);
-    }));
+    acts.appendChild(button('cnf-linkbtn', 'Show in article', function () { showInArticle(i); }));
+    if (ctx.picked) {
+      acts.appendChild(button('cnf-linkbtn', 'Add {{cn}}', function () { tagClaimInEditor(i); },
+        'Open the section editor in a new tab with {{citation needed}} after this text, for you to review and save'));
+      box.appendChild(acts);
+      return;
+    }
     acts.appendChild(button('cnf-linkbtn', 'Edit sentence', function () {
       editClaimInEditor(i, 'select');
     }, 'Open the section editor in a new tab with this sentence selected, to reword or correct it'));
@@ -5392,6 +5734,15 @@
       h.appendChild(icon(headline.busy ? 'spin' : 'info'));
       h.appendChild(el('span', null, headline.text));
       pad.appendChild(h);
+    }
+    if (!items.length && isPicked(i) && st.wiki === 'done' && (st.books === 'done' || st.books === 'none') &&
+        st.web !== 'running' && st.web !== 'error') {
+      var tagBox = el('div', 'cnf-box');
+      tagBox.appendChild(el('div', 'cnf-box-title', 'Tag it so others can look'));
+      tagBox.appendChild(el('p', null, 'Adds ' + citationNeededTag() + ' after this text, in the section editor, ' +
+        'for you to review and save.'));
+      tagBox.appendChild(button('cnf-btn cnf-btn-pri', 'Add {{citation needed}}', function () { tagClaimInEditor(i); }));
+      pad.appendChild(tagBox);
     }
 
     if (items.length) {
@@ -5463,7 +5814,8 @@
       if (item.cite) completeHeldCitation(item.cite);
       actions.appendChild(button('cnf-btn cnf-btn-pri', 'Insert in editor', function () {
         insertInEditor(i, item);
-      }, 'Open the section editor in a new tab with this <ref> in place of the {{citation needed}} tag'));
+      }, isPicked(i) ? 'Open the section editor in a new tab with this <ref> after the selected text'
+        : 'Open the section editor in a new tab with this <ref> in place of the {{citation needed}} tag'));
       actions.appendChild(button('cnf-btn', 'Copy <ref>', function () { refFor(item).then(copyRef); }));
     }
     if (item.url) {
@@ -5601,11 +5953,14 @@
   function drawOverview(pad) {
     var statuses = [];
     var tally = { found: 0, partial: 0, leads: 0, running: 0, error: 0, nothing: 0, idle: 0 };
-    for (var i = 0; i < cnSups.length; i++) {
+    var unsearched = 0;
+    for (var i = 0; i < claimCount(); i++) {
       var st = claimStatus(i);
       statuses.push(st);
-      tally[st.kind]++;
+      if (!isPicked(i)) tally[st.kind]++;
+      if (st.kind === 'idle' || st.kind === 'error') unsearched++;
     }
+    var pickedCount = pickedAnchors.length;
 
     var head = el('div');
     head.appendChild(el('div', 'cnf-ov-title', String(pageTitle).replace(/_/g, ' ')));
@@ -5617,15 +5972,19 @@
     if (tally.running) bits.push(tally.running + ' searching');
     if (tally.error) bits.push(tally.error + ' failed');
     if (tally.idle) bits.push(tally.idle + ' not searched yet');
-    head.appendChild(el('p', 'cnf-ov-summary', plural(cnSups.length, 'claim') +
-      (cnSups.length === 1 ? ' needs' : ' need') + ' a citation' + (bits.length ? ': ' + bits.join(', ') : '') + '.'));
+    var summary = cnSups.length
+      ? plural(cnSups.length, 'claim') + (cnSups.length === 1 ? ' needs' : ' need') + ' a citation' +
+        (bits.length ? ': ' + bits.join(', ') : '') + '.'
+      : 'No {{citation needed}} tags on this page.';
+    if (pickedCount) summary += ' You picked ' + pickedCount + (cnSups.length ? ' more.' : '.');
+    head.appendChild(el('p', 'cnf-ov-summary', summary));
     pad.appendChild(head);
 
     if (batch) {
       var busy = button('cnf-btn cnf-btn-pri', 'Searching… ' + batch.done + ' of ' + batch.total);
       busy.disabled = true;
       pad.appendChild(busy);
-    } else if (tally.idle || tally.error) {
+    } else if (unsearched) {
       var start = el('div');
       start.appendChild(button('cnf-btn cnf-btn-pri', 'Find sources for all (free)', findAllFree));
       start.appendChild(el('p', 'cnf-ov-summary', 'Wikipedia and Internet Archive books. No key needed.'));
@@ -5633,7 +5992,12 @@
     }
 
     var list = el('div');
+    var groups = pickedCount && cnSups.length;
+    if (groups) list.appendChild(el('h2', 'cnf-label', 'Tagged · ' + cnSups.length));
     statuses.forEach(function (st, k) {
+      if (groups && k === cnSups.length) {
+        list.appendChild(el('h2', 'cnf-label cnf-group-label', 'Picked by you · ' + pickedCount));
+      }
       var row = button('cnf-ov-row', null, function () { openClaim(k, true); });
       row.setAttribute('data-kind', st.kind);
       if (k === currentIndex) row.setAttribute('aria-current', 'true');
@@ -5664,6 +6028,45 @@
       box.appendChild(button('cnf-btn cnf-btn-pri', canSearch ? 'Search the web (' + n + ')' : 'Add key',
         canSearch ? searchWebForNothing : openSettings));
       pad.appendChild(box);
+    }
+
+    var more = el('div', 'cnf-ov-foot');
+    more.appendChild(button('cnf-linkbtn', 'Find sources for a claim with no tag', startPicking,
+      'Select text in the article and find sources for it'));
+    pad.appendChild(more);
+  }
+
+  // Choosing the text for a new claim.
+  function drawPick(pad) {
+    var p = picking.pick;
+    var box = el('div', 'cnf-box cnf-pick');
+    box.appendChild(el('div', 'cnf-box-title', 'Select the text you want a source for'));
+    box.appendChild(el('p', null, 'Select it in the article, then click Find sources. ' +
+      'A whole sentence works best; a fact within one works too.'));
+    if (p) {
+      var quote = el('div', 'cnf-quote');
+      quote.appendChild(el('span', 'cnf-quote-label', p.tag >= 0 ? 'Already tagged:' : 'Selected:'));
+      quote.appendChild(document.createTextNode(truncate(p.claim, 400)));
+      box.appendChild(quote);
+    } else if (picking.reason) {
+      box.appendChild(el('p', 'cnf-pick-reason', picking.reason));
+    }
+    var acts = el('div', 'cnf-actions');
+    var go = button('cnf-btn cnf-btn-pri', p && p.tag >= 0 ? 'Open the tagged claim' : 'Find sources', usePick);
+    go.disabled = !p;
+    acts.appendChild(go);
+    acts.appendChild(button('cnf-btn', 'Cancel', cancelPicking));
+    box.appendChild(acts);
+    pad.appendChild(box);
+    if (!cnSups.length) {
+      var hint = el('p', 'cnf-ov-summary', 'Looking for tagged claims instead? ');
+      var cat = el('a', null, 'Category:All articles with unsourced statements');
+      cat.href = (mw.util && typeof mw.util.getUrl === 'function')
+        ? mw.util.getUrl('Category:All_articles_with_unsourced_statements')
+        : '/wiki/Category:All_articles_with_unsourced_statements';
+      hint.appendChild(cat);
+      hint.appendChild(document.createTextNode(' lists every article that has one.'));
+      pad.appendChild(hint);
     }
   }
 
@@ -5842,10 +6245,10 @@
     return null;
   }
 
-  function getSectionEditLinks() {
-    if (sectionEditLinksCache) return sectionEditLinksCache;
-    sectionEditLinksCache = cnSups.map(sectionEditLinkFor);
-    return sectionEditLinksCache;
+  function sectionEditLinkAt(i) {
+    if (!sectionEditLinksCache) sectionEditLinksCache = {};
+    if (!(i in sectionEditLinksCache)) sectionEditLinksCache[i] = sectionEditLinkFor(anchorOf(i));
+    return sectionEditLinksCache[i];
   }
 
   // The source editor for a claim's section (the whole page for the lead).
@@ -5872,12 +6275,13 @@
   // Opens claim i's section in the source editor in a new tab and stages
   // what to do there once `staged` resolves: put a <ref> in place of the tag
   // (mode 'insert'), select the tagged sentence ('select'), or take it out
-  // ('remove').
+  // ('remove'). For a picked claim, which has no tag, the <ref> or a tag goes
+  // after the claim's text, found by its words ('append').
   function openClaimInEditor(i, mode, summary, staged, fallback) {
-    var links = getSectionEditLinks();
-    var link = links[i];
+    var link = sectionEditLinkAt(i);
     var k = 0;
-    for (var j = 0; j < i; j++) if (links[j] === link) k++;
+    for (var j = 0; j < i && j < cnSups.length; j++) if (sectionEditLinkAt(j) === link) k++;
+    var ctx = claimContexts[i] || {};
     var token = insertToken();
     var url = sourceEditorUrl(link);
     if (summary) url = appendQueryParam(url, 'summary', summary);
@@ -5892,9 +6296,13 @@
         pageTitle: pageTitle,
         revid: revid,
         cnIndexInSection: k,
-        sectionLabel: (claimContexts[i] && claimContexts[i].section) || null,
+        sectionLabel: ctx.section || null,
         stagedAt: Date.now()
       };
+      if (ctx.picked) {
+        payload.claim = ctx.claim;
+        payload.before = ctx.before || '';
+      }
       for (var key in extra) payload[key] = extra[key];
       if (!writeStagedInsert(token, payload)) {
         toast('Could not stage the edit (localStorage unavailable). ' + fallback);
@@ -5910,8 +6318,22 @@
       toast('No <ref> to insert.');
       return;
     }
-    openClaimInEditor(i, 'insert', 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])',
+    openClaimInEditor(i, isPicked(i) ? 'append' : 'insert', 'Added reference (via [[User:Alaexis/CNfirmed|CNfirmed]])',
       refFor(item).then(function (ref) { return { ref: ref }; }), 'Use Copy <ref> instead.');
+  }
+
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December'];
+
+  function citationNeededTag() {
+    var now = new Date();
+    return '{{Citation needed|date=' + MONTHS[now.getMonth()] + ' ' + now.getFullYear() + '}}';
+  }
+
+  // A picked claim nothing was found for: tag it, so other editors can look.
+  function tagClaimInEditor(i) {
+    openClaimInEditor(i, 'append', 'Tagged an unsourced statement (via [[User:Alaexis/CNfirmed|CNfirmed]])',
+      { ref: citationNeededTag(), tag: true }, 'Use the section\'s [edit] link instead.');
   }
 
   // For a claim that is wrong or cannot be sourced: reword it, or take it out.
@@ -5962,7 +6384,7 @@
     var mode = payload.mode || 'insert';
     var ta = document.getElementById('wpTextbox1');
     if (!ta || ta.readOnly) {
-      if (mode !== 'insert') {
+      if (mode === 'select' || mode === 'remove') {
         showEditBanner(ta ? 'CNfirmed: this page cannot be edited from your account here.'
           : 'CNfirmed: source editor not found. Switch to the wikitext editor and try again.', 'warn');
         return;
@@ -6016,6 +6438,22 @@
         message += ' It defined the reference named "' + cut.namedRefs.join('", "') +
           '": if another sentence reuses it, move the definition there.';
       }
+    } else if (mode === 'append') {
+      var what = payload.tag ? 'The tag' : 'Your <ref> snippet';
+      var found = locateClaimText(text, payload.claim || '', payload.before || '');
+      if (!found) {
+        showEditBanner('CNfirmed: could not find the selected text in this section, or found it twice — ' +
+          'the page may have changed, or the text comes from a template. ' + what +
+          ' has been copied to the clipboard: paste it after the text.', 'warn');
+        copyQuietly(payload.ref);
+        return;
+      }
+      start = citationPointAfter(text, found.end);
+      end = start + payload.ref.length;
+      newText = text.slice(0, start) + payload.ref + text.slice(start);
+      message = payload.tag
+        ? 'CNfirmed: {{citation needed}} added after the selected text — review and save.'
+        : 'CNfirmed: <ref> added after the selected text — review and save.';
     } else {
       var result = replaceNthCitationNeeded(text, n, payload.ref);
       if (!result.replaced) {
