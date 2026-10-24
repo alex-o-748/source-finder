@@ -1,0 +1,13 @@
+[
+  {"still": "out/card-title.png", "dur": 4.5},
+  {"frames": "takes/install"},
+  {"frames": "takes/article", "speedup": [["ff-start", "ff-end", 6]]},
+  {"frames": "takes/diff-bof"},
+  {"frames": "takes/all", "speedup": [["batch-start", "batch-end", 10]]},
+  {"frames": "takes/web"},
+  {"frames": "takes/airbus"},
+  {"frames": "takes/diff-airbus"},
+  {"frames": "takes/pick"},
+  {"frames": "takes/settings"},
+  {"still": "out/card-end.png", "dur": 7.5}
+]
