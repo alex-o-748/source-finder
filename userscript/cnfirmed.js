@@ -31,7 +31,9 @@
  *     under it what was searched, with a button for each search not yet run.
  *   - A "CNfirmed (N)" link opens the list of all claims, with "Find sources
  *     for all (free)" and, for the claims left with nothing, a web search.
- *     "All claims" above a claim goes back to it.
+ *     "All claims" above a claim goes back to it. On a page without tags the
+ *     link is just "CNfirmed", and opens the panel on selecting text to find
+ *     sources for, as "Find sources for a claim" in Tools does everywhere.
  *   - Provider and key are behind the panel's gear.
  *
  */
@@ -521,11 +523,12 @@
     );
     if (cnSups.length) insertBadges();
 
-    // A page without tags gets one Tools item and nothing else, until it is
+    // A page without tags gets its two links and nothing else, until one is
     // clicked: the script is meant to stay on, and most articles have none.
     mw.loader.using(['mediawiki.util'])
       .then(function () {
         if (cnSups.length) bootstrap();
+        addEntryLink();
         addPickToolLink();
       })
       .catch(function (err) {
@@ -541,12 +544,16 @@
     if (!link) return;
     link.addEventListener('click', function (e) {
       e.preventDefault();
-      if (!booted) {
-        insertBadges();
-        bootstrap();
-      }
+      bootUntagged();
       startPicking();
     });
+  }
+
+  // What a page without tags skipped at load, done when it is first asked for.
+  function bootUntagged() {
+    if (booted) return;
+    insertBadges();
+    bootstrap();
   }
 
   // Inline icons. Constants only: nothing from a page or a response is ever
@@ -622,7 +629,6 @@
     hydrateArchiveCache();
     extractAllClaims();
     booted = true;
-    if (cnSups.length) addEntryLink();
     for (var i = 0; i < cnSups.length; i++) renderBadge(i);
   }
 
@@ -637,23 +643,30 @@
 
   // One link to open the panel on the list of claims, where Source Verifier
   // puts its own: beside the page tabs, or in the tools menu on other skins.
+  // It is on every article, so the panel can always be found: on a page
+  // without tags it goes straight to picking text, there being no list.
   function addEntryLink() {
     if (!mw.util || typeof mw.util.addPortletLink !== 'function') return;
+    if (!document.getElementById('mw-content-text')) return;
     var portlet = {
       'vector-2022': 'p-associated-pages', vector: 'p-cactions',
       monobook: 'p-cactions', timeless: 'p-associated-pages'
     }[mw.config.get('skin')] || 'p-tb';
-    var label = 'CNfirmed (' + cnSups.length + ')';
-    var tip = 'Find sources for the ' + cnSups.length + ' citation-needed tag(s) on this page';
+    var label = cnSups.length ? 'CNfirmed (' + cnSups.length + ')' : 'CNfirmed';
+    var tip = cnSups.length
+      ? 'Find sources for the ' + cnSups.length + ' citation-needed tag(s) on this page'
+      : 'No citation-needed tags here: select text in the article and find sources for it';
     var link = mw.util.addPortletLink(portlet, '#', label, 'ca-cnfirmed', tip) ||
       mw.util.addPortletLink('p-tb', '#', label, 'ca-cnfirmed', tip);
     if (!link) {
-      console.warn('[CNfirmed] nowhere to put the panel link; the badges still open it');
+      console.warn('[CNfirmed] nowhere to put the panel link; the badges and the Tools item still open it');
       return;
     }
     link.addEventListener('click', function (e) {
       e.preventDefault();
-      togglePanel();
+      bootUntagged();
+      if (!claimCount() && !panelVisible()) startPicking();
+      else togglePanel();
     });
   }
 
@@ -789,10 +802,11 @@
   }
 
   // ---- A claim picked from a selection -----------------------------------
-  // Started from the Tools item or the list of claims, never by selecting
-  // alone: people select text for many reasons. While it is on, the panel
-  // shows what is selected, and Find sources turns it into a claim. The last
-  // usable selection is kept, since a tap on the panel can clear it on iOS.
+  // Started from the Tools item, the list of claims or, on a page without
+  // tags, the CNfirmed link; never by selecting alone: people select text
+  // for many reasons. While it is on, the panel shows what is selected, and
+  // Find sources turns it into a claim. The last usable selection is kept,
+  // since a tap on the panel can clear it on iOS.
 
   var PICK_BLOCKS = 'p, li, dd, dt';
   var PICK_EXCLUDED = 'table, .infobox, .navbox, .vertical-navbox, .sidebar, .metadata, .ambox, ' +
