@@ -1,7 +1,8 @@
 /**
- * The user script's Tavily + GPT-OSS provider: Tavily searches, a model on the
- * Hugging Face router judges what came back, both through the proxy Worker
- * (Wikipedia's CSP blocks the services themselves). No network: `fetch` is stubbed,
+ * The user script's Tavily + open-weight model provider: Tavily searches
+ * through the proxy Worker (Wikipedia's CSP blocks Tavily itself), and the
+ * model chosen in Settings judges what came back: GPT-OSS on Hugging Face,
+ * through the Worker, or Qwen 3.8 on Lift Wing, through llm-router. No network: `fetch` is stubbed,
  * and what is tested is the requests the script sends and how it reads the
  * replies.
  */
@@ -9,7 +10,7 @@ import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import { loadUserScript } from "./userscriptLoader.js";
 
-const script = loadUserScript({ wgPageName: "Elizabeth_Báthory" });
+const script = loadUserScript({ wgPageName: "Elizabeth_Báthory" }, { storage: { "cnfirmed-open-model": "hf" } });
 
 const CTX = {
   claim: "In 1578, three years into their marriage, Nádasdy became the chief commander of Hungarian troops.",
@@ -100,6 +101,20 @@ test("searches Tavily, then asks the model about only what was found, both via t
   assert.equal(out.length, 1);
   assert.equal(out[0].verdict.verdict, "SUPPORTED");
   assert.match(out[0].source.url, /britannica\.com/);
+});
+
+test("by default the model is Qwen 3.8 on Lift Wing, through llm-router", async () => {
+  const lw = loadUserScript({ wgPageName: "Elizabeth_Báthory" });
+  const sent = stubFetch([TAVILY_OK, hfReply([{ url: "https://www.britannica.com/biography/Elizabeth-Bathory", verdict: "SUPPORTED" }])]);
+  const out = await lw.callTavilyGptOss(CTX, KEY);
+  assert.equal(sent[0].url, `${PROXY}/tavily`);
+  assert.equal(sent[1].url, "https://llm-router.toolforge.org/liftwing");
+  assert.equal(sent[1].auth, null);
+  assert.equal(sent[1].body.model, "llm-qwen38-27b");
+  assert.equal(out.length, 1);
+
+  stubFetch([TAVILY_OK, { status: 503, body: { error: { message: "busy" } } }]);
+  await assert.rejects(lw.callTavilyGptOss(CTX, KEY), /Lift Wing \(via proxy\) 503: busy/);
 });
 
 test("no search results means no model call", async () => {

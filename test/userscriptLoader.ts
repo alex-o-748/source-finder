@@ -105,7 +105,9 @@ const EXPOSED = [
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UserScriptModule = Record<string, (...args: any[]) => any> & {
   prompts: { plan: string; books: string; judge: string };
+  /** The librarian's models with Hugging Face chosen in Settings, and with Lift Wing. */
   models: { planner: string | null; books: string | null; judge: string | null };
+  liftWingModels: { planner: string | null; books: string | null; judge: string | null };
   citoidMaps: Record<string, Record<string, unknown>>;
   citoidTypeMap: Record<string, string>;
   limits: { plan: number; books: number; judge: number; booksEffort: string };
@@ -123,6 +125,8 @@ export interface UserScriptEnv {
   document?: unknown;
   /** Globals on `window`, such as the script's model overrides or `cnfirmedArchiveFullText`. */
   window?: Record<string, unknown>;
+  /** What localStorage holds when the script loads, such as `cnfirmed-open-model`. */
+  storage?: Record<string, string>;
 }
 
 export function loadUserScript(
@@ -136,7 +140,8 @@ export function loadUserScript(
     return {
       ${EXPOSED.map((name) => `${name}: ${name},`).join("\n      ")}
       prompts: { plan: LIB_PLAN_SYSTEM, books: LIB_BOOKS_SYSTEM, judge: LIB_JUDGE_SYSTEM },
-      models: LIB_MODELS,
+      models: libModelsFor("hf"),
+      liftWingModels: libModelsFor("liftwing"),
       citoidMaps: BUILTIN_CITOID_MAPS,
       citoidTypeMap: CITOID_TYPE_MAP,
       limits: { plan: LIB_PLAN_MAX_TOKENS, books: LIB_BOOKS_MAX_TOKENS, judge: LIB_JUDGE_MAX_TOKENS, booksEffort: LIB_BOOKS_EFFORT },
@@ -161,7 +166,7 @@ export function loadUserScript(
     util: { addCSS() {}, addPortletLink() {}, addPortlet() {}, getUrl: (t: string) => `/wiki/${t}` },
     loader: { using: () => ({ then: () => ({ catch() {} }) }), getScript: () => Promise.resolve() },
   };
-  const store = new Map<string, string>();
+  const store = new Map<string, string>(Object.entries(env.storage ?? {}));
   const localStorage = {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
