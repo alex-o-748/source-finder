@@ -112,7 +112,7 @@ export function worldFetch(sent: Sent[], opts: WorldOptions = {}): typeof fetch 
     sent.push({ url, body });
     const reply = (content: string) => Response.json({ choices: [{ message: { content } }] });
 
-    if (url.endsWith("/hf")) {
+    if (url.endsWith("/hf") || url.endsWith("/liftwing")) {
       const system = (body?.messages as { content: string }[])[0].content;
       if (system === PLAN_SYSTEM) {
         if (opts.plannerStatus) return Response.json({ error: { message: "no provider" } }, { status: opts.plannerStatus });

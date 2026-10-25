@@ -17,7 +17,9 @@ after(() => {
   globalThis.fetch = realFetch;
 });
 
-const script = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+// The core runs the librarian on Hugging Face: the parity tests choose it in Settings.
+const HF = { storage: { "cnfirmed-open-model": "hf" } };
+const script = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, HF);
 
 test("the user script sends the same prompts, and defaults to the same models", () => {
   assert.equal(script.prompts.plan, lib.PLAN_SYSTEM);
@@ -26,6 +28,30 @@ test("the user script sends the same prompts, and defaults to the same models", 
   assert.deepEqual(script.models, lib.DEFAULT_LIBRARIAN_MODELS);
   const off = loadUserScript({}, { window: { cnfirmedArchiveBooksModel: false, cnfirmedArchiveJudgeModel: "openai/gpt-oss-20b" } });
   assert.deepEqual(off.models, { planner: "zai-org/GLM-5.2", books: null, judge: "openai/gpt-oss-20b" });
+  assert.deepEqual(script.liftWingModels, { planner: "llm-qwen38-27b", books: "llm-qwen38-27b", judge: "llm-qwen38-27b" });
+  assert.deepEqual(off.liftWingModels, { planner: "llm-qwen38-27b", books: null, judge: "openai/gpt-oss-20b" });
+});
+
+test("the user script's librarian runs on Qwen 3.8 on Lift Wing unless Hugging Face is chosen", async () => {
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
+  const sent: Sent[] = [];
+  globalThis.fetch = worldFetch(sent);
+  const r = await page.findArchiveCandidates(0);
+  assert.equal(r.funnel.librarian.added, 3);
+  const calls = sent.filter((s) => s.body?.messages);
+  assert.equal(calls.length, 2);
+  for (const c of calls) {
+    assert.equal(c.url, "https://llm-router.toolforge.org/liftwing");
+    assert.equal(c.body!.model, "llm-qwen38-27b");
+  }
+  // A Hugging Face model set on window still goes to the Worker.
+  const mixed = loadUserScript({ wgTitle: "Eiffel Tower" }, { window: { cnfirmedArchiveJudgeModel: "zai-org/GLM-5.2" } });
+  sent.length = 0;
+  const judged = await mixed.checkArchiveLeads({ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }, PLAN,
+    [{ title: "La tour", evidence: { year: 1900, passages: ["The tower was completed in 1889."] } }]);
+  assert.equal(judged.by, "zai-org/GLM-5.2");
+  assert.equal(sent[0].url, "https://publicai-proxy.alaexis.workers.dev/hf");
 });
 
 test("the user script reads the models' replies as the core does", () => {
@@ -172,7 +198,7 @@ test("the user script checks quotes and reads verdicts as the core does", () => 
 });
 
 test("the user script's librarian finds what the core's does", async () => {
-  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, HF);
   page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
   const scriptSent: Sent[] = [];
   globalThis.fetch = worldFetch(scriptSent);
@@ -209,7 +235,7 @@ test("the user script runs the librarian for a claim with no word to search on",
 });
 
 test("the user script's librarian adds the planner's passages to a book the search already shows", async () => {
-  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, HF);
   page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
   const sent: Sent[] = [];
   globalThis.fetch = worldFetch(sent);
@@ -221,7 +247,7 @@ test("the user script's librarian adds the planner's passages to a book the sear
 });
 
 test("the user script checks every lead in one call, and falls back to the Verify API with the restated claim", async () => {
-  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, HF);
   const ctx = { claim: CLAIM, context: PARAGRAPH, section: null, links: [] };
   const leads = [
     { title: "La tour", evidence: { year: 1900, passages: ["The Eiffel tower, completed in 1889, rose 300 metres above the Champ de Mars."] } },
@@ -270,6 +296,6 @@ test("with the librarian off, the user script makes no model call", async () => 
   globalThis.fetch = worldFetch(sent);
   const r = await page.findArchiveCandidates(0);
   assert.equal(r.funnel.librarian, undefined);
-  assert.ok(!sent.some((s) => s.url.endsWith("/hf")));
+  assert.ok(!sent.some((s) => s.body?.messages));
   assert.ok(!sent.some((s) => (new URL(s.url).searchParams.get("user_query") ?? "").includes("identifier:(")));
 });

@@ -4,13 +4,14 @@
  * CNfirmed user script — finds and verifies sources for {{citation needed}}
  * claims by calling Claude / Gemini / OpenAI directly from the browser using
  * the user's own API key (stored in localStorage) — or by searching with
- * Tavily and judging the results with GPT-OSS on Hugging Face, both through
- * the publicai-proxy Worker, since Wikipedia's CSP blocks those services.
- * Tavily searches are free, on the Worker's own key, while its credits last;
- * after that they need the user's Tavily key. Internet Archive books are
- * found and checked with open-weight models through the same Worker, which
- * needs no key (the Verify API, https://citation-verifier.toolforge.org,
- * when the Worker cannot).
+ * Tavily through the publicai-proxy Worker (Wikipedia's CSP blocks Tavily
+ * itself) and judging the results with an open-weight model. Tavily searches
+ * are free, on the Worker's own key, while its credits last; after that they
+ * need the user's Tavily key. Internet Archive books are found and checked
+ * with the same open-weight model, which needs no key: Qwen 3.8 on Lift Wing
+ * through the llm-router tool on Toolforge, or models on Hugging Face through
+ * the Worker, as chosen in Settings (the Verify API,
+ * https://citation-verifier.toolforge.org, when the model cannot).
  *
  * Add to User:Yourname/common.js:
  *
@@ -77,23 +78,83 @@
       modelOverride: 'cnfirmedModelOpenAI',
       run: callOpenAI
     },
-    // Tavily does the searching and an open-weight model on Hugging Face reads
-    // what it found; the model never searches on its own. Both go through
-    // the Worker (Wikipedia's CSP blocks the services themselves), which
-    // pays for the model, and for the searches too while its Tavily credits
-    // last. After that the user's own Tavily key pays for them.
+    // Tavily does the searching and the open-weight model chosen in Settings
+    // reads what it found; the model never searches on its own. The search
+    // goes through the Worker (Wikipedia's CSP blocks Tavily itself), which
+    // pays for it while its Tavily credits last. After that the user's own
+    // Tavily key pays for it.
     tavilyhf: {
-      name: 'Tavily + GPT-OSS',
+      name: 'Tavily + open-weight model',
       keyStorage: 'cnfirmed-key-tavily',
       keyLabel: 'Tavily API key',
       keyService: 'Tavily',
       freeSearches: true,
-      // Must be in the Worker's HF_ALLOWED_MODELS.
-      defaultModel: 'openai/gpt-oss-20b',
+      // The reader of the chosen open-weight model, unless overridden.
+      openModel: true,
       modelOverride: 'cnfirmedModelHf',
       run: callTavilyGptOss
     }
   };
+
+  // ---- Open-weight models -----------------------------------------------
+  // The Tavily reader and the Internet Archive librarian run on open-weight
+  // models that need no key, from one of two hosts chosen in Settings:
+  //   liftwing  Wikimedia's Lift Wing, through the llm-router tool on
+  //             Toolforge (the Worker does not allow Qwen 3.8). Free.
+  //   hf        Hugging Face Inference Providers, through the Worker, which
+  //             pays for them while its credits last.
+  // A request goes to the host that serves its model: Lift Wing's model ids
+  // all start with "llm-". So a model set on window (cnfirmedModelHf, or
+  // cnfirmedArchive*Model below) goes where it is served, whichever is chosen.
+
+  var LLM_ROUTER_BASE = String(window.cnfirmedLlmRouterUrl || 'https://llm-router.toolforge.org')
+    .replace(/\/+$/, '');
+  var OPEN_MODEL_STORAGE = 'cnfirmed-open-model';
+
+  var OPEN_MODELS = {
+    // Must be in llm-router's LIFTWING_ALLOWED_MODELS.
+    liftwing: {
+      name: 'Qwen 3.8 on Lift Wing',
+      blurb: 'Wikimedia’s own model hosting, through the llm-router tool on Toolforge. Free.',
+      reader: 'llm-qwen38-27b',
+      planner: 'llm-qwen38-27b',
+      books: 'llm-qwen38-27b',
+      judge: 'llm-qwen38-27b'
+    },
+    // Must be in the Worker's HF_ALLOWED_MODELS.
+    hf: {
+      name: 'Hugging Face',
+      blurb: 'GPT-OSS reads web results, GLM-5.2 finds and checks books. Paid for by the CNfirmed Worker ' +
+        'while its credits last.',
+      reader: 'openai/gpt-oss-20b',
+      planner: 'zai-org/GLM-5.2',
+      books: 'zai-org/GLM-5.2',
+      judge: 'zai-org/GLM-5.2'
+    }
+  };
+
+  function getOpenModel() {
+    var m = localStorage.getItem(OPEN_MODEL_STORAGE);
+    return OPEN_MODELS[m] ? m : 'liftwing';
+  }
+
+  function setOpenModel(m) {
+    if (!OPEN_MODELS[m]) return;
+    localStorage.setItem(OPEN_MODEL_STORAGE, m);
+  }
+
+  function onLiftWing(model) {
+    return /^llm-/.test(model);
+  }
+
+  // Where a chat completion for this model goes, and what to call the host.
+  function openModelUrl(model) {
+    return onLiftWing(model) ? LLM_ROUTER_BASE + '/liftwing' : PROXY_BASE + '/hf';
+  }
+
+  function openModelHost(model) {
+    return onLiftWing(model) ? 'Lift Wing' : 'Hugging Face';
+  }
 
   function keyLabel(providerId) {
     var p = PROVIDERS[providerId];
@@ -176,7 +237,7 @@
 
   function modelFor(providerId) {
     var p = PROVIDERS[providerId];
-    return window[p.modelOverride] || p.defaultModel;
+    return window[p.modelOverride] || (p.openModel ? OPEN_MODELS[getOpenModel()].reader : p.defaultModel);
   }
 
   function searchToolFor(providerId) {
@@ -1036,7 +1097,8 @@
   // A claim with no word to search on still has the librarian, which reads
   // its paragraph.
   function archiveNothingToSearch(i) {
-    return archiveQueriesFor(i).length === 0 && !(IA_LIBRARIAN && (LIB_MODELS.planner || LIB_MODELS.books));
+    var models = libModels();
+    return archiveQueriesFor(i).length === 0 && !(IA_LIBRARIAN && (models.planner || models.books));
   }
 
   function runBooks(i, retry) {
@@ -3334,8 +3396,9 @@
 
     // The librarian's model calls run while the searches below do.
     var libInput = { articleTitle: title, section: ctx.section, paragraph: ctx.context, claim: ctx.claim };
-    var planning = IA_LIBRARIAN && LIB_MODELS.planner
-      ? callWorkerModel(LIB_MODELS.planner, LIB_PLAN_SYSTEM, libPlanPrompt(libInput), LIB_PLAN_MAX_TOKENS)
+    var models = libModels();
+    var planning = IA_LIBRARIAN && models.planner
+      ? callWorkerModel(models.planner, LIB_PLAN_SYSTEM, libPlanPrompt(libInput), LIB_PLAN_MAX_TOKENS)
         .then(function (text) {
           var plan = libParsePlan(text);
           return { plan: plan, error: plan ? null : 'planner: no plan in the reply' };
@@ -3343,8 +3406,8 @@
           return { plan: null, error: 'planner: ' + err.message };
         })
       : Promise.resolve({ plan: null, error: null });
-    var naming = IA_LIBRARIAN && LIB_MODELS.books
-      ? callWorkerModel(LIB_MODELS.books, LIB_BOOKS_SYSTEM, libBooksPrompt(libInput), LIB_BOOKS_MAX_TOKENS, LIB_BOOKS_EFFORT)
+    var naming = IA_LIBRARIAN && models.books
+      ? callWorkerModel(models.books, LIB_BOOKS_SYSTEM, libBooksPrompt(libInput), LIB_BOOKS_MAX_TOKENS, LIB_BOOKS_EFFORT)
         .then(function (text) {
           return { books: libParseBooks(text), error: null };
         }, function (err) {
@@ -3609,9 +3672,9 @@
   // against the restated claim. Mirrors src/core/archiveLibrarian.ts, which
   // explains each step; the parity tests run both on the same replies.
   //
-  // The models are open-weight, served through the CNfirmed Worker's /hf route
-  // (Hugging Face Inference Providers, paid for by the Worker), so no key is
-  // needed. Set before the script loads, to change a model or turn its step off:
+  // The models are the open-weight ones chosen in Settings (see Open-weight
+  // models above), so no key is needed. Set before the script loads, to change
+  // a model whichever host is chosen, or to turn its step off:
   //   window.cnfirmedArchivePlannerModel  restates the claim, writes the queries
   //   window.cnfirmedArchiveBooksModel    names books likely to state it
   //   window.cnfirmedArchiveJudgeModel    checks the passages (false: the Verify API)
@@ -3625,11 +3688,18 @@
     return typeof v === 'string' && v ? v : fallback;
   }
   var IA_LIBRARIAN = window.cnfirmedArchiveLibrarian !== false;
-  var LIB_MODELS = {
-    planner: libModel('cnfirmedArchivePlannerModel', 'zai-org/GLM-5.2'),
-    books: libModel('cnfirmedArchiveBooksModel', 'zai-org/GLM-5.2'),
-    judge: libModel('cnfirmedArchiveJudgeModel', 'zai-org/GLM-5.2')
-  };
+  // Read on every claim: the choice in Settings can change between claims.
+  function libModelsFor(openModel) {
+    var m = OPEN_MODELS[openModel];
+    return {
+      planner: libModel('cnfirmedArchivePlannerModel', m.planner),
+      books: libModel('cnfirmedArchiveBooksModel', m.books),
+      judge: libModel('cnfirmedArchiveJudgeModel', m.judge)
+    };
+  }
+  function libModels() {
+    return libModelsFor(getOpenModel());
+  }
   // Reasoning models spend output tokens thinking before they answer.
   // Output tokens per call, thinking included. The Worker gives up on Hugging
   // Face after 60 seconds, about 8,000 tokens of GLM-5.2, and now and then the
@@ -3723,12 +3793,13 @@
     return JSON.stringify(body);
   }
 
-  // One chat completion through the Worker's /hf route: the reply text.
-  // `effort` is sent as reasoning_effort.
+  // One chat completion on the host that serves the model (the Worker's /hf
+  // route, or llm-router's /liftwing): the reply text. `effort` is sent as
+  // reasoning_effort.
   function callWorkerModel(model, system, user, maxTokens, effort, attempt) {
     attempt = attempt || 0;
     return workerTurn().then(function () {
-      return fetch(PROXY_BASE + '/hf', {
+      return fetch(openModelUrl(model), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: workerRequestBody(model, system, user, maxTokens, effort)
@@ -4377,7 +4448,8 @@
         return { verdicts: verdicts, by: 'verify-api' };
       });
     }
-    if (!LIB_MODELS.judge) return viaVerifyApi();
+    var judge = libModels().judge;
+    if (!judge) return viaVerifyApi();
     var books = candidates.map(function (c) {
       return { title: c.title, year: c.evidence.year, passages: c.evidence.passages };
     });
@@ -4388,9 +4460,9 @@
       claim: ctx.claim,
       fact: fact
     };
-    return callWorkerModel(LIB_MODELS.judge, LIB_JUDGE_SYSTEM, libJudgePrompt(input, books), LIB_JUDGE_MAX_TOKENS)
+    return callWorkerModel(judge, LIB_JUDGE_SYSTEM, libJudgePrompt(input, books), LIB_JUDGE_MAX_TOKENS)
       .then(function (text) {
-        return { verdicts: libParseJudgement(text, books), by: LIB_MODELS.judge };
+        return { verdicts: libParseJudgement(text, books), by: judge };
       })
       .catch(function (err) {
         console.warn('[CNfirmed] the judge model failed; checking with the Verify API instead:', err);
@@ -4565,10 +4637,10 @@
     return parts.join('\n');
   }
 
-  // ---- Tavily search + an open-weight model on Hugging Face ---------------
-  // Both calls go through the CNfirmed Cloudflare Worker: Wikipedia's
-  // Content-Security-Policy blocks api.tavily.com and router.huggingface.co,
-  // and the Worker is on its allowlist.
+  // ---- Tavily search + an open-weight model --------------------------------
+  // The search goes through the CNfirmed Cloudflare Worker: Wikipedia's
+  // Content-Security-Policy blocks api.tavily.com, and the Worker is on its
+  // allowlist. The model is the open-weight one chosen in Settings.
   var PROXY_BASE = String(window.cnfirmedProxyUrl || 'https://publicai-proxy.alaexis.workers.dev')
     .replace(/\/+$/, '');
 
@@ -4642,14 +4714,15 @@
 
   // Paced with the Internet Archive stage's calls: the Worker counts both
   // against one limit.
-  function callHfChat(system, user) {
+  function callOpenModelChat(system, user) {
+    var model = modelFor('tavilyhf');
     return workerTurn().then(function () {
-      return fetch(PROXY_BASE + '/hf', {
+      return fetch(openModelUrl(model), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: modelFor('tavilyhf'),
-          // gpt-oss reasons before it answers, and that counts against this.
+          model: model,
+          // The models reason before they answer, and that counts against this.
           max_tokens: 8000,
           temperature: 0,
           messages: [
@@ -4665,7 +4738,7 @@
         if (!res.ok) {
           var err = data && data.error;
           var msg = (err && (err.message || (typeof err === 'string' ? err : ''))) || truncate(t, 200);
-          throw new Error('Hugging Face (via proxy) ' + res.status + ': ' + msg);
+          throw new Error(openModelHost(model) + ' (via proxy) ' + res.status + ': ' + msg);
         }
         var m = data && data.choices && data.choices[0] && data.choices[0].message;
         return (m && m.content) || '';
@@ -4677,7 +4750,7 @@
     return tavilySearch(ctx, tavilyKey).then(function (results) {
       if (!results.length) return [];
       var user = buildUserMessage(ctx) + '\n\nSEARCH RESULTS:\n\n' + formatSearchResults(results);
-      return callHfChat(SYSTEM_PROMPT + '\n' + RESULTS_ADDENDUM, user).then(function (text) {
+      return callOpenModelChat(SYSTEM_PROMPT + '\n' + RESULTS_ADDENDUM, user).then(function (text) {
         // Trailing slashes and fragments differ harmlessly between copies.
         function urlKey(u) { return u.trim().replace(/#.*$/, '').replace(/\/+$/, ''); }
         var seen = Object.create(null);
@@ -6074,8 +6147,8 @@
     claude: 'Anthropic. Uses your API key.',
     gemini: 'Google. Uses your API key.',
     openai: 'Uses your API key.',
-    tavilyhf: 'Tavily searches, GPT-OSS reads the results. Free while CNfirmed’s shared searches last; ' +
-      'then uses your Tavily key.'
+    tavilyhf: 'Tavily searches, the open-weight model below reads the results. Free while CNfirmed’s ' +
+      'shared searches last; then uses your Tavily key.'
   };
 
   function drawSettings(pad) {
@@ -6144,10 +6217,36 @@
     }
     pad.appendChild(keyBlock);
 
+    var currentModel = getOpenModel();
+    var models = el('fieldset', 'cnf-field');
+    models.appendChild(el('legend', 'cnf-field-label', 'Open-weight model'));
+    models.appendChild(el('p', 'cnf-note', 'Reads the Tavily results, and finds and checks books on the ' +
+      'Internet Archive. No key needed.'));
+    Object.keys(OPEN_MODELS).forEach(function (id) {
+      var label = el('label', 'cnf-radio');
+      if (id === currentModel) label.setAttribute('data-checked', '');
+      var input = el('input');
+      input.type = 'radio';
+      input.name = 'cnfirmed-open-model';
+      input.value = id;
+      input.checked = id === currentModel;
+      input.addEventListener('change', function () {
+        setOpenModel(id);
+        drawPanel();
+      });
+      var text = el('span');
+      text.appendChild(el('span', 'cnf-radio-name', OPEN_MODELS[id].name));
+      text.appendChild(el('span', 'cnf-radio-desc', OPEN_MODELS[id].blurb));
+      label.appendChild(input);
+      label.appendChild(text);
+      models.appendChild(label);
+    });
+    pad.appendChild(models);
+
     var free = el('div', 'cnf-free');
     free.appendChild(el('b', null, 'Free, no key needed'));
     free.appendChild(el('p', 'cnf-note', 'Citations already on Wikipedia (this article and other languages), ' +
-      'and books on the Internet Archive, found and checked with open-weight models through the CNfirmed Worker.'));
+      'and books on the Internet Archive, found and checked with the open-weight model above.'));
     pad.appendChild(free);
 
     var done = el('div');
