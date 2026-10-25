@@ -521,6 +521,23 @@ export function bundledBook(
   return books.length > 1 && hit.file !== null && books.includes(hit.file) ? hit.file : null;
 }
 
+/**
+ * The item holds a printout of the article itself: Wikipedia's "Download as
+ * PDF" names the file after the page ("Soviet_Union.pdf"). Such an item is a
+ * reader's pile of Wikipedia printouts, so whichever of its books the hit
+ * matched in is a copy of Wikipedia (WP:CIRCULAR), not a source for it.
+ */
+export function printsArticle(
+  hit: Pick<ArchiveHit, "file">,
+  details: Partial<Pick<ItemDetails, "books">> | null,
+  articleTitle: string,
+): boolean {
+  const name = articleTitle.trim().replace(/ /g, "_");
+  return name !== "" && (hit.file === name || (details?.books ?? []).includes(name));
+}
+
+export const PRINTOUT_REASON = "a printout of this Wikipedia article";
+
 // ---------------------------------------------------------------------------
 // 2. Access gate
 // ---------------------------------------------------------------------------
@@ -1282,14 +1299,23 @@ export async function findArchiveCandidates(
   const shown: { s: ScoredHit; details: ItemDetails | null; via?: "planner" | "named" }[] = [];
   const lookUp = async (list: ScoredHit[], cap: number, via?: "planner" | "named"): Promise<void> => {
     let added = 0;
+    const reject = (reason: string): void => {
+      funnel.rejected[reason] = (funnel.rejected[reason] ?? 0) + 1;
+    };
     for (const s of list) {
       if (added >= cap) break;
+      if (printsArticle(s.hit, null, articleTitle)) {
+        reject(PRINTOUT_REASON);
+        continue;
+      }
       let details: ItemDetails | null = null;
       try {
         details = parseItemDetails(await client.metadata(s.hit.identifier));
-        const gate = detailsGate(details, s.access);
+        const gate = printsArticle(s.hit, details, articleTitle)
+          ? { ok: false as const, reason: PRINTOUT_REASON }
+          : detailsGate(details, s.access);
         if (!gate.ok) {
-          funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] ?? 0) + 1;
+          reject(gate.reason);
           continue;
         }
       } catch (err) {

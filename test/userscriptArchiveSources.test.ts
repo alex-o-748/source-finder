@@ -255,6 +255,53 @@ test("the user script's live flow matches the core's", async () => {
   }
 });
 
+test("both drop an item of Wikipedia printouts that holds the article, as the core does", async () => {
+  const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
+  const eiffel = loadUserScript(
+    { wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" },
+    { window: { cnfirmedArchiveLibrarian: false } },
+  );
+  const claim = CLAIMS[1];
+  eiffel.setClaimContexts([{ claim, context: claim, section: null, links: [] }]);
+  // The pamphlet's hit is in the printout itself, so it needs no lookup; the
+  // Tissandier item is told by its other files.
+  const search = structuredClone(SEARCH);
+  for (const h of search.response.body.hits.hits) {
+    if (h.fields.identifier === "undatedpamphlet") h.fields.file_basename = "Eiffel_Tower";
+  }
+  const printouts = {
+    metadata: {},
+    files: ["Paris", "Eiffel_Tower"].flatMap((b) => [{ name: `${b}.pdf` }, { name: `${b}_djvu.txt` }]),
+  };
+  const metadata = (id: string) => (id === "eiffeltowerdescr00tiss" ? printouts : { metadata: {} });
+  const looked: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    const id = decodeURIComponent(String(url).split("/metadata/")[1] ?? "");
+    if (id) {
+      looked.push(id);
+      return Response.json(metadata(id));
+    }
+    return Response.json(search);
+  }) as typeof fetch;
+  try {
+    const fromScript = await eiffel.findArchiveCandidates(0);
+    const fromCore = await findArchiveCandidates(
+      { claim, context: claim, section: null, offset: 0, tag: "{{cn}}" },
+      "Eiffel Tower",
+      { client: { fullTextSearch: async () => search, metadata: async (id) => metadata(id) } },
+    );
+    assert.deepEqual(fromScript.candidates, fromCore.candidates);
+    assert.deepEqual(fromScript.funnel, fromCore.funnel);
+    assert.equal(fromScript.funnel.rejected["a printout of this Wikipedia article"], 2);
+    const ids = fromScript.candidates.map((c: { evidence: { identifier: string } }) => c.evidence.identifier);
+    assert.ok(!ids.includes("undatedpamphlet") && !ids.includes("eiffeltowerdescr00tiss"), ids.join());
+    assert.ok(!looked.includes("undatedpamphlet"));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
 test("with the switch on, the user script reads whole texts as the core does", async () => {
   const { findArchiveCandidates } = await import("../src/core/archiveSources.js");
   const eiffel = loadUserScript(

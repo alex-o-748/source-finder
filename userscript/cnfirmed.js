@@ -553,8 +553,9 @@
   var revid = mw.config.get('wgCurRevisionId');
   var cacheKey = 'cnfirmed:' + lang + ':' + pageTitle + ':' + revid;
   var wikiCacheKey = 'cnfirmed:wiki:' + lang + ':' + pageTitle + ':' + revid;
-  // ia2: books cached before a bundled item's book was told apart from the item.
-  var archiveCacheKey = 'cnfirmed:ia2:' + lang + ':' + pageTitle + ':' + revid;
+  // ia3: books cached before printouts of the article were dropped (ia2: before
+  // a bundled item's book was told apart from the item).
+  var archiveCacheKey = 'cnfirmed:ia3:' + lang + ':' + pageTitle + ':' + revid;
 
   var cnSups = [];        // rendered <sup> nodes, in document order
   var badges = [];        // matching <button class="cnfirmed-badge"> nodes
@@ -2882,6 +2883,17 @@
       books.indexOf(hit.file) !== -1 ? hit.file : null;
   }
 
+  // The item holds a printout of the article itself: Wikipedia's "Download as
+  // PDF" names the file after the page ("Soviet_Union.pdf"). Such an item is a
+  // reader's pile of Wikipedia printouts, so whichever of its books the hit
+  // matched in is a copy of Wikipedia (WP:CIRCULAR). Mirrors printsArticle.
+  var IA_PRINTOUT_REASON = 'a printout of this Wikipedia article';
+
+  function iaPrintsArticle(hit, details, title) {
+    var name = String(title).trim().replace(/ /g, '_');
+    return name !== '' && (hit.file === name || ((details && details.books) || []).indexOf(name) !== -1);
+  }
+
   // Every lending-library book is flagged restricted; any other one cannot be
   // borrowed, so nobody without special access can read it.
   function archiveDetailsGate(details, access) {
@@ -3482,10 +3494,16 @@
           return list.reduce(function (p, s) {
             return p.then(function () {
               if (added >= cap) return;
+              if (iaPrintsArticle(s.hit, null, title)) {
+                funnel.rejected[IA_PRINTOUT_REASON] = (funnel.rejected[IA_PRINTOUT_REASON] || 0) + 1;
+                return;
+              }
               return iaFetchJson(IA_METADATA_URL + encodeURIComponent(s.hit.identifier))
                 .then(function (md) {
                   var details = archiveDetailsOf(md);
-                  var gate = archiveDetailsGate(details, s.access);
+                  var gate = iaPrintsArticle(s.hit, details, title)
+                    ? { ok: false, reason: IA_PRINTOUT_REASON }
+                    : archiveDetailsGate(details, s.access);
                   if (!gate.ok) {
                     funnel.rejected[gate.reason] = (funnel.rejected[gate.reason] || 0) + 1;
                     return;

@@ -22,6 +22,7 @@ import {
   editionKey,
   findArchiveCandidates,
   passageSummary,
+  printsArticle,
   formatArchiveCitation,
   parseSearchHits,
   rankArchiveHits,
@@ -359,6 +360,26 @@ test("collapseCopies shows a text once, on its own rather than bundled", () => {
   );
   assert.deepEqual(kept.map((x) => x.s.hit.identifier), ["steven-zaloga-eisenhower", "oldglory"]);
   assert.deepEqual(funnel.rejected, { "a copy of another lead": 1 });
+});
+
+// A real case: "Reply To London University 2 June 2021" is a reader's upload
+// of seventeen Wikipedia printouts, "Soviet_Union" among them, and its OCR of
+// an image caption came back as a source for the Soviet Union article.
+const PRINTOUTS = {
+  metadata: { title: "Reply To London University 2 June 2021" },
+  files: ["Capitalism", "Communism", "Soviet_Union", "Royal_Holloway,_University_of_London"]
+    .flatMap((b) => [{ name: `${b}.pdf` }, { name: `${b}_djvu.txt` }]),
+};
+
+test("an item holding a printout of the article is a copy of Wikipedia", () => {
+  const details = parseItemDetails(PRINTOUTS);
+  assert.ok(printsArticle({ file: "Soviet_Union" }, null, "Soviet Union"), "named after the page");
+  assert.ok(printsArticle({ file: "Soviet_Union" }, null, "Soviet_Union"));
+  assert.ok(printsArticle({ file: "Communism" }, details, "Soviet Union"), "another printout in the same pile");
+  assert.ok(printsArticle({ file: null }, details, "Royal Holloway, University of London"));
+  assert.ok(!printsArticle({ file: "Communism" }, details, "Stalinism"), "the pile does not print this article");
+  assert.ok(!printsArticle({ file: "sovietunion0000smit" }, null, "Soviet Union"), "a book about it");
+  assert.ok(!printsArticle({ file: "Soviet_Union" }, null, ""));
 });
 
 // --- the funnel, end to end ---------------------------------------------------
