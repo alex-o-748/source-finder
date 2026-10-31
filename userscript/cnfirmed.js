@@ -99,10 +99,11 @@
   // ---- Open-weight models -----------------------------------------------
   // The Tavily reader and the Internet Archive librarian run on open-weight
   // models that need no key, from one of two hosts chosen in Settings:
+  //   hf        Hugging Face Inference Providers, through the Worker, which
+  //             pays for them while its credits last. The default: GLM-5.2
+  //             names real books and checks passages better than Qwen 3.8.
   //   liftwing  Wikimedia's Lift Wing, through the llm-router tool on
   //             Toolforge (the Worker does not allow Qwen 3.8). Free.
-  //   hf        Hugging Face Inference Providers, through the Worker, which
-  //             pays for them while its credits last.
   // A request goes to the host that serves its model: Lift Wing's model ids
   // all start with "llm-". So a model set on window (cnfirmedModelHf, or
   // cnfirmedArchive*Model below) goes where it is served, whichever is chosen.
@@ -112,15 +113,6 @@
   var OPEN_MODEL_STORAGE = 'cnfirmed-open-model';
 
   var OPEN_MODELS = {
-    // Must be in llm-router's LIFTWING_ALLOWED_MODELS.
-    liftwing: {
-      name: 'Qwen 3.8 on Lift Wing',
-      blurb: 'Wikimedia’s own model hosting, through the llm-router tool on Toolforge. Free.',
-      reader: 'llm-qwen38-27b',
-      planner: 'llm-qwen38-27b',
-      books: 'llm-qwen38-27b',
-      judge: 'llm-qwen38-27b'
-    },
     // Must be in the Worker's HF_ALLOWED_MODELS.
     hf: {
       name: 'Hugging Face',
@@ -130,12 +122,21 @@
       planner: 'zai-org/GLM-5.2',
       books: 'zai-org/GLM-5.2',
       judge: 'zai-org/GLM-5.2'
+    },
+    // Must be in llm-router's LIFTWING_ALLOWED_MODELS.
+    liftwing: {
+      name: 'Qwen 3.8 on Lift Wing',
+      blurb: 'Wikimedia’s own model hosting, through the llm-router tool on Toolforge. Free.',
+      reader: 'llm-qwen38-27b',
+      planner: 'llm-qwen38-27b',
+      books: 'llm-qwen38-27b',
+      judge: 'llm-qwen38-27b'
     }
   };
 
   function getOpenModel() {
     var m = localStorage.getItem(OPEN_MODEL_STORAGE);
-    return OPEN_MODELS[m] ? m : 'liftwing';
+    return OPEN_MODELS[m] ? m : 'hf';
   }
 
   function setOpenModel(m) {

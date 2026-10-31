@@ -11,7 +11,7 @@ Results are returned ranked, each with a ready-to-paste Wikipedia cite template.
 
 This repo ships two things:
 
-- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all. The web search is free with Tavily + an open-weight model while the CNfirmed Worker's shared Tavily credits last; after that, or for a model that searches the web itself, it talks directly to Anthropic, Google (Gemini), or OpenAI, or to Tavily through the Worker, using a key you store in your own browser's `localStorage`. The Internet Archive stage needs no key either: an open-weight model (Qwen 3.8 on Wikimedia's Lift Wing by default, or models on Hugging Face through the CNfirmed Worker; see [Open-weight model](#open-weight-model)) plans its searches and checks its passages, with the Verify API as the fallback.
+- A **Wikipedia user script** (`userscript/cnfirmed.js`) — runs entirely in the browser. The wiki-local stage needs no key at all. The web search is free with Tavily + an open-weight model while the CNfirmed Worker's shared Tavily credits last; after that, or for a model that searches the web itself, it talks directly to Anthropic, Google (Gemini), or OpenAI, or to Tavily through the Worker, using a key you store in your own browser's `localStorage`. The Internet Archive stage needs no key either: an open-weight model (GLM-5.2 on Hugging Face through the CNfirmed Worker by default, or Qwen 3.8 on Wikimedia's Lift Wing; see [Open-weight model](#open-weight-model)) plans its searches and checks its passages, with the Verify API as the fallback.
 - A **Node CLI** (`cnfirmed`) — for running the same pipeline from the terminal. Web search uses the Anthropic API; checking a candidate against the claim uses the [Verify API](#the-verifier-is-separable-cli).
 
 ## Why
@@ -65,8 +65,8 @@ The Tavily reader and the Internet Archive librarian run on open-weight models t
 
 | Choice | Reader | Planner, books, check | Through |
 | ------ | ------ | --------------------- | ------- |
-| Qwen 3.8 on Lift Wing (default) | `llm-qwen38-27b` | `llm-qwen38-27b` | [llm-router](https://github.com/alex-o-748/tf-llm-router) on Toolforge, `POST /liftwing` (Wikimedia's model hosting; free) |
-| Hugging Face | `openai/gpt-oss-20b` | `zai-org/GLM-5.2` | the CNfirmed Worker, `POST /hf` (paid for by the Worker while its credits last) |
+| Hugging Face (default) | `openai/gpt-oss-20b` | `zai-org/GLM-5.2` | the CNfirmed Worker, `POST /hf` (paid for by the Worker while its credits last) |
+| Qwen 3.8 on Lift Wing | `llm-qwen38-27b` | `llm-qwen38-27b` | [llm-router](https://github.com/alex-o-748/tf-llm-router) on Toolforge, `POST /liftwing` (Wikimedia's model hosting; free) |
 
 The choice is kept in `localStorage` (`cnfirmed-open-model`). A model set on `window` (`cnfirmedModelHf`, `cnfirmedArchive*Model`) wins over the choice, and goes to the host that serves it: Lift Wing's model ids all start with `llm-`. Set `window.cnfirmedLlmRouterUrl` to use another llm-router host.
 
@@ -218,7 +218,7 @@ Deliberately out of scope: **Wikidata statements and their references.** This wa
 
 A second free stage, in both the user script (it runs whenever a claim is opened, alongside the Wikipedia search) and the CLI (`cnfirmed archive`). It looks for the claim in the OCR text of digitised books. A book counts if an editor can read the passage: an open one, or one in the lending library, which anyone with a free archive.org account can borrow.
 
-It does what a reference librarian does, with open-weight models for the steps word matching cannot do: restate the claim, think of the books that would state it, search inside them for the telling term, and read the passage. The models are the [open-weight model](#open-weight-model) chosen in Settings (Qwen 3.8 on Lift Wing by default; the GLM-5.2 below is the Hugging Face choice), so the editor needs no key. Why each step is there, and what each one found on the evaluation set, is in `docs/internet-archive-search-ideas.md`.
+It does what a reference librarian does, with open-weight models for the steps word matching cannot do: restate the claim, think of the books that would state it, search inside them for the telling term, and read the passage. The models are the [open-weight model](#open-weight-model) chosen in Settings (GLM-5.2 on Hugging Face by default, as below; Qwen 3.8 on Lift Wing is the other choice, though Qwen mostly invents book titles), so the editor needs no key. Why each step is there, and what each one found on the evaluation set, is in `docs/internet-archive-search-ideas.md`.
 
 1. **Plan** — a model (GLM-5.2) restates the claim with the names its paragraph gives ("Feodora's father died in 1814" → "Emich Karl, Prince of Leiningen, the father of Princess Feodora, died in 1814"), writes three full-text queries in a book's wording rather than Wikipedia's, and lists what a passage stating the claim must mention, numbers and names first.
 2. **Search** — the planner's queries, beside the word search's own two families, run side by side, each strictest first until it has ten books:
