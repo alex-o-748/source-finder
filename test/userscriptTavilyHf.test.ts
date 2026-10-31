@@ -103,8 +103,16 @@ test("searches Tavily, then asks the model about only what was found, both via t
   assert.match(out[0].source.url, /britannica\.com/);
 });
 
-test("by default the model is Qwen 3.8 on Lift Wing, through llm-router", async () => {
-  const lw = loadUserScript({ wgPageName: "Elizabeth_Báthory" });
+test("by default the reader is GPT-OSS on Hugging Face, through the Worker", async () => {
+  const def = loadUserScript({ wgPageName: "Elizabeth_Báthory" });
+  const sentDef = stubFetch([TAVILY_OK, hfReply([{ url: "https://www.britannica.com/biography/Elizabeth-Bathory", verdict: "SUPPORTED" }])]);
+  await def.callTavilyGptOss(CTX, KEY);
+  assert.equal(sentDef[1].url, `${PROXY}/hf`);
+  assert.equal(sentDef[1].body.model, "openai/gpt-oss-20b");
+});
+
+test("with Lift Wing chosen, the model is Qwen 3.8, through llm-router", async () => {
+  const lw = loadUserScript({ wgPageName: "Elizabeth_Báthory" }, { storage: { "cnfirmed-open-model": "liftwing" } });
   const sent = stubFetch([TAVILY_OK, hfReply([{ url: "https://www.britannica.com/biography/Elizabeth-Bathory", verdict: "SUPPORTED" }])]);
   const out = await lw.callTavilyGptOss(CTX, KEY);
   assert.equal(sent[0].url, `${PROXY}/tavily`);

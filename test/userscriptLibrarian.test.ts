@@ -32,8 +32,22 @@ test("the user script sends the same prompts, and defaults to the same models", 
   assert.deepEqual(off.liftWingModels, { planner: "llm-qwen38-27b", books: null, judge: "openai/gpt-oss-20b" });
 });
 
-test("the user script's librarian runs on Qwen 3.8 on Lift Wing unless Hugging Face is chosen", async () => {
+test("the user script's librarian runs on GLM-5.2 through the Worker by default", async () => {
   const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" });
+  page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
+  const sent: Sent[] = [];
+  globalThis.fetch = worldFetch(sent);
+  await page.findArchiveCandidates(0);
+  const calls = sent.filter((s) => s.body?.messages);
+  assert.ok(calls.length > 0);
+  for (const c of calls) {
+    assert.equal(c.url, "https://publicai-proxy.alaexis.workers.dev/hf");
+    assert.equal(c.body!.model, "zai-org/GLM-5.2");
+  }
+});
+
+test("the user script's librarian runs on Qwen 3.8 on Lift Wing when it is chosen", async () => {
+  const page = loadUserScript({ wgTitle: "Eiffel Tower", wgPageName: "Eiffel_Tower" }, { storage: { "cnfirmed-open-model": "liftwing" } });
   page.setClaimContexts([{ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }]);
   const sent: Sent[] = [];
   globalThis.fetch = worldFetch(sent);
@@ -46,7 +60,7 @@ test("the user script's librarian runs on Qwen 3.8 on Lift Wing unless Hugging F
     assert.equal(c.body!.model, "llm-qwen38-27b");
   }
   // A Hugging Face model set on window still goes to the Worker.
-  const mixed = loadUserScript({ wgTitle: "Eiffel Tower" }, { window: { cnfirmedArchiveJudgeModel: "zai-org/GLM-5.2" } });
+  const mixed = loadUserScript({ wgTitle: "Eiffel Tower" }, { storage: { "cnfirmed-open-model": "liftwing" }, window: { cnfirmedArchiveJudgeModel: "zai-org/GLM-5.2" } });
   sent.length = 0;
   const judged = await mixed.checkArchiveLeads({ claim: CLAIM, context: PARAGRAPH, section: null, links: [] }, PLAN,
     [{ title: "La tour", evidence: { year: 1900, passages: ["The tower was completed in 1889."] } }]);
