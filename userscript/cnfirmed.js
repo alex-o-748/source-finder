@@ -2560,7 +2560,9 @@
             section: ref.section,
             score: Math.round(score * 1000) / 1000,
             matchedAnchors: matched,
-            refName: ref.occurrence.name
+            refName: ref.occurrence.name,
+            // The citation's quote=, the source's own words: read if the page cannot be.
+            quote: ref.source.quote || null
           }
         });
       });
@@ -2759,8 +2761,142 @@
       });
   }
 
-  // Runs the check for a claim whose wiki-local stage is done, and keeps the
-  // verdicts on its sister-wiki candidates.
+  // -- Reading the source behind an other-language lead --
+  // A lead that states the same fact still has a source nobody here has read.
+  // So for those that pass, the source's text is fetched through the Worker
+  // (GET /?fetch=, the route Source Verifier reads citations with; the
+  // Toolforge source-fetcher answers the same way) and judged against the
+  // claim, as a book's passages are: the verdict counts only when its quote is
+  // in the text. One source per call: a whole page, up to
+  // WIKI_SOURCE_MAX_CHARS (GLM-5.2 and Qwen 3.8 both read a 52,000-character
+  // page whole and found the one table in its middle). When the page cannot be
+  // read, the citation's quote= stands in for it. When the judge model fails,
+  // the Verify API reads the same text. A source read in full that does not
+  // state the claim is hidden; one cut short keeps its "cited for this fact"
+  // label, since the evidence may lie past the cut.
+
+  var WIKI_SOURCE_MAX_CHARS = 50000;
+  var WIKI_SOURCE_MIN_CHARS = 100;
+  // The Worker cuts what it extracts at 100,000 characters.
+  var WORKER_FETCH_CAP = 100000;
+  var WIKI_SOURCE_MAX_TOKENS = 4000;
+
+  var WIKI_SOURCE_SYSTEM = [
+    "You decide whether a source states a claim from a Wikipedia article. The source's text was extracted from a web page or PDF, so it may carry menus, captions or table cells run together. It may be in another language than the claim.",
+    "",
+    "- \"supports\": the source states the claim's fact, with its specific content (who, what, and any number or date).",
+    "- \"partial\": it states a substantial part of what the claim asserts (the event but not the date, or one of two facts), enough to cite for that part.",
+    "- \"no\": it is only about the same topic, uses the same names or numbers in a different statement, only confirms a background detail of the claim, or is unrelated.",
+    "",
+    "Be strict: shared words are not support. Judge only on this text, not on what the source probably says elsewhere.",
+    "",
+    "For \"supports\" and \"partial\", quote the words in the text that state it, exactly as written, in the text's own language.",
+    "",
+    "Reply with JSON only: {\"verdict\": \"supports\", \"quote\": \"...\", \"why\": \"one short sentence\"}"
+  ].join('\n');
+
+  // The text of a lead's source: { text, from: 'page' | 'quote', truncated },
+  // or { error } when neither the page nor a quote= can be read.
+  function wikiSourceText(c) {
+    var quote = c.evidence && c.evidence.quote;
+    function fromQuote(error) {
+      if (quote && quote.trim().length >= 20) return { text: quote.trim(), from: 'quote', truncated: true };
+      return { error: error };
+    }
+    if (!c.url) return Promise.resolve(fromQuote('no URL'));
+    return fetch(PROXY_BASE + '/?fetch=' + encodeURIComponent(c.url), { credentials: 'omit' })
+      .then(function (res) {
+        return res.text().then(function (t) {
+          var data;
+          try { data = JSON.parse(t); } catch (e) { data = null; }
+          var text = data && typeof data.content === 'string' ? data.content.trim() : '';
+          if (text.length >= WIKI_SOURCE_MIN_CHARS) {
+            return {
+              text: text.slice(0, WIKI_SOURCE_MAX_CHARS),
+              from: 'page',
+              truncated: text.length > WIKI_SOURCE_MAX_CHARS || text.length >= WORKER_FETCH_CAP
+            };
+          }
+          return fromQuote((data && data.error) || (text ? 'the page has almost no text' : 'HTTP ' + res.status));
+        });
+      }, function (err) {
+        return fromQuote((err && err.message) || String(err));
+      });
+  }
+
+  function wikiSourcePrompt(input, c, source) {
+    return 'Article: ' + libArticleName(input.articleTitle) + '\n' +
+      'Claim: ' + input.claim + '\n' +
+      "The claim's paragraph, for context only: " + libClip(input.paragraph, 1200) + '\n\n' +
+      'Source: ' + libClip(c.title, 200) + (c.url ? ' (' + c.url + ')' : '') + '\n' +
+      (source.from === 'quote' ? 'Only the passage its citation quotes is available:\n' : 'Text:\n') +
+      source.text;
+  }
+
+  // The judge's verdict on one source, in the Archive check's terms:
+  // { verdict: supports | partial | unsupported, quote, reason }, or null.
+  function wikiParseSource(text, source) {
+    var r = libJsonObjectIn(text);
+    if (!r) throw new Error('check: the model gave no verdict');
+    var v = String(r.verdict == null ? '' : r.verdict).trim().toLowerCase();
+    var reason = typeof r.why === 'string' ? r.why.trim() : '';
+    var quote = typeof r.quote === 'string' ? r.quote.trim() : '';
+    if (v === 'no' || v === 'unsupported') return { verdict: 'unsupported', quote: '', reason: reason };
+    if (v !== 'supports' && v !== 'partial') return null;
+    if (!libQuoteInPassages(quote, [source.text])) {
+      return { verdict: 'unsupported', quote: '', reason: ('Not counted: its quote is not in the source. ' + reason).trim() };
+    }
+    return { verdict: v, quote: quote, reason: reason };
+  }
+
+  // Reads and judges one lead's source. Resolves to what the lead keeps as
+  // `source`: the verdict (or null), what read it, and whether the text was
+  // whole; or { unavailable } with the reason it could not be read.
+  function checkSisterSource(ctx, c) {
+    return wikiSourceText(c).then(function (source) {
+      if (source.error) return { unavailable: source.error };
+      var kept = { from: source.from, truncated: source.truncated };
+      function viaVerifyApi() {
+        return callVerifyApi(ctx.claim, source.text).then(function (r) {
+          kept.verdict = toArchiveVerdict(r);
+          kept.by = 'verify-api';
+          return kept;
+        });
+      }
+      var judge = libModels().judge;
+      if (!judge) return viaVerifyApi();
+      var input = { articleTitle: mw.config.get('wgTitle') || pageTitle, paragraph: ctx.context, claim: ctx.claim };
+      return callWorkerModel(judge, WIKI_SOURCE_SYSTEM, wikiSourcePrompt(input, c, source),
+        WIKI_SOURCE_MAX_TOKENS, WIKI_SAME_EFFORT)
+        .then(function (text) {
+          kept.verdict = wikiParseSource(text, source);
+          kept.by = judge;
+          return kept;
+        })
+        .catch(function (err) {
+          console.warn('[CNfirmed] the judge model failed on a source; checking with the Verify API instead:', err);
+          return viaVerifyApi();
+        });
+    });
+  }
+
+  function passesSameFact(c) {
+    return !!(c.check && (c.check.verdict === 'same' || c.check.verdict === 'partial'));
+  }
+
+  // The sources of the leads that state the same fact, one after another.
+  function checkSisterSources(ctx, leads) {
+    return leads.filter(passesSameFact).reduce(function (chain, c) {
+      return chain.then(function () {
+        return checkSisterSource(ctx, c).then(function (r) { c.source = r; }, function (err) {
+          c.source = { unavailable: 'the check failed: ' + ((err && err.message) || String(err)) };
+        });
+      });
+    }, Promise.resolve());
+  }
+
+  // Runs the check for a claim whose wiki-local stage is done: the same-fact
+  // check of its sister-wiki candidates, then their sources.
   function checkWikiStage(index) {
     var w = wikiState[index];
     if (!w || w.status !== 'done') return Promise.resolve(w);
@@ -2769,13 +2905,20 @@
     if (w.checking) return w.checking;
     w.check = { status: 'running' };
     renderPanel(index);
-    w.checking = checkSisterLeads(claimContexts[index], leads)
+    var ctx = claimContexts[index];
+    w.checking = checkSisterLeads(ctx, leads)
       .then(function (r) {
-        leads.forEach(function (c, k) { c.check = r.verdicts[k]; });
-        w.check = { status: 'done', by: r.by };
+        leads.forEach(function (c, k) { c.check = r.verdicts[k]; delete c.source; });
         console.log('[CNfirmed] other-language leads for claim', index, 'checked by', r.by + ':',
           r.verdicts.map(function (v) { return v ? v.verdict : 'none'; }).join(', '));
-      }, function (err) {
+        return checkSisterSources(ctx, leads).then(function () {
+          w.check = { status: 'done', by: r.by };
+          console.log('[CNfirmed] their sources:', leads.filter(passesSameFact).map(function (c) {
+            return c.source && c.source.unavailable ? 'unread (' + c.source.unavailable + ')'
+              : c.source && c.source.verdict ? c.source.verdict.verdict : 'none';
+          }).join(', '));
+        });
+      }).catch(function (err) {
         console.error('[CNfirmed] other-language check failed for claim', index, ':', err);
         w.check = { status: 'error', error: (err && err.message) || String(err) };
       }).then(function () {
@@ -5532,32 +5675,72 @@
     };
   }
 
-  // `verdict` is the other-language check's: same | partial, or null when it
-  // gave none (`checkDone`) or has not run. It says another wiki cited the
-  // source for this fact; the source itself is not read, so it stays a lead.
-  function wikiItem(c, key, verdict, checkDone) {
+  // Where an other-language lead stands once its check is done (`checkDone`):
+  //   other      cited for another fact: hidden, counted
+  //   unsupported its source, read in full, does not state the claim: hidden
+  //   supports / partial   its source was read and states it (or part of it)
+  //   same / part          cited for this fact (or part of it) there, but its
+  //                        source could not be read, was cut short, or gave
+  //                        no verdict
+  //   none        the same-fact check gave no verdict
+  //   unchecked   the check has not run, or failed
+  function sisterOutcome(c, checkDone) {
+    if (!checkDone || !c.check) return checkDone ? 'none' : 'unchecked';
+    var fact = c.check.verdict;
+    if (fact === 'no') return 'other';
+    var read = c.source && c.source.verdict ? c.source.verdict.verdict : null;
+    if (read === 'supports' || read === 'partial') return read;
+    if (read === 'unsupported' && !c.source.truncated) return 'unsupported';
+    return fact === 'partial' ? 'part' : 'same';
+  }
+
+  function wikiItem(c, key, checkDone, claim) {
     var ev = c.evidence || {};
     var same = ev.origin === 'same-article';
     var host = c.url ? hostOf(c.url) : '';
     var where = same ? 'already cited in this article' : 'cited on ' + ev.lang + '.wikipedia';
-    var verdictText = verdict === 'same'
-      ? 'Cited for this fact on ' + ev.lang + '.wikipedia, source not checked'
-      : verdict === 'partial'
-        ? 'Cited for part of this fact on ' + ev.lang + '.wikipedia, source not checked'
-        : checkDone ? 'Lead, the check gave no verdict' : 'Lead, not checked';
+    var outcome = same ? 'unchecked' : sisterOutcome(c, checkDone);
+    var read = c.source && c.source.verdict;
+    var tier = outcome === 'supports' || outcome === 'partial' ? outcome : 'lead';
+    var verdictText = {
+      supports: 'Supports the claim',
+      partial: 'Supports part of the claim',
+      same: 'Cited for this fact on ' + ev.lang + '.wikipedia, source not checked',
+      part: 'Cited for part of this fact on ' + ev.lang + '.wikipedia, source not checked',
+      none: 'Lead, the check gave no verdict'
+    }[outcome] || 'Lead, not checked';
     var notes = [];
-    if (verdict && c.check && c.check.reason) notes.push(c.check.reason);
+    var warnings = [];
+    if (tier !== 'lead') {
+      // As for web pages: a source that repeats the article word for word
+      // is probably a copy of Wikipedia.
+      if (tier === 'supports' && copiesClaim(claim, read.quote)) {
+        tier = 'flag';
+        verdictText = 'Probably copied from Wikipedia';
+        warnings.push('The source repeats the article’s sentence word for word, so it is probably ' +
+          'copied from Wikipedia (WP:CIRCULAR). Look for the source it came from.');
+      }
+      if (read.reason) notes.push(read.reason);
+      if (c.source.from === 'quote') notes.push('Checked on the passage the citation quotes; the page could not be read.');
+    } else if (outcome === 'same' || outcome === 'part') {
+      if (c.check.reason) notes.push(c.check.reason);
+      if (c.source && c.source.unavailable) notes.push('Could not read the source: ' + c.source.unavailable + '.');
+      else if (read && read.verdict === 'unsupported') notes.push('The part of the source that could be read does not state it.');
+      else if (c.source) notes.push('The check gave no verdict on the source.');
+    }
     if (same && /^<ref name=/.test(c.ref || '')) notes.push('Insert re-uses the citation already in the article.');
     return {
       key: key,
-      tier: 'lead',
+      tier: tier,
       verdictText: verdictText,
       title: c.title,
       url: c.url || null,
       meta: (host ? host + ' · ' : '') + where,
-      quoteLabel: same ? 'Cited in this article for:' : 'Cited on ' + ev.lang + '.wikipedia for:',
-      quote: truncate(ev.sentence || c.snippet || '', 400),
-      warnings: [],
+      quoteLabel: tier !== 'lead'
+        ? (c.source.from === 'quote' ? 'From the quoted passage:' : 'From the source:')
+        : same ? 'Cited in this article for:' : 'Cited on ' + ev.lang + '.wikipedia for:',
+      quote: tier !== 'lead' ? read.quote : truncate(ev.sentence || c.snippet || '', 400),
+      warnings: warnings,
       note: notes.join(' '),
       ref: c.ref
     };
@@ -5617,27 +5800,28 @@
       counts.books = bc;
     }
 
-    // Other-language leads, like books, are listed once checked; those the
-    // check found to state another fact are only counted.
+    // Other-language leads, like books, are listed once checked; those cited
+    // for another fact, or whose source was read and does not state the
+    // claim, are only counted.
     var w = wikiState[i];
     if (w && w.status === 'done') {
       var checking = w.check && w.check.status === 'running';
       var checked = !!(w.check && w.check.status === 'done');
-      var kc = { total: 0, same: 0, partial: 0, rejected: 0, unchecked: 0, sameArticle: 0 };
+      var kc = { total: 0, sameArticle: 0, supports: 0, partial: 0, same: 0, other: 0, unsupported: 0, unchecked: 0 };
       (w.candidates || []).forEach(function (c, k) {
         kc.total++;
         if (!isSisterLead(c)) {
           kc.sameArticle++;
-          all.push(wikiItem(c, 'wiki' + k, null, false));
+          all.push(wikiItem(c, 'wiki' + k, false, ctx.claim));
           return;
         }
         if (checking) return;
-        var verdict = checked && c.check ? c.check.verdict : null;
-        if (verdict === 'no') { kc.rejected++; return; }
-        if (verdict === 'same') kc.same++;
-        else if (verdict === 'partial') kc.partial++;
+        var outcome = sisterOutcome(c, checked);
+        if (outcome === 'other' || outcome === 'unsupported') { kc[outcome]++; return; }
+        if (outcome === 'supports' || outcome === 'partial') kc[outcome]++;
+        else if (outcome === 'same' || outcome === 'part') kc.same++;
         else kc.unchecked++;
-        all.push(wikiItem(c, 'wiki' + k, verdict, checked));
+        all.push(wikiItem(c, 'wiki' + k, checked, ctx.claim));
       });
       counts.wiki = kc;
     }
@@ -6166,16 +6350,19 @@
     } else if (st.wiki === 'done') {
       var parts = [];
       if (kc && kc.sameArticle) parts.push(kc.sameArticle + ' in this article');
-      if (kc && kc.same) parts.push(kc.same + ' cited for this fact elsewhere');
-      if (kc && kc.partial) parts.push(kc.partial + ' for part of it');
-      if (kc && kc.rejected) parts.push(kc.rejected + ' cited for another fact');
+      if (kc && kc.supports) parts.push(kc.supports + ' support' + (kc.supports === 1 ? 's' : '') + ' it');
+      if (kc && kc.partial) parts.push(kc.partial + ' in part');
+      if (kc && kc.same) parts.push(kc.same + ' cited for this fact elsewhere, source not checked');
+      if (kc && kc.unsupported) parts.push(kc.unsupported + ' don’t state it');
+      if (kc && kc.other) parts.push(kc.other + ' cited for another fact');
       if (kc && kc.unchecked) parts.push(kc.unchecked + ' not checked');
       section.appendChild(sourceRow('Wikipedia', wikiWhere, 'done', kc && kc.total
         ? plural(kc.total, 'lead') + ': ' + parts.join(', ')
         : 'Nothing in this article or other languages'));
     } else if (st.wiki === 'running' && w.status === 'done') {
       section.appendChild(sourceRow('Wikipedia', wikiWhere, 'running', 'Checking ' +
-        plural((w.candidates || []).filter(isSisterLead).length, 'other-language lead') + ' against the claim…'));
+        plural((w.candidates || []).filter(isSisterLead).length, 'other-language lead') +
+        ' and reading their sources…'));
     } else if (st.wiki === 'error') {
       section.appendChild(sourceRow('Wikipedia', wikiWhere, 'error', 'Failed: ' + w.error, 'Retry', retry));
     } else {

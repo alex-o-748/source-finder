@@ -104,11 +104,16 @@ const EXPOSED = [
   "wikiParseSame",
   "checkSisterLeads",
   "wikiItem",
+  "sisterOutcome",
+  "wikiSourceText",
+  "wikiParseSource",
+  "checkSisterSource",
+  "checkSisterSources",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UserScriptModule = Record<string, (...args: any[]) => any> & {
-  prompts: { plan: string; books: string; judge: string; wikiSame: string };
+  prompts: { plan: string; books: string; judge: string; wikiSame: string; wikiSource: string };
   /** The librarian's models with Hugging Face chosen in Settings, and with Lift Wing. */
   models: { planner: string | null; books: string | null; judge: string | null };
   liftWingModels: { planner: string | null; books: string | null; judge: string | null };
@@ -143,7 +148,7 @@ export function loadUserScript(
   const exposed = `
     return {
       ${EXPOSED.map((name) => `${name}: ${name},`).join("\n      ")}
-      prompts: { plan: LIB_PLAN_SYSTEM, books: LIB_BOOKS_SYSTEM, judge: LIB_JUDGE_SYSTEM, wikiSame: WIKI_SAME_SYSTEM },
+      prompts: { plan: LIB_PLAN_SYSTEM, books: LIB_BOOKS_SYSTEM, judge: LIB_JUDGE_SYSTEM, wikiSame: WIKI_SAME_SYSTEM, wikiSource: WIKI_SOURCE_SYSTEM },
       models: libModelsFor("hf"),
       liftWingModels: libModelsFor("liftwing"),
       citoidMaps: BUILTIN_CITOID_MAPS,

@@ -225,6 +225,33 @@ about ("Feodora's father" vs "the Prince of Leiningen, who died in 1814"),
 calls a claim with one part missing unsupported, and passes shared words (an
 otter shrew's webbed feet for the otter civet's).
 
+## Checking the other-language leads (`--check-wiki`)
+
+`--check-wiki` (also on with `--check`) runs the user script's check of the
+other-language leads: the sentence each was cited for, against the claim, in
+one judge call per claim; then, for those that state the same fact, the source,
+fetched through the Worker and judged (README, "Checking the other-language
+leads"). The page fetches are recorded with the model calls.
+
+```sh
+NODE_USE_ENV_PROXY=1 npx tsx eval/run.ts --record --check-wiki --name check-wiki
+npx tsx eval/score.ts --run check-wiki
+```
+
+`score.ts` adds a "sister, checked" method (the leads the panel lists) and a
+table of where the check left each lead against its label. The labels judge
+the sentence, not the source, so "supports" against "unsupported" means the
+source did not say what the sentence says: read those by hand.
+
+Measured in November 2026 (`results/check-wiki.json`): of the 28 leads, the
+sentence check dropped 22 (all 7 topic and 15 unrelated); the panel lists 4,
+all good (precision 21% → 100%). The 2 good leads it hides are sources that do
+not state the claim, both confirmed by reading them: a review of *2312* that
+never mentions *Forty Signs of Rain*, and a profile of Clinton Sparks that
+gives his age, not the birth date claimed. Three of the 6 sources could not be
+read through the Worker (403, 404, LinkedIn's 999); the Toolforge
+source-fetcher reads the first of them.
+
 ## The web search (paid)
 
 The user script's Claude web search runs with `--web`. Recording it needs a key

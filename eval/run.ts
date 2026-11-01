@@ -17,7 +17,10 @@
  *                                          # eval/cassettes-fulltext/, not committed)
  *   npx tsx eval/run.ts --check --name check
  *                                          # also check the Archive leads' passages, as the
- *                                          # user script does (its judge model, or the Verify API)
+ *                                          # user script does (its judge model, or the Verify API),
+ *                                          # and the other-language leads: sentence, then source
+ *   npx tsx eval/run.ts --check-wiki --name check-wiki
+ *                                          # the other-language check alone
  *   npx tsx eval/run.ts --no-librarian     # the Archive's word search alone, without the models'
  *                                          # queries, named books and search inside the leads
  *
@@ -66,6 +69,8 @@ const concurrency = Number(arg("concurrency") ?? (record ? 4 : 1));
 const web = process.argv.includes("--web");
 /** Check the Archive leads as the user script does: its judge model, or the Verify API. */
 const check = process.argv.includes("--check");
+/** Check the other-language leads as the user script does (also on with --check). */
+const checkWiki = check || process.argv.includes("--check-wiki");
 /** The Archive's models: planner queries, named books, the search inside every lead (default on, as shipped). */
 const librarian = !process.argv.includes("--no-librarian");
 /** Read the whole text of open books too (option off in the shipped script until archive.org allows it). */
@@ -86,8 +91,8 @@ if (!record) {
 }
 // Deliberately not ANTHROPIC_API_KEY: Claude Code reads that name itself.
 const apiKey = process.env.CNFIRMED_ANTHROPIC_API_KEY ?? "";
-if ((web || check) && engine !== "userscript") {
-  throw new Error("--web and --check run the user script's model calls only");
+if ((web || checkWiki) && engine !== "userscript") {
+  throw new Error("--web, --check and --check-wiki run the user script's model calls only");
 }
 if (web && record && !apiKey) {
   throw new Error("recording a model call needs CNFIRMED_ANTHROPIC_API_KEY in the environment");
@@ -130,7 +135,9 @@ const stats = installCassette({
   // The librarian's client tries a 504 or an answerless reply once more
   // itself; recording the answerless one would replay it to that retry.
   clientRetries5xx: [WORKER_HOST],
-  skipRecording: (host, status, body) => host === WORKER_HOST && status === 200 && replyContent(body) === null,
+  // A page fetched through the Worker (GET /?fetch=) is no chat reply, and is kept.
+  skipRecording: (host, status, body) =>
+    host === WORKER_HOST && status === 200 && /"choices"\s*:/.test(body) && replyContent(body) === null,
   log: (line) => console.error(line),
   observe: tallyUsage,
 });
@@ -148,8 +155,13 @@ export interface Lead {
   evidence: string[];
   /** Where that evidence lives: `de:Eiffelturm`, or the book's year and access. */
   where: string;
-  /** Archive leads, with --check: the model's verdict on the passages, labelled like eval/labels.json. */
-  check?: { verdict: string; reason: string } | null;
+  /**
+   * With --check. Archive leads: the model's verdict on the passages, labelled
+   * like eval/labels.json. Other-language leads: where the check left the lead
+   * (the user script's sisterOutcome: supports, partial, same, part, other,
+   * unsupported, none), with the reason.
+   */
+  check?: { verdict: string; reason: string; sourceQuote?: string } | null;
 }
 
 export interface ClaimResult {
@@ -170,6 +182,8 @@ export interface ClaimResult {
   archiveFunnel: Omit<ArchiveFunnel, "passages"> | null;
   /** With --check: what checked the Archive leads (the judge model, or "verify-api"). */
   checkedBy?: string;
+  /** With --check: what checked the other-language leads' sentences. */
+  wikiCheckedBy?: string;
   /** The paid web search, when run with --web. */
   web?: Lead[];
   errors: string[];
@@ -245,7 +259,26 @@ async function runScriptClaim(c: EvalClaim): Promise<ClaimResult> {
   result.claimChanged = result.claim !== c.claim;
   result.wikiWarnings = page.corpus.warnings;
   try {
-    result.wiki = page.findWiki(index).map(wikiLead);
+    const wiki = page.findWiki(index);
+    result.wiki = wiki.map(wikiLead);
+    if (checkWiki && wiki.some((w) => w.evidence.origin === "sister-wiki")) {
+      try {
+        const { outcomes, by } = await page.checkWiki(index, wiki);
+        result.wikiCheckedBy = by;
+        result.wiki.forEach((lead, k) => {
+          const o = outcomes[k];
+          if (!o) return;
+          const read = o.source?.verdict;
+          lead.check = {
+            verdict: o.outcome,
+            reason: o.source?.unavailable ? `source unread: ${o.source.unavailable}` : (read?.reason ?? o.check?.reason ?? ""),
+            ...(read?.quote ? { sourceQuote: read.quote } : {}),
+          };
+        });
+      } catch (err) {
+        result.errors.push(`wiki check: ${(err as Error).message}`);
+      }
+    }
   } catch (err) {
     result.errors.push(`wiki: ${(err as Error).message}`);
   }
