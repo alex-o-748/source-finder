@@ -3135,8 +3135,9 @@
         ],
         "where": "fa:سقوط گنجه (۱۸۰۴)",
         "check": {
-          "verdict": "same",
-          "reason": "source unread: Source returned 403"
+          "verdict": "supports",
+          "reason": "The source states the claim almost verbatim, including all dates, names, and the policy aim.",
+          "sourceQuote": "The origins of the first Russo-Persian War can be traced back to the decision of Tsar Paul to annex Georgia (December 1800) and, after Paul’s assassination (11 March 1801), the activist policy followed by his successor, Alexander I, aimed at establishing Russian control over the khanates of the eastern Caucasus"
         }
       }
     ],
@@ -9923,7 +9924,7 @@
         "where": "de:Kim Stanley Robinson",
         "check": {
           "verdict": "partial",
-          "reason": "The source confirms that Forty Signs of Rain is about global warming, but does not explicitly state it has 'an entirely ecological thrust' as its principal subject.",
+          "reason": "The source confirms that Forty Signs of Rain deals with global warming, but does not state it has an 'entirely ecological thrust' or that global warming is its 'principal subject'.",
           "sourceQuote": "Fifty Degrees Below (and the first volume of the trilogy, Forty Signs of Rain) tells the story of the efforts of a loosely-connected group of scientists, campaigners and politicians to provoke a national response to the crisis of global warming."
         }
       },
@@ -9945,7 +9946,7 @@
         "where": "de:Kim Stanley Robinson",
         "check": {
           "verdict": "unsupported",
-          "reason": "The source discusses the novel 2312 and climate change themes generally, but never mentions Forty Signs of Rain."
+          "reason": "The source discusses the novel 2312 and climate change themes but never mentions Forty Signs of Rain or its ecological thrust."
         }
       },
       {
@@ -16937,7 +16938,7 @@
         "where": "ar:كلينتون سباركس",
         "check": {
           "verdict": "same",
-          "reason": "source unread: Source returned 404"
+          "reason": "source unread: Source returned HTTP 404"
         }
       },
       {
@@ -16955,8 +16956,8 @@
         ],
         "where": "ar:كلينتون سباركس",
         "check": {
-          "verdict": "unsupported",
-          "reason": "The source does not mention his full name 'Clinton Charls Sparks' or his birth date September 18, 1979; it only states he was 28 in 2005, which actually contradicts a 1979 birth year."
+          "verdict": "same",
+          "reason": "source unread: Blocked by robots.txt"
         }
       },
       {
@@ -16975,7 +16976,7 @@
         "where": "ar:كلينتون سباركس",
         "check": {
           "verdict": "same",
-          "reason": "source unread: Source returned 999"
+          "reason": "source unread: Blocked by robots.txt"
         }
       }
     ],

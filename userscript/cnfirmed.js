@@ -2763,10 +2763,11 @@
 
   // -- Reading the source behind an other-language lead --
   // A lead that states the same fact still has a source nobody here has read.
-  // So for those that pass, the source's text is fetched through the Worker
-  // (GET /?fetch=, the route Source Verifier reads citations with; the
-  // Toolforge source-fetcher answers the same way) and judged against the
-  // claim, as a book's passages are: the verdict counts only when its quote is
+  // So for those that pass, the source's text is fetched by source-fetcher,
+  // the Toolforge tool the Verify API reads citations with (it respects
+  // robots.txt, paces each host, and is cleared with WMCS for unattended
+  // fetching; it read pages the Worker's fetch was refused), and judged
+  // against the claim, as a book's passages are: the verdict counts only when its quote is
   // in the text. One source per call: a whole page, up to
   // WIKI_SOURCE_MAX_CHARS (GLM-5.2 and Qwen 3.8 both read a 52,000-character
   // page whole and found the one table in its middle). When the page cannot be
@@ -2775,11 +2776,16 @@
   // state the claim is hidden; one cut short keeps its "cited for this fact"
   // label, since the evidence may lie past the cut.
 
+  // GET /?fetch=<url>: { content, error, status (the site's), truncated }.
+  var SOURCE_FETCHER_BASE = String(window.cnfirmedSourceFetcherUrl || 'https://source-fetcher.toolforge.org')
+    .replace(/\/+$/, '');
   var WIKI_SOURCE_MAX_CHARS = 50000;
   var WIKI_SOURCE_MIN_CHARS = 100;
-  // The Worker cuts what it extracts at 100,000 characters.
-  var WORKER_FETCH_CAP = 100000;
   var WIKI_SOURCE_MAX_TOKENS = 4000;
+  // A 429 is the fetcher pacing that host ("try again shortly") or the host
+  // itself asking it to slow down: waited out twice, 10 then 20 seconds.
+  var SOURCE_FETCH_RETRIES = 2;
+  var SOURCE_FETCH_RETRY_MS = 10000;
 
   var WIKI_SOURCE_SYSTEM = [
     "You decide whether a source states a claim from a Wikipedia article. The source's text was extracted from a web page or PDF, so it may carry menus, captions or table cells run together. It may be in another language than the claim.",
@@ -2804,24 +2810,30 @@
       return { error: error };
     }
     if (!c.url) return Promise.resolve(fromQuote('no URL'));
-    return fetch(PROXY_BASE + '/?fetch=' + encodeURIComponent(c.url), { credentials: 'omit' })
-      .then(function (res) {
-        return res.text().then(function (t) {
-          var data;
-          try { data = JSON.parse(t); } catch (e) { data = null; }
-          var text = data && typeof data.content === 'string' ? data.content.trim() : '';
-          if (text.length >= WIKI_SOURCE_MIN_CHARS) {
-            return {
-              text: text.slice(0, WIKI_SOURCE_MAX_CHARS),
-              from: 'page',
-              truncated: text.length > WIKI_SOURCE_MAX_CHARS || text.length >= WORKER_FETCH_CAP
-            };
-          }
-          return fromQuote((data && data.error) || (text ? 'the page has almost no text' : 'HTTP ' + res.status));
+    function attempt(n) {
+      return fetch(SOURCE_FETCHER_BASE + '/?fetch=' + encodeURIComponent(c.url), { credentials: 'omit' })
+        .then(function (res) {
+          return res.text().then(function (t) {
+            var data;
+            try { data = JSON.parse(t); } catch (e) { data = null; }
+            var text = data && typeof data.content === 'string' ? data.content.trim() : '';
+            if (text.length >= WIKI_SOURCE_MIN_CHARS) {
+              return {
+                text: text.slice(0, WIKI_SOURCE_MAX_CHARS),
+                from: 'page',
+                truncated: !!data.truncated || text.length > WIKI_SOURCE_MAX_CHARS
+              };
+            }
+            if (data && data.status === 429 && n < SOURCE_FETCH_RETRIES) {
+              return sleep(SOURCE_FETCH_RETRY_MS * Math.pow(2, n)).then(function () { return attempt(n + 1); });
+            }
+            return fromQuote((data && data.error) || (text ? 'the page has almost no text' : 'HTTP ' + res.status));
+          });
+        }, function (err) {
+          return fromQuote((err && err.message) || String(err));
         });
-      }, function (err) {
-        return fromQuote((err && err.message) || String(err));
-      });
+    }
+    return attempt(0);
   }
 
   function wikiSourcePrompt(input, c, source) {

@@ -142,9 +142,9 @@ test("a lead's label says what was checked", () => {
   assert.equal(item.quoteLabel, "From the source:");
   assert.equal(item.quote, "leads to chromium (element 24) isotopes");
 
-  const unread = { ...same, source: { unavailable: "Source returned 403" } };
+  const unread = { ...same, source: { unavailable: "Blocked by robots.txt" } };
   assert.equal(script.wikiItem(unread, "wiki0", true, CLAIM).tier, "lead");
-  assert.match(script.wikiItem(unread, "wiki0", true, CLAIM).note, /Could not read the source: Source returned 403\./);
+  assert.match(script.wikiItem(unread, "wiki0", true, CLAIM).note, /Could not read the source: Blocked by robots\.txt\./);
 
   const copied = { ...read, source: { ...read.source, verdict: { verdict: "supports", quote: CLAIM, reason: "" } } };
   assert.equal(script.wikiItem(copied, "wiki0", true, CLAIM).tier, "flag");
@@ -161,28 +161,61 @@ test("a source read in full that does not state the claim is hidden; one cut sho
   assert.equal(script.sisterOutcome(same, false), "unchecked");
 });
 
-test("a source's text comes from the Worker's fetch route, and a quote= stands in when the page cannot be read", async () => {
+// source-fetcher's replies, as its README documents them.
+function fetched(content: string, extra: Record<string, unknown> = {}): Reply {
+  return { status: 200, body: { content, error: null, status: 200, pdf: false, truncated: false, ...extra } };
+}
+function refused(status: number | null, error: string): Reply {
+  return { status: status === null ? 502 : 200, body: { content: null, error, status } };
+}
+
+test("a source's text comes from source-fetcher on Toolforge, and a quote= stands in when the page cannot be read", async () => {
   const script = loadUserScript();
   const sent = stubFetch([
-    { status: 200, body: { content: PAGE } },
-    { status: 200, body: { error: "Source returned 403" } },
-    { status: 200, body: { error: "Source returned 403" } },
+    fetched(PAGE),
+    refused(403, "Blocked by robots.txt"),
+    refused(null, "Request to source timed out"),
   ]);
   const page = await script.wikiSourceText(LEADS[1]);
-  assert.equal(sent[0].url, "https://publicai-proxy.alaexis.workers.dev/?fetch=" + encodeURIComponent(LEADS[1].url));
+  assert.equal(sent[0].url, "https://source-fetcher.toolforge.org/?fetch=" + encodeURIComponent(LEADS[1].url));
   assert.deepEqual(page, { text: PAGE.trim(), from: "page", truncated: false });
 
   const quoted = { ...LEADS[1], evidence: { ...LEADS[1].evidence, quote: "Beim Betazerfall entstehen Isotope des Chroms." } };
   assert.deepEqual(await script.wikiSourceText(quoted), { text: "Beim Betazerfall entstehen Isotope des Chroms.", from: "quote", truncated: true });
-  assert.deepEqual(await script.wikiSourceText(LEADS[1]), { error: "Source returned 403" });
+  assert.deepEqual(await script.wikiSourceText(LEADS[1]), { error: "Request to source timed out" });
 });
 
-test("a long page is cut at 50,000 characters and marked as cut", async () => {
+test("another source-fetcher host can be set on window", async () => {
+  const script = loadUserScript({}, { window: { cnfirmedSourceFetcherUrl: "http://localhost:8000/" } });
+  const sent = stubFetch([fetched(PAGE)]);
+  await script.wikiSourceText(LEADS[1]);
+  assert.match(sent[0].url, /^http:\/\/localhost:8000\/\?fetch=/);
+});
+
+test("a page is cut at 50,000 characters, and marked as cut when it was cut or source-fetcher cut it", async () => {
   const script = loadUserScript();
-  stubFetch([{ status: 200, body: { content: "x ".repeat(40000) } }]);
-  const r = await script.wikiSourceText(LEADS[1]);
-  assert.equal(r.text.length, 50000);
-  assert.equal(r.truncated, true);
+  stubFetch([fetched("x ".repeat(40000)), fetched(PAGE, { truncated: true })]);
+  const long = await script.wikiSourceText(LEADS[1]);
+  assert.equal(long.text.length, 50000);
+  assert.equal(long.truncated, true);
+  assert.equal((await script.wikiSourceText(LEADS[1])).truncated, true);
+});
+
+test("a 429 from source-fetcher is waited out twice, then the source counts as unread", async () => {
+  const script = loadUserScript();
+  const realSetTimeout = globalThis.setTimeout;
+  const waits: number[] = [];
+  globalThis.setTimeout = ((fn: () => void, ms: number) => { waits.push(ms); return realSetTimeout(fn, 0); }) as typeof setTimeout;
+  try {
+    stubFetch([refused(429, "Too many requests to this host"), fetched(PAGE)]);
+    assert.equal((await script.wikiSourceText(LEADS[1])).from, "page");
+    const sent = stubFetch([1, 2, 3].map(() => refused(429, "Too many requests to this host")));
+    assert.deepEqual(await script.wikiSourceText(LEADS[1]), { error: "Too many requests to this host" });
+    assert.equal(sent.length, 3);
+    assert.deepEqual(waits, [10000, 10000, 20000]);
+  } finally {
+    globalThis.setTimeout = realSetTimeout;
+  }
 });
 
 test("the judge's verdict on a source counts only when its quote is in the text", () => {
@@ -199,7 +232,7 @@ test("the judge's verdict on a source counts only when its quote is in the text"
 test("one judge call per source, with the whole page; the Verify API reads the same text when the judge fails", async () => {
   const script = loadUserScript({ wgTitle: "Vanadium" });
   const sent = stubFetch([
-    { status: 200, body: { content: PAGE } },
+    fetched(PAGE),
     model({ verdict: "supports", quote: "leads to chromium (element 24) isotopes", why: "States it." }),
   ]);
   const r = await script.checkSisterSource(CTX, LEADS[1]);
@@ -209,7 +242,7 @@ test("one judge call per source, with the whole page; the Verify API reads the s
     verdict: { verdict: "supports", quote: "leads to chromium (element 24) isotopes", reason: "States it." } });
 
   const sent2 = stubFetch([
-    { status: 200, body: { content: PAGE } },
+    fetched(PAGE),
     { status: 400, body: { error: "bad request" } },
     verify("PARTIALLY SUPPORTED"),
   ]);
@@ -225,12 +258,10 @@ test("only the leads that state the same fact have their sources read", async ()
     { ...LEADS[0], check: { verdict: "no", reason: "" } },
     { ...LEADS[1], check: { verdict: "same", reason: "" } },
   ];
-  const sent = stubFetch([
-    { status: 200, body: { error: "Source returned 404" } },
-  ]);
+  const sent = stubFetch([refused(404, "Source returned HTTP 404")]);
   await script.checkSisterSources(CTX, leads);
   assert.equal(sent.length, 1);
   assert.match(sent[0].url, /example\.org%2Fnubase/);
   assert.equal("source" in leads[0], false);
-  assert.deepEqual(leads[1].source, { unavailable: "Source returned 404" });
+  assert.deepEqual(leads[1].source, { unavailable: "Source returned HTTP 404" });
 });

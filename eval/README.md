@@ -243,14 +243,16 @@ table of where the check left each lead against its label. The labels judge
 the sentence, not the source, so "supports" against "unsupported" means the
 source did not say what the sentence says: read those by hand.
 
-Measured in November 2026 (`results/check-wiki.json`): of the 28 leads, the
-sentence check dropped 22 (all 7 topic and 15 unrelated); the panel lists 4,
-all good (precision 21% → 100%). The 2 good leads it hides are sources that do
-not state the claim, both confirmed by reading them: a review of *2312* that
-never mentions *Forty Signs of Rain*, and a profile of Clinton Sparks that
-gives his age, not the birth date claimed. Three of the 6 sources could not be
-read through the Worker (403, 404, LinkedIn's 999); the Toolforge
-source-fetcher reads the first of them.
+Measured in November 2026 (`results/check-wiki.json`), with the sources
+fetched by source-fetcher on Toolforge: of the 28 leads, the sentence check
+dropped 22 (all 7 topic and 15 unrelated); the panel lists 5, all good
+(precision 21% → 100%): Encyclopaedia Iranica stating the claim, a Guardian
+review stating part of it, and three cited for the same fact whose sources
+could not be read (a 404, and boston.com and LinkedIn, whose robots.txt
+refuses robots). The one good lead hidden is a review of *2312* that never
+mentions *Forty Signs of Rain*, confirmed by reading it. Through the Worker's
+fetch, tried first, Iranica answered 403 and the boston.com profile was read
+(it gives Clinton Sparks's age, not the claimed birth date).
 
 ## The web search (paid)
 
