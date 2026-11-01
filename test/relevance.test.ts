@@ -5,6 +5,7 @@ import {
   anchorsOf,
   coverage,
   fold,
+  hasNumber,
   isLatinScript,
   normaliseDigits,
   weightedTokens,
@@ -85,4 +86,23 @@ test("a grouped figure is one number, not its thousands groups", () => {
   assert.deepEqual(anchorScore(query, "a garrison of 45,000 men").matched, []);
   // A comma between whole numbers is a list, not a figure.
   assert.deepEqual(anchorsOf("in 1861, 1927 and 1861,186").numbers, ["1861", "1927", "186"]);
+});
+
+test("hasNumber matches whole numbers only", () => {
+  assert.ok(hasNumber("bei 24 millionen tonnen", "24"));
+  assert.ok(hasNumber("22 °c", "22"));
+  assert.ok(hasNumber("das 1889er modell", "1889"));
+  assert.ok(hasNumber("1889-1890", "1890"));
+  assert.ok(!hasNumber("(stand 2022)", "22"));
+  assert.ok(!hasNumber("2024 und 1224", "24"));
+  assert.ok(hasNumber("2024 und 24", "24"), "a later whole occurrence still counts");
+});
+
+test("anchorScore does not find a number inside a longer one", () => {
+  // en:Vanadium, October 2026: "element 22 ... element 24" matched a German
+  // sentence about reserves of "24 Millionen Tonnen (Stand 2022)".
+  const query = anchorsOf("Electron capture leads to element 22 (titanium) isotopes, beta decay to element 24 (chromium).");
+  const scored = anchorScore(query, "Bei bekannten Reserven von insgesamt 24 Millionen Tonnen (Stand 2022) ist kein Engpass zu erwarten.");
+  assert.deepEqual(scored.matched, ["24"]);
+  assert.equal(scored.score, 0.5);
 });

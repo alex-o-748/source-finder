@@ -1100,7 +1100,7 @@
   // Opening a claim runs what has not run yet; a search that failed waits
   // for its Retry (`retry`), so going back to a claim does not start it again.
   function startClaim(i, retry) {
-    var wiki = runWikiStage(i, retry);
+    var wiki = runWiki(i, retry);
     var books = runBooks(i, retry);
     renderPanel(i);
     return Promise.all([wiki, books]).then(function () {
@@ -1194,7 +1194,7 @@
     renderPanel();
     batch.promise = indexes.reduce(function (chain, index) {
       return chain.then(function () {
-        return runWikiStage(index, true)
+        return runWiki(index, true)
           .then(function () { return runBooks(index, true); })
           .catch(function (err) { console.error('[CNfirmed] search failed for claim', index, ':', err); })
           .then(function () { batch.done++; renderPanel(index); });
@@ -1306,9 +1306,11 @@
   // Wikimedia already holds — in this article's own reference list, or attached
   // to the same fact on another language edition.
   //
-  // Free, unmetered, and needs no API key or model at all, so it runs on a
-  // plain badge click even when no provider key is set. Mirrors
-  // src/core/{wikitext,wikitextRefs,relevance,wikiSources}.ts.
+  // Free, unmetered, and needs no API key, so it runs on a plain badge click
+  // even when no provider key is set. Mirrors
+  // src/core/{wikitext,wikitextRefs,relevance,wikiSources}.ts. The leads from
+  // other language editions are then checked by the open-weight judge model
+  // (see "Checking other-language leads" below), which the core does not do.
   //
   // What it produces is evidence, not a verdict: "a human editor cited this
   // source for a sentence that looks like your claim". Read it before pasting.
@@ -2171,6 +2173,19 @@
     return a.numbers.length + a.names.length;
   }
 
+  // Whether `text` has the number `n` as a whole number: "22" is in "22 °C"
+  // and "1889er", not in "2022". Mirrors hasNumber in src/core/relevance.ts.
+  function hasNumberIn(text, n) {
+    var at = text.indexOf(n);
+    while (at !== -1) {
+      var before = at === 0 ? '' : text.charAt(at - 1);
+      var after = text.charAt(at + n.length);
+      if (!/\d/.test(before) && !/\d/.test(after)) return true;
+      at = text.indexOf(n, at + 1);
+    }
+    return false;
+  }
+
   function anchorScoreOf(query, text, extraNames) {
     var folded = foldText(joinDigitGroups(normaliseDigits(text)));
     var have = tokenSetOf(text);
@@ -2180,7 +2195,7 @@
     var hit = 0;
     query.numbers.forEach(function (n) {
       total += 2;
-      if ((have[n] || folded.indexOf(n) !== -1) && !seen[n]) {
+      if ((have[n] || hasNumberIn(folded, n)) && !seen[n]) {
         seen[n] = true; hit += 2; matched.push(n);
       }
     });
@@ -2625,10 +2640,160 @@
         var s = wikiState[k];
         if (s && s.status === 'done') {
           serialisable[k] = { status: 'done', candidates: s.candidates, warnings: s.warnings };
+          // Only a finished check is kept: one that failed or was cut short
+          // runs again when the claim is next opened.
+          if (s.check && s.check.status === 'done') serialisable[k].check = s.check;
         }
       });
       localStorage.setItem(wikiCacheKey, JSON.stringify(serialisable));
     } catch (e) { /* ignore */ }
+  }
+
+  // -- Checking other-language leads --
+  // The anchors find a sentence on another wiki that shares the claim's
+  // numbers and names, which is not the same as stating its fact: on Vanadium,
+  // "element 24 (chromium)" matched "24 million tonnes of reserves". So each
+  // sister-wiki lead's sentence, the one that wiki cited the source for, goes
+  // to the judge model with the claim, all of a claim's leads in one call: does
+  // it state the same fact? The text is already in hand, so nothing is
+  // fetched. A pass means another wiki cited this source for this fact, not
+  // that the source was read: the lead says so. With no judge model, or when
+  // the call fails, each sentence goes to the Verify API as the source instead.
+  // Same-article leads are not checked: their sentence is by design a
+  // different one, the neighbour whose source may cover this claim too.
+
+  var WIKI_SAME_SYSTEM = [
+    "You decide, for each sentence from another language edition of Wikipedia, whether it states the same fact as a claim from a Wikipedia article. Each sentence is the one that edition cited a source for, so a sentence stating the same fact points to a source for the claim.",
+    "",
+    "- \"same\": the sentence states the claim's fact, with its specific content (who, what, and any number or date), in whatever language or wording.",
+    "- \"partial\": it states a substantial part of what the claim asserts (one of two facts, the event but not the date), enough to cite for that part.",
+    "- \"no\": it states something else: the same topic, the same names or numbers in a different statement, or only a background detail of the claim.",
+    "",
+    "Be strict: shared numbers and names are not the same fact. \"24\" as an atomic number and \"24 million tonnes\" are different facts.",
+    "",
+    "Reply with JSON only: {\"sentences\": [{\"id\": \"S1\", \"verdict\": \"same\", \"why\": \"one short sentence\"}]}, one entry per sentence, in order."
+  ].join('\n');
+  var WIKI_SAME_MAX_TOKENS = 4000;
+  var WIKI_SAME_EFFORT = 'low';
+  var WIKI_SAME_SENTENCE_CHARS = 600;
+  var WIKI_SAME_VERDICTS = ['same', 'partial', 'no'];
+  var VERIFY_TO_WIKI_SAME = {
+    'SUPPORTED': 'same',
+    'PARTIALLY SUPPORTED': 'partial',
+    'NOT SUPPORTED': 'no'
+  };
+
+  function isSisterLead(c) {
+    return !!(c && c.evidence && c.evidence.origin === 'sister-wiki');
+  }
+
+  function wikiSamePrompt(input, leads) {
+    var head = 'Article: ' + libArticleName(input.articleTitle) + '\n' +
+      'Claim: ' + input.claim + '\n' +
+      "The claim's paragraph, for context only: " + libClip(input.paragraph, 1200) + '\n';
+    var list = leads.map(function (c, i) {
+      var ev = c.evidence;
+      return 'S' + (i + 1) + '. ' + ev.lang + '.wikipedia, ' + libClip(ev.article, 120) +
+        (ev.section ? ', section "' + libClip(ev.section, 80) + '"' : '') + ':\n' +
+        libClip(ev.sentence, WIKI_SAME_SENTENCE_CHARS);
+    });
+    return head + '\n' + list.join('\n\n');
+  }
+
+  // A verdict per lead, in order: { verdict: same | partial | no, reason },
+  // or null where the reply gives none.
+  function wikiParseSame(text, leads) {
+    var j = libJsonObjectIn(text);
+    var list = j && Array.isArray(j.sentences) ? j.sentences : null;
+    if (!list) throw new Error('check: the model gave no verdicts');
+    var byId = Object.create(null);
+    list.forEach(function (e, i) {
+      if (!e || typeof e !== 'object') return;
+      var id = String(e.id == null ? 'S' + (i + 1) : e.id).trim().toUpperCase();
+      if (!byId[id]) byId[id] = e;
+    });
+    return leads.map(function (c, i) {
+      var r = byId['S' + (i + 1)];
+      if (!r) return null;
+      var v = String(r.verdict == null ? '' : r.verdict).trim().toLowerCase();
+      if (WIKI_SAME_VERDICTS.indexOf(v) === -1) return null;
+      return { verdict: v, reason: typeof r.why === 'string' ? r.why.trim() : '' };
+    });
+  }
+
+  function toWikiSameVerdict(result) {
+    var verdict = result && VERIFY_TO_WIKI_SAME[String(result.verdict || '').trim().toUpperCase()];
+    return verdict ? { verdict: verdict, reason: result.comments || '' } : null;
+  }
+
+  // The check of a claim's sister-wiki leads: the judge model in one call, or
+  // the Verify API, one sentence after another, when there is none or the call
+  // fails. Resolves to the verdicts, in order, and what gave them.
+  function checkSisterLeads(ctx, leads) {
+    function viaVerifyApi() {
+      var out = [];
+      return leads.reduce(function (chain, c) {
+        return chain.then(function () {
+          return callVerifyApi(ctx.claim, c.evidence.sentence).then(function (r) {
+            out.push(toWikiSameVerdict(r));
+          });
+        });
+      }, Promise.resolve()).then(function () { return { verdicts: out, by: 'verify-api' }; });
+    }
+    var judge = libModels().judge;
+    if (!judge) return viaVerifyApi();
+    var input = {
+      articleTitle: mw.config.get('wgTitle') || pageTitle,
+      paragraph: ctx.context,
+      claim: ctx.claim
+    };
+    return callWorkerModel(judge, WIKI_SAME_SYSTEM, wikiSamePrompt(input, leads),
+      WIKI_SAME_MAX_TOKENS, WIKI_SAME_EFFORT)
+      .then(function (text) {
+        return { verdicts: wikiParseSame(text, leads), by: judge };
+      })
+      .catch(function (err) {
+        console.warn('[CNfirmed] the judge model failed on the other-language leads; ' +
+          'checking with the Verify API instead:', err);
+        return viaVerifyApi();
+      });
+  }
+
+  // Runs the check for a claim whose wiki-local stage is done, and keeps the
+  // verdicts on its sister-wiki candidates.
+  function checkWikiStage(index) {
+    var w = wikiState[index];
+    if (!w || w.status !== 'done') return Promise.resolve(w);
+    var leads = (w.candidates || []).filter(isSisterLead);
+    if (!leads.length) return Promise.resolve(w);
+    if (w.checking) return w.checking;
+    w.check = { status: 'running' };
+    renderPanel(index);
+    w.checking = checkSisterLeads(claimContexts[index], leads)
+      .then(function (r) {
+        leads.forEach(function (c, k) { c.check = r.verdicts[k]; });
+        w.check = { status: 'done', by: r.by };
+        console.log('[CNfirmed] other-language leads for claim', index, 'checked by', r.by + ':',
+          r.verdicts.map(function (v) { return v ? v.verdict : 'none'; }).join(', '));
+      }, function (err) {
+        console.error('[CNfirmed] other-language check failed for claim', index, ':', err);
+        w.check = { status: 'error', error: (err && err.message) || String(err) };
+      }).then(function () {
+        delete w.checking;
+        persistWiki();
+        renderPanel(index); renderBadge(index);
+        return w;
+      });
+    return w.checking;
+  }
+
+  // The wiki-local stage, then the check of its other-language leads; leads
+  // cached before their check finished are checked now.
+  function runWiki(i, retry) {
+    return runWikiStage(i, retry).then(function (w) {
+      if (w && w.status === 'done' && !w.check) return checkWikiStage(i);
+      return w;
+    });
   }
 
   // ---- Internet Archive: books -------------------------------------------
@@ -5367,23 +5532,33 @@
     };
   }
 
-  function wikiItem(c, key) {
+  // `verdict` is the other-language check's: same | partial, or null when it
+  // gave none (`checkDone`) or has not run. It says another wiki cited the
+  // source for this fact; the source itself is not read, so it stays a lead.
+  function wikiItem(c, key, verdict, checkDone) {
     var ev = c.evidence || {};
     var same = ev.origin === 'same-article';
     var host = c.url ? hostOf(c.url) : '';
     var where = same ? 'already cited in this article' : 'cited on ' + ev.lang + '.wikipedia';
+    var verdictText = verdict === 'same'
+      ? 'Cited for this fact on ' + ev.lang + '.wikipedia, source not checked'
+      : verdict === 'partial'
+        ? 'Cited for part of this fact on ' + ev.lang + '.wikipedia, source not checked'
+        : checkDone ? 'Lead, the check gave no verdict' : 'Lead, not checked';
+    var notes = [];
+    if (verdict && c.check && c.check.reason) notes.push(c.check.reason);
+    if (same && /^<ref name=/.test(c.ref || '')) notes.push('Insert re-uses the citation already in the article.');
     return {
       key: key,
       tier: 'lead',
-      verdictText: 'Lead, not checked',
+      verdictText: verdictText,
       title: c.title,
       url: c.url || null,
       meta: (host ? host + ' · ' : '') + where,
       quoteLabel: same ? 'Cited in this article for:' : 'Cited on ' + ev.lang + '.wikipedia for:',
       quote: truncate(ev.sentence || c.snippet || '', 400),
       warnings: [],
-      note: same && /^<ref name=/.test(c.ref || '')
-        ? 'Insert re-uses the citation already in the article.' : '',
+      note: notes.join(' '),
       ref: c.ref
     };
   }
@@ -5399,13 +5574,14 @@
     else if (a.status !== 'done') books = a.status;
     else if ((a.candidates || []).length && (!a.check || a.check.status === 'running')) books = 'running';
     else books = 'done';
-    return { wiki: w.status, books: books, web: s.status };
+    var wiki = w.status === 'done' && w.check && w.check.status === 'running' ? 'running' : w.status;
+    return { wiki: wiki, books: books, web: s.status };
   }
 
   function collectItems(i) {
     var ctx = claimContexts[i] || {};
     var all = [];
-    var counts = { web: null, books: null };
+    var counts = { web: null, books: null, wiki: null };
 
     var s = state[i];
     if (s && s.status === 'done' && s.result) {
@@ -5441,9 +5617,29 @@
       counts.books = bc;
     }
 
+    // Other-language leads, like books, are listed once checked; those the
+    // check found to state another fact are only counted.
     var w = wikiState[i];
     if (w && w.status === 'done') {
-      (w.candidates || []).forEach(function (c, k) { all.push(wikiItem(c, 'wiki' + k)); });
+      var checking = w.check && w.check.status === 'running';
+      var checked = !!(w.check && w.check.status === 'done');
+      var kc = { total: 0, same: 0, partial: 0, rejected: 0, unchecked: 0, sameArticle: 0 };
+      (w.candidates || []).forEach(function (c, k) {
+        kc.total++;
+        if (!isSisterLead(c)) {
+          kc.sameArticle++;
+          all.push(wikiItem(c, 'wiki' + k, null, false));
+          return;
+        }
+        if (checking) return;
+        var verdict = checked && c.check ? c.check.verdict : null;
+        if (verdict === 'no') { kc.rejected++; return; }
+        if (verdict === 'same') kc.same++;
+        else if (verdict === 'partial') kc.partial++;
+        else kc.unchecked++;
+        all.push(wikiItem(c, 'wiki' + k, verdict, checked));
+      });
+      counts.wiki = kc;
     }
 
     all.sort(function (x, y) { return TIER_ORDER[x.tier] - TIER_ORDER[y.tier]; });
@@ -5962,10 +6158,24 @@
 
     var w = wikiState[i] || {};
     var wikiWhere = 'this article and other languages';
-    if (st.wiki === 'done') {
-      var n = (w.candidates || []).length;
-      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'done',
-        n ? plural(n, 'lead') : 'Nothing in this article or other languages'));
+    var kc = counts.wiki;
+    if (st.wiki === 'done' && w.check && w.check.status === 'error') {
+      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'error',
+        'Found ' + plural(kc.total, 'lead') + ', but the check of the other-language ones failed: ' +
+        w.check.error, 'Retry', function () { checkWikiStage(i); }));
+    } else if (st.wiki === 'done') {
+      var parts = [];
+      if (kc && kc.sameArticle) parts.push(kc.sameArticle + ' in this article');
+      if (kc && kc.same) parts.push(kc.same + ' cited for this fact elsewhere');
+      if (kc && kc.partial) parts.push(kc.partial + ' for part of it');
+      if (kc && kc.rejected) parts.push(kc.rejected + ' cited for another fact');
+      if (kc && kc.unchecked) parts.push(kc.unchecked + ' not checked');
+      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'done', kc && kc.total
+        ? plural(kc.total, 'lead') + ': ' + parts.join(', ')
+        : 'Nothing in this article or other languages'));
+    } else if (st.wiki === 'running' && w.status === 'done') {
+      section.appendChild(sourceRow('Wikipedia', wikiWhere, 'running', 'Checking ' +
+        plural((w.candidates || []).filter(isSisterLead).length, 'other-language lead') + ' against the claim…'));
     } else if (st.wiki === 'error') {
       section.appendChild(sourceRow('Wikipedia', wikiWhere, 'error', 'Failed: ' + w.error, 'Retry', retry));
     } else {
