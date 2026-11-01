@@ -44,6 +44,13 @@ export interface ScriptArticle {
    * per lead (or null), and what gave them.
    */
   checkArchive(index: number, candidates: Json[], plan: Json | null): Promise<{ verdicts: Json[]; by: string }>;
+  /**
+   * The check of the other-language leads, as the script makes it: whether
+   * each lead's sentence states the claim's fact, then the sources of those
+   * that do, read through the Worker and judged. Per candidate, where it ends
+   * up (`sisterOutcome`), or null for a same-article lead.
+   */
+  checkWiki(index: number, candidates: Json[]): Promise<{ outcomes: (Json | null)[]; by: string }>;
 }
 
 export async function loadScriptArticle(
@@ -81,6 +88,21 @@ export async function loadScriptArticle(
     findWeb: (index, apiKey) => script.callClaude(script.getClaimContexts()[index], apiKey),
     checkArchive: (index, candidates, plan) =>
       script.checkArchiveLeads(script.getClaimContexts()[index], plan, candidates),
+    checkWiki: async (index, candidates) => {
+      const ctx = script.getClaimContexts()[index];
+      const isSister = (c: Json) => c.evidence?.origin === "sister-wiki";
+      const leads = candidates.filter(isSister);
+      if (!leads.length) return { outcomes: candidates.map(() => null), by: "" };
+      const r = await script.checkSisterLeads(ctx, leads);
+      leads.forEach((c: Json, k: number) => { c.check = r.verdicts[k]; });
+      await script.checkSisterSources(ctx, leads);
+      return {
+        by: r.by,
+        outcomes: candidates.map((c: Json) => isSister(c)
+          ? { outcome: script.sisterOutcome(c, true), check: c.check ?? null, source: c.source ?? null }
+          : null),
+      };
+    },
   };
 }
 

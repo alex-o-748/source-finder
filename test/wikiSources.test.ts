@@ -203,3 +203,44 @@ test("a claim with nothing to match on returns nothing rather than noise", () =>
   );
   assert.equal(found.length, 0);
 });
+
+// en:Vanadium, revision 1382712222 (29 October 2026): a {{cn}} on the decay
+// products, and an excerpt of de:Vanadium on mining. Before numbers were
+// matched whole, "22" was found in "2022" and the claim got four German leads
+// about reserves and critical raw materials (reported by Johnjbarton on
+// User talk:Alaexis/CNfirmed, 30 October 2026).
+const VANADIUM_EN = fixture("en_vanadium.wikitext");
+const VANADIUM_DE = fixture("de_vanadium.wikitext");
+const vanadium: Article = {
+  title: "Vanadium",
+  lang: "en",
+  revid: 1382712222,
+  wikitext: VANADIUM_EN,
+  url: "https://en.wikipedia.org/wiki/Vanadium",
+};
+
+test("a number inside a longer one is no anchor: en:Vanadium gets no lead about mining", () => {
+  const [decay] = extractClaims(VANADIUM_EN);
+  assert.match(decay.claim, /element 24/);
+  const found = findWikiCandidates(
+    buildWikiCorpus(vanadium, [{ lang: "de", title: "Vanadium", wikitext: VANADIUM_DE }]),
+    decay,
+  );
+  assert.deepEqual(found.filter((c) => c.evidence.origin === "sister-wiki"), []);
+});
+
+test("the same claim still finds a German sentence that states its numbers", () => {
+  // Synthetic: a sentence with the claim's numbers, to show the fix does not
+  // stop two-digit numbers from matching at all.
+  const stated = VANADIUM_DE + "\n\nBeim Elektroneneinfang entstehen Isotope des Elements 22, beim Betazerfall " +
+    "Isotope des Elements 24.<ref>{{Internetquelle |url=https://example.org/nubase |titel=NUBASE}}</ref>\n";
+  const [decay] = extractClaims(VANADIUM_EN);
+  const found = findWikiCandidates(
+    buildWikiCorpus(vanadium, [{ lang: "de", title: "Vanadium", wikitext: stated }]),
+    decay,
+  );
+  assert.deepEqual(
+    found.filter((c) => c.evidence.origin === "sister-wiki").map((c) => c.url),
+    ["https://example.org/nubase"],
+  );
+});

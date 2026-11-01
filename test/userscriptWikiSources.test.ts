@@ -135,3 +135,20 @@ test("the user script drops blocklisted domains too", () => {
   );
   assert.ok(!urls.some((u) => u.includes("dailymail")));
 });
+
+test("the user script does not find a number inside a longer one either (en:Vanadium)", () => {
+  const EN_V = fixture("en_vanadium.wikitext");
+  const DE_V = fixture("de_vanadium.wikitext");
+  const page = loadUserScript({ wgTitle: "Vanadium", wgPageName: "Vanadium" });
+  const contexts = claimContextsFromWikitext(EN_V);
+  page.setClaimContexts(contexts);
+  page.setCnSups(contexts.map(() => ({})));
+  const found = page.findWikiCandidates({
+    local: page.indexWikiArticle("en", "Vanadium", EN_V),
+    sisters: [page.indexWikiArticle("de", "Vanadium", DE_V)],
+    linkTranslations: {},
+    claimOffsets: page.citationNeededOffsets(EN_V),
+    warnings: [],
+  }, 0);
+  assert.deepEqual(found.filter((c: { evidence: { origin: string } }) => c.evidence.origin === "sister-wiki"), []);
+});

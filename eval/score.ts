@@ -51,6 +51,8 @@ function readJson<T>(file: string, fallback: T): T {
 
 const ORIGINS: Lead["origin"][] = ["same-article", "sister-wiki", "internet-archive", "web"];
 const GOOD = new Set<Verdict>(["supports", "partial"]);
+/** Other-language outcomes the panel does not list (the user script's sisterOutcome). */
+const SISTER_HIDDEN = new Set(["other", "unsupported"]);
 
 function words(s: string): string[] {
   return s.toLowerCase().replace(/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/g, "$1").match(/[\p{L}\p{N}]+/gu) ?? [];
@@ -128,6 +130,7 @@ function main(): void {
   // With --check runs, the Archive leads the model kept count as a method of
   // their own: what an editor with a key set is shown.
   const checked = results.some((r) => r.archive.some((l) => l.check !== undefined));
+  const wikiChecked = results.some((r) => r.wiki.some((l) => l.check !== undefined));
   const methods: { name: string; pick: (r: ClaimResult) => Lead[] }[] = [
     ...ORIGINS.map((origin) => ({ name: origin, pick: (r: ClaimResult) => leadsOf(r).filter((l) => l.origin === origin) })),
     ...(checked
@@ -135,6 +138,15 @@ function main(): void {
           name: "archive, checked",
           // As the popover shows them: what the model kept, and any lead it gave no verdict.
           pick: (r: ClaimResult) => r.archive.filter((l) => !l.check || GOOD.has(l.check.verdict as Verdict)),
+        }]
+      : []),
+    ...(wikiChecked
+      ? [{
+          name: "sister, checked",
+          // As the panel shows them: all but those cited for another fact, or
+          // whose source was read in full and does not state the claim.
+          pick: (r: ClaimResult) => r.wiki.filter((l) =>
+            l.origin === "sister-wiki" && !(l.check && SISTER_HIDDEN.has(l.check.verdict))),
         }]
       : []),
     { name: "any", pick: leadsOf },
@@ -178,6 +190,7 @@ function main(): void {
   }
 
   if (checked) scoreCheck(results, labelOf);
+  if (wikiChecked) scoreWikiCheck(results, labelOf);
 
   const unlabelled = results.reduce((n, r) => n + leadsOf(r).filter((l) => !labelOf(r, l)).length, 0);
   const errors = results.filter((r) => r.errors.length).length;
@@ -240,3 +253,36 @@ function scoreCheck(
 }
 
 main();
+
+/**
+ * How the check of the other-language leads agrees with the hand labels. The
+ * labels judge the sentence the other wiki cited the source for, not the
+ * source, so a "supports" label with an "unsupported" outcome is the source
+ * failing to say what the sentence says: worth reading, not necessarily an
+ * error of the check.
+ */
+function scoreWikiCheck(
+  results: ClaimResult[],
+  labelOf: (r: ClaimResult, l: Lead) => Label | undefined,
+): void {
+  const labels: string[] = ["supports", "partial", "topic", "unrelated", "unknown", "unjudged"];
+  const pairs = results.flatMap((r) =>
+    r.wiki
+      .filter((l) => l.origin === "sister-wiki")
+      .map((l) => ({ outcome: l.check?.verdict ?? "unchecked", label: labelOf(r, l)?.verdict ?? "unjudged" })),
+  );
+  console.log("\nOther-language check against the labels (rows: outcome, columns: label of the sentence)");
+  console.log(`  ${"".padEnd(12)}${labels.map((v) => v.padStart(10)).join("")}`);
+  for (const o of ["supports", "partial", "same", "part", "unsupported", "other", "none", "unchecked"]) {
+    const row = labels.map((v) => String(pairs.filter((p) => p.outcome === o && p.label === v).length).padStart(10));
+    if (pairs.some((p) => p.outcome === o)) console.log(`  ${o.padEnd(12)}${row.join("")}`);
+  }
+  const judged = pairs.filter((p) => p.label !== "unjudged" && p.label !== "unknown");
+  const shown = judged.filter((p) => !SISTER_HIDDEN.has(p.outcome));
+  const good = judged.filter((p) => GOOD.has(p.label as Verdict));
+  const shownGood = shown.filter((p) => GOOD.has(p.label as Verdict));
+  console.log(
+    `  shown ${shown.length} of ${judged.length} judged leads: precision ${pct(shownGood.length, shown.length).trim()}` +
+      ` (all leads: ${pct(good.length, judged.length).trim()}); good leads shown ${shownGood.length} of ${good.length}`,
+  );
+}

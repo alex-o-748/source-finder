@@ -4,7 +4,7 @@ Find and verify sources for Wikipedia `{{citation needed}}` claims.
 
 CNfirmed locates every `{{citation needed}}`-family tag in a Wikipedia article and extracts the claim being cited, plus surrounding context. It then looks for a source in two stages:
 
-1. **On wiki, free.** Citations this article already carries, and citations other language editions attach to the same fact. No model, no API key, no cost.
+1. **On wiki, free.** Citations this article already carries, and citations other language editions attach to the same fact. No API key, no cost; in the user script, a free open-weight model checks that another edition's sentence states the same fact, then reads the source.
 2. **On the web, paid.** Only for the claims stage 1 could not answer: an LLM with web search discovers candidates and judges whether each *actually substantiates the specific claim* — not just mentions the topic.
 
 Results are returned ranked, each with a ready-to-paste Wikipedia cite template.
@@ -75,6 +75,7 @@ The choice is kept in `localStorage` (`cnfirmed-open-model`). A model set on `wi
 For each claim, the panel shows one list of sources, best first, whatever search found it:
 
 - **Supports the claim** / **Supports part of the claim**: something read the source against the claim (an open-weight model, or the Verify API, for a book's passages; your model for a web page).
+- **Cited for this fact on de.wikipedia, source not checked** (or *for part of this fact*): another language edition cited this source for a sentence that states your claim's fact, as judged by the open-weight model (or the Verify API), but the source itself could not be read (a dead link, a site whose robots.txt refuses robots, a page cut short), so read it before you paste it. When the source can be read, the lead is shown as *Supports the claim* or *Supports part of the claim* with the source's words, or not at all. Other-language leads judged to state a different fact are only counted.
 - **Lead, not checked**: a citation an editor attached to a sentence like yours, in this article (`already cited in this article`, with that sentence) or on another language edition (`cited on de.wikipedia`, with the sentence there). *Leads, not verdicts*: read the source before you paste it.
 - **Probably copied from Wikipedia**: a web page whose quote repeats the article's sentence word for word (WP:CIRCULAR). Listed last, with a warning. Pages on sites anyone can upload to (Scribd and the like) carry a warning too, as does a web source the model judged of low reliability for the claim.
 
@@ -198,19 +199,26 @@ A cite template and `<ref>` snippet are emitted for every candidate; the verdict
 
 ## Sources already on Wikipedia (the free stage)
 
-Before anything is billed, CNfirmed looks for a citation Wikimedia already holds. Two passes, both deterministic code with no model in the loop:
+Before anything is billed, CNfirmed looks for a citation Wikimedia already holds. Two passes, both deterministic code; the user script then has a free model check the second pass's leads:
 
 **The article's own references.** A tagged sentence usually sits beside sourced text, and the neighbouring citation often covers it too. Each existing `<ref>` is scored on proximity to the tag (same paragraph, same section, elsewhere) plus weighted token overlap with the reference's own title, publisher and `quote=`. Outside the claim's section, proximity counts for nothing and the reference has to earn its place on what it is actually about. A hit pastes as `<ref name="existing" />`, re-using the citation already on the page.
 
 **Other language editions.** Their references are precisely the sources a web search will not surface. The corresponding sentence is located without a translation model, using anchors that survive translation:
 
-- **Numbers and dates** — normalised across numeral systems, so `١٨٨٩` and `1889` are the same anchor.
+- **Numbers and dates** — normalised across numeral systems, so `١٨٨٩` and `1889` are the same anchor, and matched as whole numbers: `22` is not found in `2022`.
 - **Proper nouns** — folded for case and diacritics, and only used between wikis that share a script.
 - **Wikilink targets** — resolved to the counterpart title on the target wiki through interlanguage links. This is what makes a claim locatable on a wiki whose script shares nothing with ours.
 
 A match on the exact sentence is the real signal; the same anchors elsewhere in the paragraph count for less. Both passes deduplicate by URL, drop blocklisted domains, and rank by match strength.
 
-What comes out is **evidence, not a verdict**: a human editor cited that source for a sentence that looks like your claim. The CLI's `find` still verifies these leads with the model before ranking them alongside web results; `cnfirmed wiki` and the user script's free stage present them unverified, with the sentence and the matched anchors, and leave the judgment to the editor.
+What comes out is **evidence, not a verdict**: a human editor cited that source for a sentence that looks like your claim. The CLI's `find` still verifies these leads with the model before ranking them alongside web results; `cnfirmed wiki` presents them unverified, with the sentence and the matched anchors.
+
+**Checking the other-language leads (user script).** Shared anchors are not a shared fact: on en:Vanadium, a claim that beta decay leads to element 24 (chromium) once matched four German sentences about mining, one of them on "24 Millionen Tonnen" of reserves "(Stand 2022)". So each lead is checked in two steps, with the open-weight judge model (GLM-5.2, or Qwen 3.8 on Lift Wing; `window.cnfirmedArchiveJudgeModel`):
+
+1. **The sentence.** All of a claim's leads go to the model in one call: does the sentence that wiki cited the source for state the claim's fact (*same*, *partial*, *no*)? Nothing is fetched; the text is already in hand. Leads judged *no* are only counted.
+2. **The source**, for the leads that pass. Its text is fetched by [source-fetcher](https://github.com/alex-o-748/tf-source-fetcher) on Toolforge (`GET https://source-fetcher.toolforge.org/?fetch=`, the fetcher behind the Verify API; it respects robots.txt, paces each host, and is cleared with WMCS for unattended fetching; set `window.cnfirmedSourceFetcherUrl` for another host), whole up to 50,000 characters (both models read a 52,000-character page whole and found the one table that mattered in its middle), and judged against the claim, one source per call, as a book's passages are: *supports*, *partial* or *no*, counting only when the quoted words are in the text. When the page cannot be read, the citation's `quote=` stands in for it. A source read in full that does not state the claim is hidden; one that could not be read, or was cut short, keeps the *cited for this fact, source not checked* label.
+
+With no judge model, or when a call fails, the Verify API reads the same text (the sentence, then the source's). On the evaluation set's 28 hand-labelled other-language leads (9 claims), the sentence check kept all 6 good leads and dropped all 22 bad ones (GLM-5.2; Qwen 3.8 did the same on the 20 of them labelled when it was tried); of the 6, three sources were read (Encyclopaedia Iranica states the claim; a Guardian review states part of it; a HuffPost review, read by hand too, is about another novel and is hidden) and three could not be (a 404, and two sites whose robots.txt refuses robots). The panel lists 5 leads, all good, against 28 at 21% before. `eval/run.ts --check-wiki` measures it. Same-article leads are not checked this way: their sentence is a different one by design.
 
 Deliberately out of scope: **Wikidata statements and their references.** This was built, shipped and then removed — it found nothing on real articles. See the plan doc for why, before building it again.
 

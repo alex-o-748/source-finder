@@ -1,0 +1,7 @@
+'''Vanadium''' ist ein [[chemisches Element]] mit dem Elementsymbol V und der Ordnungszahl 23.
+
+== Gewinnung und Darstellung ==
+
+Im Jahr 2020 wurden insgesamt 105.800&nbsp;Tonnen Vanadiumerz gefördert (gerechnet als Vanadiummetall). Vanadium wird (Stand 2022) nur in sechs Ländern weltweit abgebaut, 99 % des abgebauten Vanadiums in nur 4 Ländern: [[Südafrika]], [[Volksrepublik China|China]], [[Russland]] und [[Brasilien]].<ref name="BMLRT">{{Internetquelle | url= https://www.bmf.gv.at/dam/jcr:b778238b-9952-4fee-84ab-f3293b00c4e9/WMD%202025.pdf | titel= Vanadium | hrsg= [[Bundesministerium für Landwirtschaft, Regionen und Tourismus]] World Mining Data 2025, Seite 117 | abruf= 2025-05-28}}</ref>
+Wegen dieser hohen Abhängigkeit von wenigen Ländern wird Vanadium von der EU und von den USA in der [[Liste der kritischen Rohstoffe|Liste kritischer Rohstoffe]] geführt.<ref>[[Europäische Kommission]]: [https://single-market-economy.ec.europa.eu/sectors/raw-materials/areas-specific-interest/critical-raw-materials_en Critical Raw Materials].</ref><ref>[[Federal Register]] der US-Bundesregierung: [https://www.federalregister.gov/documents/2022/02/24/2022-04027/2022-final-list-of-critical-minerals 2022 final list of critical materials].</ref>
+Bei bekannten Reserven von insgesamt 24&nbsp;Millionen Tonnen (Stand 2022) ist ein Lieferengpass bei Vanadium auf absehbare Zeit nicht zu erwarten.<ref>[[U.S. Geological Survey]]: [https://pubs.usgs.gov/periodicals/mcs2022/mcs2022-vanadium.pdf ''Vanadium.''] In: ''Mineral Commodity Summaries.'' 2022. (PDF; 84&nbsp;kB).</ref>

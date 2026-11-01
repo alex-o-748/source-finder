@@ -201,6 +201,22 @@ export function anchorCount(a: Anchors): number {
 }
 
 /**
+ * Whether `text` contains the number `n` as a whole number: "22" is in "22 °C"
+ * and "1889er", but not in "2022". A substring match let a claim about element
+ * 22 match a German sentence about reserves "as of 2022".
+ */
+export function hasNumber(text: string, n: string): boolean {
+  let at = text.indexOf(n);
+  while (at !== -1) {
+    const before = at === 0 ? "" : text[at - 1];
+    const after = text[at + n.length] ?? "";
+    if (!/\d/.test(before) && !/\d/.test(after)) return true;
+    at = text.indexOf(n, at + 1);
+  }
+  return false;
+}
+
+/**
  * How much of `query`'s anchor set appears in `text`. Numbers count double:
  * a matching year is far better evidence of "the same fact" than a matching
  * surname, which may just mean "the same article".
@@ -217,7 +233,7 @@ export function anchorScore(
   let hit = 0;
   for (const n of new Set(query.numbers)) {
     total += 2;
-    if (have.has(n) || folded.includes(n)) {
+    if (have.has(n) || hasNumber(folded, n)) {
       hit += 2;
       matched.add(n);
     }

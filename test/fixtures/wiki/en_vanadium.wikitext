@@ -1,0 +1,10 @@
+'''Vanadium''' is a [[chemical element]]; it has [[Symbol (chemistry)|symbol]] '''V''' and [[atomic number]] 23.
+
+== Characteristics ==
+
+=== Isotopes ===
+{{Main|Isotopes of vanadium}}
+
+Naturally occurring vanadium is composed of one stable [[isotope]], {{sup|51}}V, and one [[Radionuclide|radioactive isotope]], {{sup|50}}V. The latter has a [[half-life]] of 2.71×10<sup>17</sup> years and a natural abundance of 0.25%. {{sup|51}}V has a [[nuclear spin]] of {{frac|7|2}} and can be used for [[Vanadium-51 nuclear magnetic resonance|NMR spectroscopy]].<ref name="Rehder">{{cite book |last1=Rehder |first1=D. |title=Vanadium-51 NMR |last2=Polenova |first2=T. |last3=Bühl |first3=M. |year=2007 |isbn=978-0-12-373919-3 |series=Annual Reports on NMR Spectroscopy |volume=62 |pages=49–114 |doi=10.1016/S0066-4103(07)62002-X}}</ref> Twenty-five artificial [[radioisotope]]s have been characterized, ranging in [[mass number]] from 42 to 68. The most stable of these isotopes are {{sup|49}}V with a half-life of 330 days, and {{sup|48}}V with a half-life of 15.97 days. The remaining [[radioactive]] isotopes have half-lives shorter than an hour, most below 10 seconds.{{NUBASE2020|ref}}
+
+[[Electron capture]] is the main [[decay mode]] for isotopes lighter than {{sup|51}}V. For the heavier ones, the most common mode is [[beta decay]].{{NUBASE2020|ref}} The electron capture reactions lead to the formation of element 22 ([[titanium]]) isotopes, while beta decay leads to element 24 ([[chromium]]) isotopes.{{citation needed|date=October 2026}}
