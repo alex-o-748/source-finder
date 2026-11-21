@@ -336,10 +336,11 @@ test("a book bundled in an item with others is shown, linked and cited as itself
   assert.equal(c.url, "https://archive.org/details/009-bernard-montgomery/018%20-%20Eisenhower");
   assert.ok(c.evidence.viewerUrl.startsWith(`${c.url}?q=%22promoted`));
   assert.deepEqual(c.evidence.bundle, { title: "009 Bernard Montgomery", books: 4 });
+  // The citation links the book searched for the passage, as the panel does,
+  // so whoever checks the citation lands on its page.
   assert.equal(
     c.citation.template,
-    "{{cite book |title=018 - Eisenhower " +
-      "|url=https://archive.org/details/009-bernard-montgomery/018%20-%20Eisenhower |via=Internet Archive}}",
+    `{{cite book |title=018 - Eisenhower |url=${c.evidence.viewerUrl} |via=Internet Archive}}`,
   );
 });
 
@@ -438,6 +439,7 @@ test("findArchiveCandidates: the whole funnel, with counts", async () => {
     c.evidence.viewerUrl,
     "https://archive.org/details/eiffeltowerdescr00tiss?q=%22Eiffel%20Tower%20finished%20in%201889%22",
   );
+  assert.ok(c.citation.ref.includes(`|url=${c.evidence.viewerUrl} |`), "the citation carries the search");
   assert.ok(c.evidence.passages[0].includes("rises 300 metres"));
   assert.equal(
     c.relevance,

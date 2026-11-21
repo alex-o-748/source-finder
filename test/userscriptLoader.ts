@@ -33,6 +33,7 @@ const EXPOSED = [
   "parseArchiveHits",
   "rankArchiveHits",
   "toArchiveCandidate",
+  "withRefUrl",
   "archiveDetailsOf",
   "iaSearchPhrase",
   "iaCollapseCopies",
