@@ -3549,17 +3549,19 @@
   }
 
   // url-access=registration for a lending-library book, as InternetArchiveBot
-  // writes it: the link works, after signing in with a free account.
+  // writes it: the link works, after signing in with a free account. `url` is
+  // the book searched for the passage (iaViewerUrl), so whoever checks the
+  // citation later lands on the page that states the claim.
   // A bundle's author, publisher, year and ISBN are the item's, not the
   // book's: left for the editor to fill in.
-  function formatArchiveCitation(hit, access, details, book) {
+  function formatArchiveCitation(hit, access, details, book, url) {
     var item = !book;
     var parts = ['title=' + escapePipes(book || hit.title)];
     if (item && hit.creator) parts.push('author=' + escapePipes(iaCleanCreator(hit.creator)));
     if (item && details && details.publisher) parts.push('publisher=' + escapePipes(details.publisher));
     if (item && hit.year !== null) parts.push('year=' + hit.year);
     if (item && details && details.isbn) parts.push('isbn=' + escapePipes(details.isbn));
-    parts.push('url=' + iaDetailsUrl(hit.identifier, book));
+    parts.push('url=' + (url || iaDetailsUrl(hit.identifier, book)));
     if (access === 'borrow') parts.push('url-access=registration');
     parts.push('via=Internet Archive');
     var template = '{{cite book |' + parts.join(' |') + '}}';
@@ -3580,6 +3582,7 @@
     var best = s.passages[0];
     var book = iaBundledBook(hit, details);
     var url = iaDetailsUrl(hit.identifier, book);
+    var viewer = iaViewerUrl(url, best.text, terms);
     var matched = iaCompactAnchors(best.matched);
     var byline = [
       s.access === 'borrow' ? 'Internet Archive (borrow)' : 'Internet Archive',
@@ -3595,7 +3598,7 @@
       score: s.score,
       matchedAnchors: matched,
       query: hit.query,
-      viewerUrl: iaViewerUrl(url, best.text, terms)
+      viewerUrl: viewer
     };
     if (book !== null) evidence.bundle = { title: hit.title, books: details.books.length };
     if (s.fullText) evidence.fullText = true;
@@ -3606,7 +3609,7 @@
       relevance: byline + ' — matched ' + (matched.join(', ') || 'claim wording'),
       snippet: best.text,
       evidence: evidence,
-      citation: formatArchiveCitation(hit, s.access, details, book)
+      citation: formatArchiveCitation(hit, s.access, details, book, viewer)
     };
   }
 
@@ -5682,7 +5685,8 @@
       quote: words || (ev.fullText ? c.snippet : '…' + c.snippet + '…'),
       warnings: warnings,
       note: notes.join(' '),
-      ref: c.citation && c.citation.ref,
+      ref: c.citation && withRefUrl(c.citation.ref, url),
+      refUrl: url,
       cite: citoidHolder(c, persistArchive)
     };
   }
@@ -6313,7 +6317,19 @@
 
   function refFor(item) {
     if (!item.cite) return Promise.resolve(item.ref);
-    return completeHeldCitation(item.cite).then(function (citation) { return citation.ref; });
+    return completeHeldCitation(item.cite).then(function (citation) {
+      return item.refUrl ? withRefUrl(citation.ref, item.refUrl) : citation.ref;
+    });
+  }
+
+  // The citation's |url= set to the link the panel opens: for a book, searched
+  // for the words the check found (they find the page better than the passage
+  // the citation was first made with), so a reader of the article can check it.
+  function withRefUrl(ref, url) {
+    if (!ref || !url) return ref;
+    return ref.replace(/\|\s*url=[^|}]*?(\s*(?:\||}}))/, function (m, end) {
+      return '|url=' + url + end;
+    });
   }
 
   function copyRef(ref) {

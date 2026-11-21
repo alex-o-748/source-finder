@@ -1033,13 +1033,16 @@ export function viewerUrl(url: string, passage: string, terms: ClaimTerms): stri
 
 /**
  * `url-access=registration` for a lending-library book, as InternetArchiveBot
- * writes it: the link works, after signing in with a free account.
+ * writes it: the link works, after signing in with a free account. `url` is
+ * the book searched for the passage (`viewerUrl`), so whoever checks the
+ * citation later lands on the page that states the claim.
  */
 export function formatArchiveCitation(
   hit: Pick<ArchiveHit, "identifier" | "title" | "creator" | "year">,
   access: ArchiveAccess,
   details: Pick<ItemDetails, "publisher" | "isbn"> | null,
   book: string | null = null,
+  url: string = detailsUrl(hit.identifier, book),
 ): Citation {
   // A bundle's author, publisher, year and ISBN are the item's, not the
   // book's: left for the editor to fill in.
@@ -1050,7 +1053,7 @@ export function formatArchiveCitation(
     item && details?.publisher ? `publisher=${escapePipes(details.publisher)}` : null,
     item && hit.year !== null ? `year=${hit.year}` : null,
     item && details?.isbn ? `isbn=${escapePipes(details.isbn)}` : null,
-    `url=${detailsUrl(hit.identifier, book)}`,
+    `url=${url}`,
     access === "borrow" ? "url-access=registration" : null,
     "via=Internet Archive",
   ].filter((p): p is string => p !== null);
@@ -1076,6 +1079,7 @@ export function toArchiveCandidate(
   const best = s.passages[0];
   const book = bundledBook(hit, details);
   const url = detailsUrl(hit.identifier, book);
+  const viewer = viewerUrl(url, best.text, terms);
   const matched = compactAnchors(best.matched);
   const byline = [
     s.access === "borrow" ? "Internet Archive (borrow)" : "Internet Archive",
@@ -1096,12 +1100,12 @@ export function toArchiveCandidate(
       score: s.score,
       matchedAnchors: matched,
       query: hit.query,
-      viewerUrl: viewerUrl(url, best.text, terms),
+      viewerUrl: viewer,
       ...(book !== null && { bundle: { title: hit.title, books: details!.books!.length } }),
       ...(s.fullText && { fullText: true as const }),
       ...(via && { via }),
     },
-    citation: formatArchiveCitation(hit, s.access, details, book),
+    citation: formatArchiveCitation(hit, s.access, details, book, viewer),
   };
 }
 

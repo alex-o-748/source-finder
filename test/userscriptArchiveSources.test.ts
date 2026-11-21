@@ -303,3 +303,18 @@ test("with the switch on, the user script reads whole texts as the core does", a
     globalThis.fetch = realFetch;
   }
 });
+
+test("withRefUrl: the citation's url becomes the link the panel opens", () => {
+  const ref =
+    "<ref>{{cite book |title=The Eiffel Tower |url=https://archive.org/details/eiffeltower0000pezz?q=1889 " +
+    "|url-access=registration |via=Internet Archive}}</ref>";
+  const url = "https://archive.org/details/eiffeltower0000pezz?q=%22finished%20in%201889%22";
+  assert.equal(
+    script.withRefUrl(ref, url),
+    "<ref>{{cite book |title=The Eiffel Tower |url=" + url + " |url-access=registration |via=Internet Archive}}</ref>",
+  );
+  // url last in the template, and a citation with no url at all
+  assert.equal(script.withRefUrl("<ref>{{cite book |title=T |url=https://a.org/x}}</ref>", url),
+    `<ref>{{cite book |title=T |url=${url}}}</ref>`);
+  assert.equal(script.withRefUrl("<ref>{{cite book |title=T}}</ref>", url), "<ref>{{cite book |title=T}}</ref>");
+});
