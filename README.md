@@ -88,6 +88,13 @@ For a web source or an Internet Archive book, the `<ref>` is a fully filled cita
 
 Under the list, **Searched** says what each search (Wikipedia, books, web) found, or that it is still running, and holds the button for any search not yet run or failed.
 
+## Hints API (Toolforge)
+
+`src/hints/` is a lookup service for other tools, such as Citation Hunt: a batch
+job runs the book search and its model check ahead of time, and
+`GET /v1/hints?wiki=en&page_id=…&text=…` returns the books that passed for the
+claims in that text. See [`docs/hints-api.md`](docs/hints-api.md).
+
 ## Node CLI
 
 A standalone command-line tool. Useful for batch runs or scripting; the user script doesn't depend on it. The web search runs against the Anthropic API; every candidate is then checked by the Verify API, which needs no key.
