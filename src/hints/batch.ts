@@ -164,8 +164,13 @@ async function main(): Promise<void> {
     const lines = (await readFile(values.titles, "utf8")).split("\n").map((l) => l.trim());
     titles.push(...lines.filter((l) => l && !l.startsWith("#")));
   }
-  if (values.search) titles.push(...(await searchTitles(wiki, values.search, Number(values.limit), values.random)));
+  if (values.search) {
+    const found = await searchTitles(wiki, values.search, Number(values.limit), values.random);
+    console.log(`search ${JSON.stringify(values.search)}: ${found.length} article(s)`);
+    titles.push(...found);
+  }
   if (!titles.length) {
+    console.error(`arguments received: ${JSON.stringify(process.argv.slice(2))}`);
     console.error("Nothing to do: give --title, --titles <file> or --search <query>.");
     process.exit(2);
   }

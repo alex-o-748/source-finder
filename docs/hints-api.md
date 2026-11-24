@@ -99,11 +99,11 @@ toolforge webservice buildservice start --mount=all
 curl https://cnfirmed.toolforge.org/healthz
 ```
 
-A pilot run, 50 random articles about military history with a `{{cn}}` tag:
+A pilot run, 10 random articles about military history with a `{{cn}}` tag:
 
 ```bash
 toolforge jobs run pilot --image tool-cnfirmed/tool-cnfirmed:latest --mount=all \
-  --command "batch --search 'incategory:\"All articles with unsourced statements\" articletopic:military-and-warfare' --limit 50 --random"
+  --command "batch --search 'incategory:\"All articles with unsourced statements\" articletopic:military-and-warfare' --limit 10 --random"
 toolforge jobs logs pilot
 ```
 
