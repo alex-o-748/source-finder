@@ -24,7 +24,9 @@
     "eval:run": "tsx eval/run.ts",
     "eval:score": "tsx eval/score.ts",
     "eval:record": "NODE_USE_ENV_PROXY=1 tsx eval/run.ts --record",
-    "eval:sample": "NODE_USE_ENV_PROXY=1 tsx eval/sample.ts"
+    "eval:sample": "NODE_USE_ENV_PROXY=1 tsx eval/sample.ts",
+    "hints:web": "node dist/hints/web.js",
+    "hints:batch": "node dist/hints/batch.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
