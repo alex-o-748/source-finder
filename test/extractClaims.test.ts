@@ -97,3 +97,22 @@ test("the previous sentence's {{cn}} tag is not part of the next claim", () => {
   );
   assert.equal(claims[1].context, "The tower opened in 1889. It was popular.");
 });
+
+test("a ? or . inside a citation before the claim does not start the claim", () => {
+  const text =
+    "== Overview ==\n" +
+    "It had a film projector.<ref>{{cite journal |title=Newspaper Printed On Plane In Flight |url=https://books.google.com/books?id=IikDAAAAMBAJ&pg=PA43 |date=March 1935}}</ref> In a first in aviation the aircraft was equipped with a folding ladder.{{Citation needed|date=May 2024}}";
+  const [claim] = extractClaims(text);
+  assert.equal(claim.claim, "In a first in aviation the aircraft was equipped with a folding ladder.");
+});
+
+test("a tag in mid-sentence still ends the claim at the tag", () => {
+  const text = "First sentence. Another publisher's comic was ''Trash'' (1978){{citation needed|date=December 2013}} featured a blurb.";
+  const [claim] = extractClaims(text);
+  assert.equal(claim.claim, "Another publisher's comic was ''Trash'' (1978)");
+});
+
+test("a claim keeps the italics that open it", () => {
+  const [claim] = extractClaims("It sailed north. ''Shasta'' conducted these operations in a storm.{{cn|date=May 2024}}");
+  assert.equal(claim.claim, "''Shasta'' conducted these operations in a storm.");
+});

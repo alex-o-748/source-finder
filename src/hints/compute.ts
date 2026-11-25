@@ -25,7 +25,7 @@ import type { ArchiveCandidate, Citation, Claim } from "../core/types.js";
 import { claimProse } from "./match.js";
 
 /** Bumped when what is computed changes, so the batch job knows a stored page is stale. */
-export const PIPELINE_VERSION = 1;
+export const PIPELINE_VERSION = 2;
 
 export interface BookHint {
   verdict: "supports" | "partial";

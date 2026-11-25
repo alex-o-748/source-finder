@@ -1,4 +1,5 @@
 import type { Claim } from "./types.js";
+import { taggedSentenceRange } from "./wikitext.js";
 
 /**
  * Matches a {{citation needed}}-style template call, covering the redirects
@@ -141,7 +142,19 @@ export function extractClaims(wikitext: string): Claim[] {
     const paragraph = wikitext.slice(paraStart, paraEnd);
     const cnOffsetInPara = offset - paraStart;
 
-    const rawClaim = claimFromParagraph(paragraph, cnOffsetInPara);
+    // Where the tagged sentence starts, with refs and templates masked: a "?"
+    // or "." inside a citation's URL or title is not a sentence end. Without
+    // this, a claim after a Google Books citation began "id=…&pg=PA43
+    // |date=… }}</ref> In a first…". The claim still ends at the tag.
+    const sentence = taggedSentenceRange(wikitext, offset, offset + tag.length);
+    let start = sentence.start;
+    // The range skips the quote marks a sentence opens with; give them back,
+    // italics and bold markup included ("''Shasta'' conducted…").
+    while (start > paraStart && /['"“‘]/.test(wikitext[start - 1])) start--;
+    const rawClaim =
+      start >= paraStart && start <= offset
+        ? wikitext.slice(start, offset)
+        : claimFromParagraph(paragraph, cnOffsetInPara);
     const claim = cleanForDisplay(rawClaim);
     const context = cleanForDisplay(paragraph);
     const section = sectionFor(wikitext, offset);
